@@ -1,3 +1,16 @@
 {
-  "extends": "next/core-web-vitals"
+  "extends": ["next/core-web-vitals", "plugin:tailwindcss/recommended"],
+  "settings": {
+    "tailwindcss": {
+      "callees": ["cn", "twMerge", "tv"]
+    }
+  },
+  "rules": {
+    "tailwindcss/no-custom-classname": [
+      "warn",
+      {
+        "whitelist": ["animate-duration-\\[.*\\]"]
+      }
+    ]
+  }
 }
