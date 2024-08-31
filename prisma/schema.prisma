@@ -13,8 +13,151 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+enum Role {
+  ADMIN
+  TEACHER
+  STUDENT
+}
+
 model User {
-  id    Int     @id @default(autoincrement())
-  email String  @unique
-  name  String?
+  id           String    @id
+  role         Role      @default(STUDENT)
+  displayName  String    @map("display_name")
+  avatarImgKey String?   @map("avatar_img_key")
+  isActive     Boolean   @default(true) @map("is_active")
+  isGuest      Boolean   @default(false) @map("is_guest")
+  attributes   Json?     @default("{}")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  // Role-specific information
+  student   Student?
+  teacher   Teacher?
+  admin     Admin?
+
+  @@map("users")
+  @@index([role])
+
+}
+
+// 学生
+model Student {
+  userId      String   @id @map("user_id")
+  reserve1    String?
+  reserve2    String?
+  attributes  Json?    @default("{}")
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  enrollments SessionEnrollment[]
+  responses   Response[]
+
+  @@map("students")
+}
+
+// 教員
+model Teacher {
+  userId      String   @id @map("user_id")
+  reserve1    String?
+  reserve2    String?
+  attributes  Json?    @default("{}")
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessions LearningSession[]
+  @@map("teachers")
+}
+
+// 管理者
+model Admin {
+  userId      String   @id @map("user_id")
+  reserve1    String?
+  reserve2    String?
+  attributes  Json
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("admins")
+}
+
+// ラーニングセッション
+model LearningSession {
+  id          String   @id @default(cuid())
+  teacherId   String   @map("teacher_id")
+  title       String
+  accessCode  String   @map("access_code")
+  isActive    Boolean  @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  teacher     Teacher  @relation(fields: [teacherId], references: [userId], onDelete: Cascade)
+  enrollments SessionEnrollment[]
+  questions   Question[]
+
+  @@map("learning_sessions")
+}
+
+// 学生とラーニングセッションの中間テーブル
+model SessionEnrollment {
+  sessionId         String          @map("session_id")
+  studentId         String          @map("student_id")
+  enrolledAt        DateTime        @default(now()) @map("enrolled_at")
+  learningSession   LearningSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  student           Student         @relation(fields: [studentId], references: [userId], onDelete: Cascade)
+
+  @@id([sessionId, studentId])
+  @@map("session_enrollments")
+}
+
+// 設問
+model Question {
+  id                 String   @id @default(cuid())
+  sessionId          String   @map("session_id")
+  order              Int
+  title              String
+  description        String?
+  defaultOptionId    String   @unique @map("default_option_id")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  session            LearningSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  options            Option[]
+  responses          Response[]
+  defaultOption      Option   @relation("DefaultOption", fields: [defaultOptionId], references: [id])
+
+  @@map("questions")
+}
+
+// 選択肢
+model Option {
+  id             String   @id @default(cuid())
+  questionId     String   @map("question_id")
+  order          Int
+  title          String
+  description    String?
+  rewardMessage  String?  @map("reward_message")
+  rewardPoints   Int      @default(0) @map("reward_points")
+  effect         Boolean  @default(false)
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  question            Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  responses           Response[]
+  defaultForQuestion  Question? @relation("DefaultOption")
+
+  @@map("options")
+}
+
+// 回答
+model Response {
+  id           Int      @id @default(autoincrement())
+  studentId    String   @map("student_id")
+  questionId   String   @map("question_id")
+  optionId     String   @map("option_id")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  student      Student  @relation(fields: [studentId], references: [userId], onDelete: Cascade)
+  question     Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  option       Option   @relation(fields: [optionId], references: [id], onDelete: Cascade)
+
+  @@index([questionId, optionId])
+  @@index([studentId])
+
+  @@map("responses")
 }

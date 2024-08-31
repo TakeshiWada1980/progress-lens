@@ -1,0 +1,12 @@
+const AppErrorCode = {
+  UNKNOWN_ERROR: "9999",
+  ENDPOINT_NOT_FOUND: "9404",
+  INVALID_TOKEN: "4001",
+  USER_NOT_FOUND: "3001",
+  AXIOS_ERROR: "5001",
+  NOT_ADMIN: "3002",
+  BAD_REQUEST_BODY: "4002",
+  DB_OPERATION_ERROR: "5002",
+};
+
+export default AppErrorCode;
