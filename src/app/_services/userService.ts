@@ -93,7 +93,7 @@ class UserService {
       data: {
         id,
         displayName,
-        role: "STUDENT",
+        role: Role.STUDENT,
         student: {
           create: {
             reserve1: "student-foo",

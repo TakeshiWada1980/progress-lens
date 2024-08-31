@@ -23,20 +23,18 @@ export const GET = async (req: NextRequest) => {
 
     // appUser が存在するなら早期リターン
     if (appUser) {
-      let redirectTo = "/";
+      let redirectTo = "/"; // 学生用ページができたら変更
       switch (appUser.role) {
         case Role.TEACHER:
-          redirectTo = "/";
+          redirectTo = "/"; // 教員用ページができたら変更
           break;
         case Role.ADMIN:
-          redirectTo = "/";
+          redirectTo = "/"; // 管理者用ページができたら変更
           break;
         default:
           break;
       }
       const res = {
-        displayName: appUser.displayName,
-        role: appUser.role,
         redirectTo,
       } as RedirectTo;
       return NextResponse.json(
@@ -45,16 +43,11 @@ export const GET = async (req: NextRequest) => {
     }
 
     // appUser が存在しないなら appUser にレコードを挿入（新規作成）
-    const name = (authUser.email ?? "").split("@")[0];
-    const newAppUser = await userService.createUserWithStudent(
-      authUser.id,
-      name
-    );
+    const name = (authUser.email ?? "").split("@")[0]; // 仮の表示名
+    await userService.createUserWithStudent(authUser.id, name);
 
     // プロフィール設定画面にリダイレクト
     const res = {
-      displayName: newAppUser.displayName,
-      role: newAppUser.role,
       redirectTo: "/user/profile",
     } as RedirectTo;
 
