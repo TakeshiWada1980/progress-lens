@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useEffect, useState } from "react";
+import React, { createContext, useMemo, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { Session } from "@supabase/supabase-js";
 import ApiRequestHeader from "@/app/_types/ApiRequestHeader";
@@ -15,6 +15,7 @@ interface AuthContextProps {
   setIsUserProfileRefreshRequired: React.Dispatch<
     React.SetStateAction<boolean>
   >;
+  logout: () => Promise<boolean>;
 }
 
 export const AuthContext = createContext<AuthContextProps | undefined>(
@@ -34,7 +35,7 @@ const AuthProvider: React.FC<Props> = ({ children }) => {
     Authorization: null,
   });
 
-  const getApiCaller = useCallback(
+  const getApiCaller = useMemo(
     () => createGetRequest<ApiResponse<UserProfile>>(),
     []
   );
@@ -43,13 +44,22 @@ const AuthProvider: React.FC<Props> = ({ children }) => {
     useState<boolean>(true);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
 
+  const logout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error("Error logging out:", error);
+      return false;
+    }
+    return true;
+  };
+
   // セッションに変更があった場合や子コンポーネントからのリクエストがあった場合にユーザ情報を再取得
   useEffect(() => {
-    const ep = "/api/v1/user/profile";
+    const ep = `/api/v1/user/profile`;
     const fetchUserProfile = async () => {
       if (session && isUserProfileRefreshRequired) {
         try {
-          const res = await getApiCaller()(ep, apiRequestHeader);
+          const res = await getApiCaller(ep, apiRequestHeader);
           const userData = res.data;
           setUserProfile(userData);
 
@@ -126,6 +136,7 @@ const AuthProvider: React.FC<Props> = ({ children }) => {
         token,
         userProfile,
         setIsUserProfileRefreshRequired,
+        logout,
       }}
     >
       {children}

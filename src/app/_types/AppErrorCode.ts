@@ -7,6 +7,7 @@ const AppErrorCode = {
   NOT_ADMIN: "3002",
   BAD_REQUEST_BODY: "4002",
   DB_OPERATION_ERROR: "5002",
+  INVALID_HTTP_HEADER: "4003",
 };
 
 export default AppErrorCode;

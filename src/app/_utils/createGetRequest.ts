@@ -4,17 +4,52 @@ import ApiRequestHeader from "@/app/_types/ApiRequestHeader";
 import { ApiErrorResponse, Origin } from "@/app/_types/ApiResponse";
 import AppErrorCode from "@/app/_types/AppErrorCode";
 
+// この関数は、通常、以下のようにコールされる。
+//
+// const { apiRequestHeader } = useAuth();
+// const getApiCaller = createGetRequest<ApiResponse<UserProfile>>()
+// const res = await getApiCaller(ep,apiRequestHeader);
+//
+// しかし、タイミングによっては（特に当該ページでブラウザがリロードされたときは）、
+// useAuth が処理中で、一時的に apiRequestHeader が { Authorization : null } となる。
+// このヘッダでは絶対に通信に失敗するため、そもそもfetchを行わないようにする。
+// 通常、以下のようにコールされる。
+
+// また、この関数は AuthContext.tsx でも使用するため内部に useAuth は組み込めない。
+
 const createGetRequest = <Response>() => {
   return async (
-    url: string,
+    endpoint: string,
     headers?: ApiRequestHeader
   ): Promise<Response | ApiErrorResponse> => {
+    // useAuth が初期化中である場合に備えた処理
+    // isAuthHeaderValid が true になるのは、headers が undefined か、
+    // headers.Authorization が null や undefined でない場合
+    const isAuthHeaderValid =
+      headers === undefined || headers?.Authorization != null;
+
+    if (!isAuthHeaderValid) {
+      const errorResponse: ApiErrorResponse = {
+        success: false,
+        data: null,
+        error: {
+          origin: Origin.CLIENT,
+          appErrorCode: AppErrorCode.INVALID_HTTP_HEADER,
+          technicalInfo:
+            "引数 headers に { Authorization : null } が含まれるため意図的に通信を遮断しました。useAuthが初期中の可能性があります。",
+          technicalInfoObject: { headers },
+        },
+        httpStatus: 400,
+      };
+      return errorResponse;
+    }
+
     const options = {
       headers,
     };
     let res: AxiosResponse<Response, any> | null = null;
     try {
-      res = await axios.get<Response>(url, options);
+      res = await axios.get<Response>(endpoint, options);
       res = res as AxiosResponse<Response, any>;
       // 開発環境では、動作検証のためにDelayを設定
       if (isDevelopmentEnv && apiDelay > 0) {

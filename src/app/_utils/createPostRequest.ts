@@ -10,6 +10,27 @@ const createPostRequest = <RequestBody, Response>() => {
     data: RequestBody,
     headers?: ApiRequestHeader
   ): Promise<Response | ApiErrorResponse> => {
+    // useAuth が初期化中である場合に備えた処理
+    // isAuthHeaderValid が true になるのは、headers が undefined か、
+    // headers.Authorization が null や undefined でない場合
+    const isAuthHeaderValid =
+      headers === undefined || headers?.Authorization != null;
+    if (!isAuthHeaderValid) {
+      const errorResponse: ApiErrorResponse = {
+        success: false,
+        data: null,
+        error: {
+          origin: Origin.CLIENT,
+          appErrorCode: AppErrorCode.INVALID_HTTP_HEADER,
+          technicalInfo:
+            "引数 headers に { Authorization : null } が含まれるため意図的に通信を遮断しました。useAuthが初期中の可能性があります。",
+          technicalInfoObject: { headers },
+        },
+        httpStatus: 400,
+      };
+      return errorResponse;
+    }
+
     const options = headers ? { headers } : {};
     let res: AxiosResponse<Response, any> | null = null;
     try {

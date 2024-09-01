@@ -1,7 +1,5 @@
 import NextLink from "next/link";
 import { tv, type VariantProps } from "tailwind-variants";
-
-// UI
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPersonDigging } from "@fortawesome/free-solid-svg-icons";
 import {
@@ -11,18 +9,41 @@ import {
   TooltipTrigger,
 } from "@/app/_components/shadcn/ui/tooltip";
 
-const link = tv({
-  base: "mx-0.5",
+// TODO: hover時のスタイルを追加
+export const link = tv({
+  base: "",
   variants: {
-    variant: {
-      normal: "text-blue-500 underline",
+    style: {
+      inline: "mx-0.5 text-blue-500 underline",
+      nav: "",
       unstyled: "",
-      notImplemented: "cursor-pointer text-gray-400",
-      notImplementedWithTooltip: "cursor-pointer text-gray-400",
+    },
+    state: {
+      enabled: "",
+      disabled: "cursor-default text-gray-400",
+      notImplemented: "cursor-pointer",
     },
   },
+  compoundVariants: [
+    {
+      style: "inline",
+      state: "disabled",
+      class: "no-underline",
+    },
+    {
+      style: "inline",
+      state: "notImplemented",
+      class: "text-gray-400",
+    },
+    {
+      style: "nav",
+      state: "notImplemented",
+      class: "text-gray-400",
+    },
+  ],
   defaultVariants: {
-    variant: "normal",
+    style: "inline",
+    state: "enabled",
   },
 });
 
@@ -33,41 +54,46 @@ interface Props extends VariantProps<typeof link> {
   label?: string;
 }
 
-const Link: React.FC<Props> = (props) => {
-  const { variant, href, className, children, label } = props;
+const Link: React.FC<Props> = ({
+  style,
+  state,
+  href,
+  className,
+  children,
+  label,
+}) => {
+  const content = (
+    <span className={link({ style, state, class: className })}>
+      {children}
+      {label}
+    </span>
+  );
 
-  if (variant === "notImplemented") {
-    return (
-      <span className={link({ variant, class: className })}>
-        {children}
-        {label}
-      </span>
-    );
-  }
-
-  if (variant === "notImplementedWithTooltip") {
-    return (
-      <TooltipProvider delayDuration={0}>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <span className={link({ variant, class: className })}>
-              {children}
-              {label}
-            </span>
-          </TooltipTrigger>
-          <TooltipContent className="bg-slate-700 text-white">
-            <p>
-              <FontAwesomeIcon icon={faPersonDigging} className="mr-1" />
-              未実装です
-            </p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-    );
+  if (state && state !== "enabled") {
+    const wrappedContent =
+      state === "notImplemented" ? (
+        <TooltipProvider delayDuration={0}>
+          <Tooltip>
+            <TooltipTrigger asChild>{content}</TooltipTrigger>
+            <TooltipContent className="bg-slate-700 text-white">
+              <p>
+                <FontAwesomeIcon icon={faPersonDigging} className="mr-1" />
+                未実装です。
+              </p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      ) : (
+        content
+      );
+    return wrappedContent;
   }
 
   return (
-    <NextLink href={href} className={link({ variant, class: className })}>
+    <NextLink
+      href={href}
+      className={link({ style, state: state, class: className })}
+    >
       {children}
       {label}
     </NextLink>

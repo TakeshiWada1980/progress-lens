@@ -37,13 +37,13 @@ interface Props
 }
 
 const TextInputField = forwardRef<HTMLInputElement, Props>((props, ref) => {
-  const { disabled, className, readOnly, error, ...rest } = props;
+  const { disabled, className, readOnly, error, isBusy, ...rest } = props;
 
   return (
     <input
       ref={ref}
       className={input({ disabled, readOnly, error, class: className })}
-      disabled={disabled}
+      disabled={disabled || isBusy}
       readOnly={readOnly}
       {...rest}
     />

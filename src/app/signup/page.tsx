@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { supabase } from "@/lib/supabase";
 import { Session } from "@supabase/supabase-js";
 import { zodResolver } from "@hookform/resolvers/zod";
+import useAuth from "@/app/_hooks/useAuth";
 
 // UIコンポーネント
 import FormInputErrorMsg from "@/app/_components/elements/FormFieldErrorMsg";
@@ -29,6 +30,7 @@ const SignUpPage: React.FC = () => {
   const [errorMsg, setErrorMsg] = useState<string | null>();
   const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
   const [session, setSession] = useState<Session | null | undefined>(undefined);
+  const { logout } = useAuth();
 
   const c_Email = "email";
   const c_Password = "password";
@@ -48,10 +50,7 @@ const SignUpPage: React.FC = () => {
   }, []);
 
   const logoutAction = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      console.error("ログアウト処理に失敗:", error);
-    } else {
+    if (await logout()) {
       setSession(null);
     }
   };
@@ -201,7 +200,7 @@ const SignUpPage: React.FC = () => {
             className="mr-1"
           />
           パスワードを忘れてしまった場合は
-          <Link href="/forget-password" variant="notImplementedWithTooltip">
+          <Link href="/forget-password" state="notImplemented">
             パスワードの再設定
           </Link>
           を行なってください。

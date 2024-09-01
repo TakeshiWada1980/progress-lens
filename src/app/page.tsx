@@ -7,7 +7,10 @@ import { appName } from "@/config/app-config";
 const Home: React.FC = () => {
   return (
     <div>
-      <PageTitle title={appName} />
+      <PageTitle
+        title={`Visualize and Share Your Progress with ${appName}`}
+        className="text-xl"
+      />
       <ul>
         <li>
           <Link href="/signup" label="/signup" />
@@ -17,6 +20,7 @@ const Home: React.FC = () => {
         </li>
         <li>
           <Link href="/user/profile" label="/user/profile" />
+          &nbsp;(Login required)
         </li>
       </ul>
     </div>

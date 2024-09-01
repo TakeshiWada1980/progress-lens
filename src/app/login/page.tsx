@@ -31,7 +31,7 @@ const LoginPage: React.FC = () => {
   const [session, setSession] = useState<Session | null | undefined>(undefined);
   const router = useRouter();
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
-  const { setIsUserProfileRefreshRequired } = useAuth();
+  const { setIsUserProfileRefreshRequired, logout } = useAuth();
 
   const c_Email = "email";
   const c_Password = "password";
@@ -51,10 +51,7 @@ const LoginPage: React.FC = () => {
   }, [session]);
 
   const logoutAction = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      console.error("ログアウト処理に失敗:", JSON.stringify(error));
-    } else {
+    if (await logout()) {
       setSession(null);
     }
   };
@@ -90,16 +87,16 @@ const LoginPage: React.FC = () => {
       apiRequestHeader
     );
 
-    // ロールやユーザステート（初回ログイン？）に合わせたリダイレクト
+    // ロールやユーザステート（初回ログインなど）に合わせたリダイレクト
     if (res.success) {
       router.replace(res.data?.redirectTo!);
       return;
     }
 
-    setErrorMsg("ログイン処理に失敗しました（予期せぬ挙動）。");
+    setErrorMsg("バックエンドでのログイン処理に失敗しました（予期せぬ挙動）。");
     setIsLoggedIn(false);
     console.error("■ ログイン処理に失敗:", JSON.stringify(res, null, 2));
-    await supabase.auth.signOut();
+    await logout();
     return;
   };
 
@@ -198,7 +195,7 @@ const LoginPage: React.FC = () => {
             className="mr-1"
           />
           パスワードを忘れてしまった場合は
-          <Link href="/forget-password" variant="notImplementedWithTooltip">
+          <Link href="/forget-password" state="notImplemented">
             パスワードの再設定
           </Link>
           を行なってください。

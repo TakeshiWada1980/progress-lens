@@ -111,7 +111,6 @@ const ProfileUpdateForm: React.FC<Props> = ({ disabled }) => {
 
   const avatarDeleteAction = () => {
     setValue(c_AvatarImgKey, undefined, { shouldValidate: true });
-    // setValue(c_AvatarImgUrl, undefined, { shouldValidate: true });
   };
 
   return (
@@ -244,7 +243,7 @@ const ProfileUpdateForm: React.FC<Props> = ({ disabled }) => {
             className="mr-1"
           />
           ログインID (メールアドレス) の確認と変更は
-          <Link href="/user/email" variant="notImplementedWithTooltip">
+          <Link href="/user/email" state="notImplemented">
             メールアドレスの変更
           </Link>
           から行ってください。
@@ -256,7 +255,7 @@ const ProfileUpdateForm: React.FC<Props> = ({ disabled }) => {
             className="mr-1"
           />
           パスワードの変更は
-          <Link href="/user/password" variant="notImplementedWithTooltip">
+          <Link href="/user/password" state="notImplemented">
             パスワードの変更
           </Link>
           から行ってください。
