@@ -22,6 +22,18 @@ const Home: React.FC = () => {
           <Link href="/user/profile" label="/user/profile" />
           &nbsp;(Login required)
         </li>
+        <li>
+          <Link href="/student" label="/student" />
+          &nbsp;(Login required)
+        </li>
+        <li>
+          <Link href="/teacher" label="/teacher" />
+          &nbsp;(Login required - TEACHER, ADMIN only)
+        </li>
+        <li>
+          <Link href="/admin" label="/admin" />
+          &nbsp;(Login required - ADMIN only)
+        </li>
       </ul>
     </div>
   );

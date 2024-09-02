@@ -5,7 +5,7 @@ import { ApiError } from "@/app/api/_helpers/apiExceptions";
 import { Origin } from "@/app/_types/ApiResponse";
 import { StatusCodes } from "@/app/_utils/extendedStatusCodes";
 import type { UserQueryOptions } from "@/app/_types/ServiceTypes";
-import type { Prisma } from "@prisma/client";
+import type { Prisma, User } from "@prisma/client";
 
 type UserWithStudent = P.UserGetPayload<{ include: { student: true } }>;
 
@@ -39,6 +39,7 @@ class UserService {
     this.prisma = prisma;
   }
 
+  // IDによるユーザ情報の取得 (該当なしの場合は例外をスロー)
   public async findUserById<
     T extends Prisma.UserInclude,
     U extends Prisma.UserSelect
@@ -53,6 +54,7 @@ class UserService {
     return user;
   }
 
+  // IDによるユーザ情報の取得 (該当なしの場合は null を返す)
   @handleErrors()
   public async tryFindUserById<
     T extends Prisma.UserInclude,
@@ -67,12 +69,13 @@ class UserService {
     })) as P.UserGetPayload<{ include: T; select: U }> | null;
   }
 
+  // ユーザ情報（ displayName と avatarImgKey ）の更新
   @handleErrors()
   public async updateUser(
     id: string,
     data: P.UserUpdateInput
   ): Promise<boolean> {
-    // avatarImgKey が undefine 場合は null に変換
+    // avatarImgKey が undefine のときは null に変換
     data.avatarImgKey ??= null;
     await this.prisma.user.update({
       where: { id },
@@ -84,6 +87,7 @@ class UserService {
     return true;
   }
 
+  // ユーザ（ 学生ロール ）の新規作成
   @handleErrors()
   public async createUserAsStudent(
     id: string,
@@ -105,6 +109,55 @@ class UserService {
         student: true,
       },
     });
+  }
+
+  // ロールの変更。学生→教員、教員→管理者のみ許可
+  @handleErrors()
+  public async updateUserRole<
+    T extends Prisma.UserInclude,
+    U extends Prisma.UserSelect
+  >(
+    id: string,
+    newRole: Role,
+    options?: UserQueryOptions<T, U>
+  ): Promise<Prisma.UserGetPayload<{ include: T; select: U }>> {
+    const user = await this.findUserById(id, options);
+    if (user.role === newRole) {
+      return user;
+    }
+
+    // とりあえず 現在、学生であると仮定して教員にロール変更
+    if (user.role === Role.STUDENT && newRole === Role.TEACHER) {
+      await this.prisma.user.update({
+        where: { id },
+        data: {
+          role: "TEACHER" as Role,
+          teacher: {
+            create: {
+              reserve1: "teacher-foo",
+              reserve2: "teacher-bar",
+            },
+          },
+        },
+      });
+      // } else if (user.role === Role.TEACHER && newRole === Role.ADMIN) {
+      //   await this.prisma.user.update({
+      //     where: { id },
+      //     data: {
+      //       role: "ADMIN" as Role,
+      //       admin: {
+      //         create: {
+      //           reserve1: "admin-foo",
+      //           reserve2: "admin-bar",
+      //         },
+      //       },
+      //     },
+      //   });
+    } else {
+      throw Error("Invalid role change");
+    }
+
+    return await this.findUserById(id, options);
   }
 
   public static NotFoundError = class extends ApiError {

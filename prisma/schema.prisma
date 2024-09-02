@@ -1,6 +1,7 @@
 // 更新後は
 // npx prisma db push
 // npx prisma generate
+// npx prisma db seed
 // https://supabase.com/dashboard/project/bodqloucedxxzyncfrab
 
 generator client {
@@ -11,6 +12,12 @@ datasource db {
   provider = "postgresql"
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
+}
+
+generator fabbrica {
+  provider    = "prisma-fabbrica"
+  output      = "../fabbrica"
+  noTranspile = true
 }
 
 enum Role {
@@ -71,10 +78,9 @@ model Admin {
   userId      String   @id @map("user_id")
   reserve1    String?
   reserve2    String?
-  attributes  Json
+  attributes  Json?    @default("{}")
 
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
   @@map("admins")
 }
 
