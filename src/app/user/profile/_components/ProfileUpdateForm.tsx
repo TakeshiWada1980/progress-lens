@@ -27,13 +27,15 @@ import { roleEnum2str } from "@/app/_utils/roleEnum2str";
 
 interface Props {
   disabled: boolean;
+  email?: string;
 }
 
-const ProfileUpdateForm: React.FC<Props> = ({ disabled }) => {
+const ProfileUpdateForm: React.FC<Props> = ({ disabled, email }) => {
   const c_DisplayName = "displayName";
   const c_AvatarImgUrl = "avatarImgUrl";
   const c_AvatarImgKey = "avatarImgKey";
   const c_Role = "role";
+  const c_Mail = "mail";
 
   const [isImgLoading, setIsImgLoading] = React.useState(false);
 
@@ -188,6 +190,20 @@ const ProfileUpdateForm: React.FC<Props> = ({ disabled }) => {
         />
       </div>
 
+      <div className="mb-6">
+        <label htmlFor={c_Mail} className="mb-1 block font-bold text-gray-700">
+          メールアドレス（ログインID）
+        </label>
+        <TextInputField
+          id={c_Mail}
+          type="text"
+          value={email}
+          placeholder="(自動取得されます)"
+          readOnly
+          disabled={disabled}
+        />
+      </div>
+
       {/* ファイル選択ボタン（デバッグ用・消すな!）*/}
       {/* <div className="mb-4 flex w-full flex-col md:flex-row">
         <div>
@@ -200,7 +216,7 @@ const ProfileUpdateForm: React.FC<Props> = ({ disabled }) => {
       </div> */}
 
       {/* AvatarImgKey リリース時には hidden 属性を設定 */}
-      <div className="mb-4">
+      <div className="mb-6">
         <label
           htmlFor={c_AvatarImgKey}
           className="mb-1 block font-bold text-gray-700"
@@ -218,7 +234,7 @@ const ProfileUpdateForm: React.FC<Props> = ({ disabled }) => {
       </div>
 
       {/* AvatarImgUrl リリース時には hidden 属性を設定 */}
-      <div className="mb-4">
+      <div className="mb-6">
         <label
           htmlFor={c_AvatarImgUrl}
           className="mb-1 block font-bold text-gray-700"
@@ -242,7 +258,7 @@ const ProfileUpdateForm: React.FC<Props> = ({ disabled }) => {
             flip="horizontal"
             className="mr-1"
           />
-          ログインID (メールアドレス) の確認と変更は
+          メールアドレス（ログインID）の変更は
           <Link href="/user/email" state="notImplemented">
             メールアドレスの変更
           </Link>

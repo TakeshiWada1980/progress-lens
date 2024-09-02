@@ -1,11 +1,12 @@
 "use client";
 
 import React, { useState } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 // カスタムフック・APIリクエスト系
 import useAuth from "@/app/_hooks/useAuth";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import LoadingSpinner from "./LoadingSpinner";
 
 // UIコンポーネント
 import Link, { link } from "@/app/_components/elements/Link";
@@ -86,8 +87,10 @@ export const UserNavWidget: React.FC = () => {
 
   return (
     <div className="flex items-center">
-      {role !== "" && (
+      {role !== "" ? (
         <div className="mr-2 text-xs text-slate-500">[{role}]</div>
+      ) : (
+        <LoadingSpinner message="Loading..." />
       )}
       <div className="mr-3">{displayName}</div>
       <DropdownMenu

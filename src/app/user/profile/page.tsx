@@ -32,7 +32,8 @@ const defaultValues: UserProfile = {
 
 const UserProfilePage: React.FC = () => {
   const ep = "/api/v1/user/profile?x=1"; // ?x=1 はキャッシュを管理のダミークエリ
-  const { apiRequestHeader, setIsUserProfileRefreshRequired } = useAuth();
+  const { apiRequestHeader, setIsUserProfileRefreshRequired, session } =
+    useAuth();
   const { data } = useAuthenticatedGetRequest<UserProfile>(ep);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [roleValue, setRoleValue] = React.useState<string>("");
@@ -105,7 +106,10 @@ const UserProfilePage: React.FC = () => {
       <div className="my-5">
         <form noValidate onSubmit={methods.handleSubmit(onSubmit)}>
           <FormProvider {...methods}>
-            <ProfileUpdateForm disabled={isSubmitting || !data?.data} />
+            <ProfileUpdateForm
+              disabled={isSubmitting || !data?.data}
+              email={session?.user.email}
+            />
           </FormProvider>
           <ActionButton
             type="submit"

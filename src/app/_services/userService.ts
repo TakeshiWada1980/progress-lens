@@ -85,7 +85,7 @@ class UserService {
   }
 
   @handleErrors()
-  public async createUserWithStudent(
+  public async createUserAsStudent(
     id: string,
     displayName: string
   ): Promise<UserWithStudent> {

@@ -12,7 +12,7 @@ import { Role } from "@prisma/client";
 
 export const revalidate = 0; // キャッシュを無効化
 
-// [GET] /api/v1/use/finalize-login
+// [GET] /api/v1/user/finalize-login
 export const GET = async (req: NextRequest) => {
   const userService = new UserService(prisma);
 
@@ -44,7 +44,7 @@ export const GET = async (req: NextRequest) => {
 
     // appUser が存在しないなら appUser にレコードを挿入（新規作成）
     const name = (authUser.email ?? "").split("@")[0]; // 仮の表示名
-    await userService.createUserWithStudent(authUser.id, name);
+    await userService.createUserAsStudent(authUser.id, name);
 
     // プロフィール設定画面にリダイレクト
     const res = {
