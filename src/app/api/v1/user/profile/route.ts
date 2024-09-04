@@ -57,6 +57,7 @@ export const POST = async (req: NextRequest) => {
 
     postBody = await req.json();
     const userProfile = userProfileSchema.parse(postBody) as UserProfile;
+    userProfile.displayName = userProfile.displayName.trim();
 
     // 更新（対象は displayName と avatarImgKey のみ）
     await userService.updateUser(authUser.id, userProfile);

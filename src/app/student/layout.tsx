@@ -3,7 +3,6 @@
 import React from "react";
 import useRouteGuard from "@/app/_hooks/useRouteGuard";
 import LoadingPage from "@/app/_components/LoadingPage";
-import { useRouter } from "next/navigation";
 
 interface Props {
   children: React.ReactNode;

@@ -21,6 +21,8 @@ export const GET = async (req: NextRequest) => {
     const authUser = await getAuthUser(req);
     const appUser = await userService.tryFindUserById(authUser.id);
 
+    //TODO: appUser?.isGuest の場合は displayName と avatarImgKey を初期化
+
     // appUser が存在するなら早期リターン
     if (appUser) {
       let redirectTo = "/"; // 学生用ページができたら変更

@@ -7,6 +7,7 @@
     "shadcn",
     "signup",
     "tailwindcss",
-    "upsert"
+    "upsert",
+    "uuidv"
   ]
 }
