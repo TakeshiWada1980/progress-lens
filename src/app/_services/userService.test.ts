@@ -5,7 +5,7 @@ import { PrismaClient } from "@prisma/client";
 import { DomainRuleViolationError } from "@/app/_services/servicesExceptions";
 
 const TEST_PREFIX = "TEST_";
-const updateUserRoleOptionQuery = {
+const updateRoleQuery = {
   include: { teacher: true, student: true, admin: true },
 };
 
@@ -48,20 +48,16 @@ describe("UserServiceに関するテスト", () => {
   });
 
   it("ロールの不正昇格 (STUDENT->ADMIN)", async () => {
-    await expect(async () => {
-      await userService.updateUserRole(
-        testUserId,
-        Role.ADMIN,
-        updateUserRoleOptionQuery
-      );
-    }).rejects.toThrow(DomainRuleViolationError);
+    await expect(
+      userService.updateUserRole(testUserId, Role.ADMIN, updateRoleQuery)
+    ).rejects.toThrow(DomainRuleViolationError);
   });
 
   it("ロールの昇格 (STUDENT->TEACHER)", async () => {
     const user = await userService.updateUserRole(
       testUserId,
       Role.TEACHER,
-      updateUserRoleOptionQuery
+      updateRoleQuery
     );
     expect(user.role).toBe(Role.TEACHER);
     expect(user.student).not.toBeNull();
@@ -70,20 +66,16 @@ describe("UserServiceに関するテスト", () => {
   });
 
   it("ロールの不正降格 (TEACHER->STUDENT)", async () => {
-    await expect(async () => {
-      await userService.updateUserRole(
-        testUserId,
-        Role.STUDENT,
-        updateUserRoleOptionQuery
-      );
-    }).rejects.toThrow(DomainRuleViolationError);
+    await expect(
+      userService.updateUserRole(testUserId, Role.STUDENT, updateRoleQuery)
+    ).rejects.toThrow(DomainRuleViolationError);
   });
 
   it("ロールの昇格 (TEACHER->ADMIN)", async () => {
     const user = await userService.updateUserRole(
       testUserId,
       Role.ADMIN,
-      updateUserRoleOptionQuery
+      updateRoleQuery
     );
     expect(user.role).toBe(Role.ADMIN);
     expect(user.student).not.toBeNull();
@@ -92,23 +84,15 @@ describe("UserServiceに関するテスト", () => {
   });
 
   it("ロールの不正降格 (ADMIN->TEACHER)", async () => {
-    await expect(async () => {
-      await userService.updateUserRole(
-        testUserId,
-        Role.TEACHER,
-        updateUserRoleOptionQuery
-      );
-    }).rejects.toThrow(DomainRuleViolationError);
+    await expect(
+      userService.updateUserRole(testUserId, Role.TEACHER, updateRoleQuery)
+    ).rejects.toThrow(DomainRuleViolationError);
   });
 
   it("ロールの不正降格 (ADMIN->STUDENT)", async () => {
-    await expect(async () => {
-      await userService.updateUserRole(
-        testUserId,
-        Role.STUDENT,
-        updateUserRoleOptionQuery
-      );
-    }).rejects.toThrow(DomainRuleViolationError);
+    await expect(
+      userService.updateUserRole(testUserId, Role.STUDENT, updateRoleQuery)
+    ).rejects.toThrow(DomainRuleViolationError);
   });
 });
 

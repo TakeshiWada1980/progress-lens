@@ -24,11 +24,12 @@ const handleErrors = () => {
         if (error instanceof ApiError) {
           throw error;
         }
-        let msg = `Error in UserService.${propertyKey}`;
+        const className = this.constructor.name;
+        let msg = `Error in ${className}.${propertyKey}: `;
         if (error instanceof Error) {
-          msg += `: ${error.message}`;
+          msg += error.message;
         } else if (error !== null && error !== undefined) {
-          msg += `: ${String(error)}`;
+          msg += String(error);
         }
         throw new DatabaseOperationError(msg, error);
       }
@@ -39,13 +40,29 @@ const handleErrors = () => {
 };
 
 // Userサービスクラス
-// 基本的に、このサービスクラスのなかでは認証や認可の処理は行わない
-// 呼び出す側で、認証や認可を完了させておくこと
+//   基本的に、このサービスクラスでは認証や認可の検証処理はしない
+//   呼び出す側で、認証・認可を確認して利用すること
 class UserService {
   private prisma: PrismaClient;
 
-  constructor(prisma: PrismaClient) {
+  public constructor(prisma: PrismaClient) {
     this.prisma = prisma;
+  }
+
+  // 許可するロールの変更マップ (key: 現在ロール, value: 変更許可ロールの配列)
+  private static roleUpdateMap: Partial<Record<Role, Role[]>> = {
+    [Role.STUDENT]: [Role.TEACHER],
+    [Role.TEACHER]: [Role.ADMIN],
+  };
+
+  // ロールの変更が許可されているかどうかを検証
+  public static validateRoleChange(currentRole: Role, newRole: Role) {
+    const allowedRoles = UserService.roleUpdateMap[currentRole] || [];
+    if (!allowedRoles.includes(newRole)) {
+      throw new DomainRuleViolationError(
+        `許可されていないロールの変更です。${currentRole} -> ${newRole}`
+      );
+    }
   }
 
   // IDによるユーザ情報の取得 (該当なしの場合は例外をスロー)
@@ -95,7 +112,7 @@ class UserService {
     return true;
   }
 
-  // ユーザ（ 学生ロール ）の新規作成
+  // ユーザ（学生ロール）の新規作成
   @handleErrors()
   public async createUserAsStudent(
     id: string,
@@ -119,7 +136,7 @@ class UserService {
     });
   }
 
-  // ロールの変更。学生→教員、教員→管理者の変更のみを許可
+  // ロールの昇格（変更）。現状、学生→教員、教員→管理者のみ許可
   @handleErrors()
   public async updateUserRole<
     T extends Prisma.UserInclude,
@@ -134,38 +151,64 @@ class UserService {
       return user;
     }
 
-    if (user.role === Role.STUDENT && newRole === Role.TEACHER) {
-      await this.prisma.user.update({
-        where: { id },
-        data: {
-          role: Role.TEACHER,
-          teacher: {
-            create: {
-              reserve1: "teacher-foo",
-              reserve2: "teacher-bar",
-            },
-          },
-        },
-      });
-    } else if (user.role === Role.TEACHER && newRole === Role.ADMIN) {
-      await this.prisma.user.update({
-        where: { id },
-        data: {
-          role: Role.ADMIN,
-          admin: {
-            create: {
-              reserve1: "admin-foo",
-              reserve2: "admin-bar",
-            },
-          },
-        },
-      });
-    } else {
-      throw new DomainRuleViolationError(
-        `許可されていないロールの変更です。${user.role} -> ${newRole}`
-      );
-    }
+    // 許可されたロール昇格でなければ DomainRuleViolationError をスロー
+    UserService.validateRoleChange(user.role, newRole);
 
+    switch (newRole) {
+      case Role.TEACHER:
+        return await this.assignToTeacherRole(id, options);
+      case Role.ADMIN:
+        return await this.assignToAdminRole(id, options);
+      default:
+        throw Error("予期せぬエラーが発生しました。");
+    }
+  }
+
+  // ロール昇格（学生→教員）・初期データの設定
+  @handleErrors()
+  private async assignToTeacherRole<
+    T extends Prisma.UserInclude,
+    U extends Prisma.UserSelect
+  >(
+    id: string,
+    options?: UserQueryOptions<T, U>
+  ): Promise<Prisma.UserGetPayload<{ include: T; select: U }>> {
+    await this.prisma.user.update({
+      where: { id },
+      data: {
+        role: Role.TEACHER,
+        teacher: {
+          create: {
+            reserve1: "teacher-foo",
+            reserve2: "teacher-bar",
+          },
+        },
+      },
+    });
+    return await this.findUserById(id, options);
+  }
+
+  // ロール変更（教員→管理者）・初期データの設定
+  @handleErrors()
+  private async assignToAdminRole<
+    T extends Prisma.UserInclude,
+    U extends Prisma.UserSelect
+  >(
+    id: string,
+    options?: UserQueryOptions<T, U>
+  ): Promise<Prisma.UserGetPayload<{ include: T; select: U }>> {
+    await this.prisma.user.update({
+      where: { id },
+      data: {
+        role: Role.ADMIN,
+        admin: {
+          create: {
+            reserve1: "admin-foo",
+            reserve2: "admin-bar",
+          },
+        },
+      },
+    });
     return await this.findUserById(id, options);
   }
 
