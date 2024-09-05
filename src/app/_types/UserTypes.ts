@@ -10,10 +10,17 @@ export interface UserId {
 }
 
 export const userIdSchema = z.object({
-  id: z
-    .string()
-    .regex(uuidRegex, "予期せぬ形式です。Invalid UUID format")
-    .optional(),
+  id: z.string().regex(uuidRegex, "不正な形式です。Invalid UUID format."),
+});
+
+export interface UserNewRole {
+  id: string;
+  newRole: Role;
+}
+
+export const userNewRoleSchema = z.object({
+  id: z.string().regex(uuidRegex, "不正な形式です。Invalid UUID format."),
+  newRole: z.enum([Role.ADMIN, Role.TEACHER, Role.STUDENT]),
 });
 
 export interface UserAuth {
@@ -37,7 +44,7 @@ export interface UserProfile {
 export const userProfileSchema = z.object({
   id: z
     .string()
-    .regex(uuidRegex, "予期せぬ形式です。Invalid UUID format")
+    .regex(uuidRegex, "不正な形式です。Invalid UUID format.")
     .optional(),
   role: z.enum([Role.ADMIN, Role.TEACHER, Role.STUDENT]).optional(),
   displayName: z

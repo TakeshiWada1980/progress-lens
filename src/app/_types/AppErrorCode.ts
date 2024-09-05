@@ -8,6 +8,7 @@ const AppErrorCode = {
   BAD_REQUEST_BODY: "4002",
   DB_OPERATION_ERROR: "5002",
   INVALID_HTTP_HEADER: "4003",
+  DOMAIN_RULE_VIOLATION: "5003",
 };
 
 export default AppErrorCode;

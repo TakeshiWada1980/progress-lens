@@ -5,7 +5,11 @@ import { ApiError } from "@/app/api/_helpers/apiExceptions";
 import { Origin } from "@/app/_types/ApiResponse";
 import { StatusCodes } from "@/app/_utils/extendedStatusCodes";
 import type { UserQueryOptions } from "@/app/_types/ServiceTypes";
-import type { Prisma } from "@prisma/client";
+import type { Prisma, User } from "@prisma/client";
+import {
+  DomainRuleViolationError,
+  DatabaseOperationError,
+} from "@/app/_services/servicesExceptions";
 
 type UserWithStudent = P.UserGetPayload<{ include: { student: true } }>;
 
@@ -17,13 +21,17 @@ const handleErrors = () => {
       try {
         return await originalMethod.apply(this, args);
       } catch (error: unknown) {
-        let msg = `Error in UserService.${propertyKey}`;
-        if (error instanceof Error) {
-          msg += `: ${error.message}`;
-        } else if (error !== null && error !== undefined) {
-          msg += `: ${String(error)}`;
+        if (error instanceof ApiError) {
+          throw error;
         }
-        throw new UserService.DatabaseOperationError(msg, error);
+        const className = this.constructor.name;
+        let msg = `Error in ${className}.${propertyKey}: `;
+        if (error instanceof Error) {
+          msg += error.message;
+        } else if (error !== null && error !== undefined) {
+          msg += String(error);
+        }
+        throw new DatabaseOperationError(msg, error);
       }
     };
 
@@ -32,13 +40,32 @@ const handleErrors = () => {
 };
 
 // Userサービスクラス
+//   基本的に、このサービスクラスでは認証や認可の検証処理はしない
+//   呼び出す側で、認証・認可を確認して利用すること
 class UserService {
   private prisma: PrismaClient;
 
-  constructor(prisma: PrismaClient) {
+  public constructor(prisma: PrismaClient) {
     this.prisma = prisma;
   }
 
+  // 許可するロールの変更マップ (key: 現在ロール, value: 変更許可ロールの配列)
+  private static roleUpdateMap: Partial<Record<Role, Role[]>> = {
+    [Role.STUDENT]: [Role.TEACHER],
+    [Role.TEACHER]: [Role.ADMIN],
+  };
+
+  // ロールの変更が許可されているかどうかを検証
+  public static validateRoleChange(currentRole: Role, newRole: Role) {
+    const allowedRoles = UserService.roleUpdateMap[currentRole] || [];
+    if (!allowedRoles.includes(newRole)) {
+      throw new DomainRuleViolationError(
+        `許可されていないロールの変更です。${currentRole} -> ${newRole}`
+      );
+    }
+  }
+
+  // IDによるユーザ情報の取得 (該当なしの場合は例外をスロー)
   public async findUserById<
     T extends Prisma.UserInclude,
     U extends Prisma.UserSelect
@@ -48,12 +75,12 @@ class UserService {
   ): Promise<Prisma.UserGetPayload<{ include: T; select: U }>> {
     const user = await this.tryFindUserById(id, options);
     if (!user) {
-      throw new UserService.NotFoundError(id);
+      throw new UserService.UserNotFoundError(id);
     }
     return user;
   }
 
-  @handleErrors()
+  // IDによるユーザ情報の取得 (該当なしの場合は null を返す)
   public async tryFindUserById<
     T extends Prisma.UserInclude,
     U extends Prisma.UserSelect
@@ -67,12 +94,13 @@ class UserService {
     })) as P.UserGetPayload<{ include: T; select: U }> | null;
   }
 
+  // ユーザ情報（ displayName と avatarImgKey ）の更新
   @handleErrors()
   public async updateUser(
     id: string,
     data: P.UserUpdateInput
   ): Promise<boolean> {
-    // avatarImgKey が undefine 場合は null に変換
+    // avatarImgKey が undefine のときは null に変換
     data.avatarImgKey ??= null;
     await this.prisma.user.update({
       where: { id },
@@ -84,6 +112,7 @@ class UserService {
     return true;
   }
 
+  // ユーザ（学生ロール）の新規作成
   @handleErrors()
   public async createUserAsStudent(
     id: string,
@@ -107,30 +136,93 @@ class UserService {
     });
   }
 
-  public static NotFoundError = class extends ApiError {
+  // ロールの昇格（変更）。現状、学生→教員、教員→管理者のみ許可
+  @handleErrors()
+  public async updateUserRole<
+    T extends Prisma.UserInclude,
+    U extends Prisma.UserSelect
+  >(
+    id: string,
+    newRole: Role,
+    options?: UserQueryOptions<T, U>
+  ): Promise<Prisma.UserGetPayload<{ include: T; select: U }>> {
+    const user = await this.findUserById(id, options);
+    if (user.role === newRole) {
+      return user;
+    }
+
+    // 許可されたロール昇格でなければ DomainRuleViolationError をスロー
+    UserService.validateRoleChange(user.role, newRole);
+
+    switch (newRole) {
+      case Role.TEACHER:
+        return await this.assignToTeacherRole(id, options);
+      case Role.ADMIN:
+        return await this.assignToAdminRole(id, options);
+      default:
+        throw Error("予期せぬエラーが発生しました。");
+    }
+  }
+
+  // ロール昇格（学生→教員）・初期データの設定
+  @handleErrors()
+  private async assignToTeacherRole<
+    T extends Prisma.UserInclude,
+    U extends Prisma.UserSelect
+  >(
+    id: string,
+    options?: UserQueryOptions<T, U>
+  ): Promise<Prisma.UserGetPayload<{ include: T; select: U }>> {
+    await this.prisma.user.update({
+      where: { id },
+      data: {
+        role: Role.TEACHER,
+        teacher: {
+          create: {
+            reserve1: "teacher-foo",
+            reserve2: "teacher-bar",
+          },
+        },
+      },
+    });
+    return await this.findUserById(id, options);
+  }
+
+  // ロール変更（教員→管理者）・初期データの設定
+  @handleErrors()
+  private async assignToAdminRole<
+    T extends Prisma.UserInclude,
+    U extends Prisma.UserSelect
+  >(
+    id: string,
+    options?: UserQueryOptions<T, U>
+  ): Promise<Prisma.UserGetPayload<{ include: T; select: U }>> {
+    await this.prisma.user.update({
+      where: { id },
+      data: {
+        role: Role.ADMIN,
+        admin: {
+          create: {
+            reserve1: "admin-foo",
+            reserve2: "admin-bar",
+          },
+        },
+      },
+    });
+    return await this.findUserById(id, options);
+  }
+
+  public static UserNotFoundError = class extends ApiError {
     readonly httpStatus: StatusCodes = StatusCodes.BAD_REQUEST;
     readonly appErrorCode: string = AppErrorCode.USER_NOT_FOUND;
     readonly origin: Origin = Origin.SERVER;
     readonly technicalInfo: string;
     readonly technicalInfoObject?: any;
     constructor(userId: string) {
-      const msg = `Users テーブルに ID='${userId}' に該当するユーザが見つかりませんでした。`;
+      const msg = `ID : '${userId}' に該当するユーザが見つかりませんでした。`;
       super(msg);
       this.technicalInfo = msg;
       this.technicalInfoObject = { userId: userId };
-    }
-  };
-
-  public static DatabaseOperationError = class extends ApiError {
-    readonly httpStatus: StatusCodes = StatusCodes.INTERNAL_SERVER_ERROR;
-    readonly appErrorCode: string = AppErrorCode.DB_OPERATION_ERROR;
-    readonly origin: Origin = Origin.SERVER;
-    readonly technicalInfo: string;
-    readonly technicalInfoObject?: any;
-    constructor(msg: string, obj?: any) {
-      super(msg);
-      this.technicalInfo = msg;
-      this.technicalInfoObject = obj;
     }
   };
 }
