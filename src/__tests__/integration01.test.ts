@@ -206,7 +206,7 @@ describe("教員のLS作成と取得、学生のLS参加と取得のテスト", 
     it(
       "成功する",
       async () => {
-        const student = students[0];
+        const student = students[0]; // [学生] 構文 誤次郎
         // 全ての教員のセッションに参加
         await Promise.all(
           // flatMap を使用すること
@@ -216,21 +216,138 @@ describe("教員のLS作成と取得、学生のLS参加と取得のテスト", 
             )
           )
         );
-        // 参加したセッションの数を確認(1)
-        const sessions = await sessionService.getAllByStudentId(student.id!);
-        console.log(JSON.stringify(sessions, null, 2));
-        expect(sessions.length).toBe(
-          teachers.reduce((acc, teacher) => acc + teacher.sessions.length, 0)
+
+        // sessionIdsSet0 は、登録した「はず」のセッションID（セット）
+        const expectedIdSet = new Set<string>(
+          teachers.flatMap((teacher) =>
+            teacher.sessions.map((session) => session.id!)
+          )
         );
+
+        // StudentId をキーにセッションを取得
+        const sessions = await sessionService.getAllByStudentId(student.id!);
+        const actualIdSet1 = new Set<string>(
+          sessions.map((session) => session.id!)
+        );
+        expect(actualIdSet1).toEqual(expectedIdSet);
 
         // Student に Session が紐づいていることを確認
         const fetchedStudent = (await userService.getById(
           student.id!,
           studentWithEnrollmentsSchema
         )) as PRS.UserGetPayload<typeof studentWithEnrollmentsSchema>;
-        expect(sessions.length).toBe(
-          fetchedStudent.student?.enrollments.length
+        const actualIdSet2 = new Set<string>(
+          fetchedStudent.student?.enrollments.map(
+            (enrollment) => enrollment.sessionId
+          )
         );
+        expect(actualIdSet2).toEqual(expectedIdSet);
+      },
+      Timeout
+    );
+  });
+
+  // NOTE: テストコードの重複は、とりあえず許容
+  describe("学生1（仕様 曖昧子）がLSに参加", () => {
+    it(
+      "成功する",
+      async () => {
+        const student = students[1]; // [学生] 仕様 曖昧子
+        const teacher = teachers[0]; // [教員] 高負荷 耐子
+        // 教員0（高負荷 耐子）のセッションだけに参加
+        await Promise.all(
+          teacher.sessions.map((session) =>
+            sessionService.enrollStudent(session.id!, student.id!)
+          )
+        );
+
+        const expectedIdSet = new Set<string>(
+          teacher.sessions.map((session) => session.id!)
+        );
+
+        const sessions = await sessionService.getAllByStudentId(student.id!);
+        const actualIdSet1 = new Set<string>(
+          sessions.map((session) => session.id!)
+        );
+        expect(actualIdSet1).toEqual(expectedIdSet);
+
+        const fetchedStudent = (await userService.getById(
+          student.id!,
+          studentWithEnrollmentsSchema
+        )) as PRS.UserGetPayload<typeof studentWithEnrollmentsSchema>;
+        const actualIdSet2 = new Set<string>(
+          fetchedStudent.student?.enrollments.map(
+            (enrollment) => enrollment.sessionId
+          )
+        );
+        expect(actualIdSet2).toEqual(expectedIdSet);
+      },
+      Timeout
+    );
+  });
+
+  // NOTE: テストコードの重複は、とりあえず許容
+  describe("学生2（保守 絶望太）がLSに参加", () => {
+    it(
+      "成功する",
+      async () => {
+        const student = students[2]; // [学生] 保守 絶望太
+        const teacher = teachers[1]; // [教員] 不具合 直志
+        // 教員2（不具合 直志）のセッションだけに参加
+        await Promise.all(
+          teacher.sessions.map((session) =>
+            sessionService.enrollStudent(session.id!, student.id!)
+          )
+        );
+
+        const expectedIdSet = new Set<string>(
+          teacher.sessions.map((session) => session.id!)
+        );
+
+        const sessions = await sessionService.getAllByStudentId(student.id!);
+        const actualIdSet1 = new Set<string>(
+          sessions.map((session) => session.id!)
+        );
+        expect(actualIdSet1).toEqual(expectedIdSet);
+
+        const fetchedStudent = (await userService.getById(
+          student.id!,
+          studentWithEnrollmentsSchema
+        )) as PRS.UserGetPayload<typeof studentWithEnrollmentsSchema>;
+        const actualIdSet2 = new Set<string>(
+          fetchedStudent.student?.enrollments.map(
+            (enrollment) => enrollment.sessionId
+          )
+        );
+        expect(actualIdSet2).toEqual(expectedIdSet);
+      },
+      Timeout
+    );
+  });
+
+  describe("学生3（負債 雪崩美）は、いずれのLSにも未参加", () => {
+    it(
+      "成功する",
+      async () => {
+        const student = students[3]; // [学生] 負債 雪崩美
+        const expectedIdSet = new Set<string>([]);
+
+        const sessions = await sessionService.getAllByStudentId(student.id!);
+        const actualIdSet1 = new Set<string>(
+          sessions.map((session) => session.id!)
+        );
+        expect(actualIdSet1).toEqual(expectedIdSet);
+
+        const fetchedStudent = (await userService.getById(
+          student.id!,
+          studentWithEnrollmentsSchema
+        )) as PRS.UserGetPayload<typeof studentWithEnrollmentsSchema>;
+        const actualIdSet2 = new Set<string>(
+          fetchedStudent.student?.enrollments.map(
+            (enrollment) => enrollment.sessionId
+          )
+        );
+        expect(actualIdSet2).toEqual(expectedIdSet);
       },
       Timeout
     );

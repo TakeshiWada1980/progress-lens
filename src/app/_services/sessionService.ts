@@ -109,7 +109,7 @@ class SessionService {
     })) as PRS.LearningSessionGetPayload<{ include: T; select: U }>[];
   }
 
-  // ラーニングセッションの名前の変更
+  // 名前（title属性）の変更
   @withErrorHandling()
   public async updateTitle(sessionId: string, title: string): Promise<void> {
     try {
@@ -128,7 +128,7 @@ class SessionService {
     }
   }
 
-  // ラーニングセッションの新規作成と初期化
+  // 新規作成と初期化（設問１個付き）
   @withErrorHandling()
   public async create(
     teacherId: string,
