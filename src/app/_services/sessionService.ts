@@ -135,38 +135,45 @@ class SessionService {
     title: string,
     accessCode: string
   ): Promise<CreateSessionReturnType> {
-    // 1. セッションの作成
-    let session: LearningSession | null;
-    try {
-      session = await this.prisma.learningSession.create({
-        data: {
-          teacherId,
-          accessCode,
-          title,
-        },
-      });
-    } catch (error: any) {
-      if (error.code === "P2002") {
-        throw new DomainRuleViolationError(
-          `Unique constraint failed on the accessCode ${accessCode}`,
-          { teacherId, title, accessCode }
-        );
-      } else if (error.code === "P2003") {
-        throw new DomainRuleViolationError(
-          `FK constraint failed on the teacherId ${teacherId}`,
-          { teacherId, title, accessCode }
-        );
-      }
-      throw error;
-    }
+    let session: LearningSession | null = null;
 
-    // 2. 設問の作成
-    const questionService = new QuestionService(this.prisma);
-    await questionService.createQuestion(session.id);
+    // トランザクション内でセッションと初期設問を作成
+    await this.prisma.$transaction(
+      async (tx) => {
+        // 1. セッションの作成
+        try {
+          session = await tx.learningSession.create({
+            data: {
+              teacherId,
+              accessCode,
+              title,
+            },
+          });
+        } catch (error: any) {
+          if (error.code === "P2002") {
+            throw new DomainRuleViolationError(
+              `Unique constraint failed on the accessCode ${accessCode}`,
+              { teacherId, title, accessCode }
+            );
+          } else if (error.code === "P2003") {
+            throw new DomainRuleViolationError(
+              `FK constraint failed on the teacherId ${teacherId}`,
+              { teacherId, title, accessCode }
+            );
+          }
+          throw error;
+        }
+
+        // 2. 設問の作成
+        const questionService = new QuestionService(tx);
+        await questionService.createQuestion(session.id);
+      },
+      { timeout: 5000 }
+    );
 
     // 3. 設問と選択肢を含めた完全なセッション情報の再取得
     return (await this.getById(
-      session.id,
+      session!.id,
       fullSessionSchema
     )) as CreateSessionReturnType;
   }

@@ -12,11 +12,33 @@ export type QuestionReturnType<
   select?: U;
 };
 
-class QuestionService {
-  private prisma: PrismaClient;
+type TransactionCapablePrisma = PrismaClient | PRS.TransactionClient;
 
-  constructor(prisma: PrismaClient) {
+class QuestionService {
+  private prisma: TransactionCapablePrisma;
+
+  constructor(prisma: TransactionCapablePrisma) {
     this.prisma = prisma;
+  }
+
+  private isPrismaClient(
+    client: TransactionCapablePrisma
+  ): client is PrismaClient {
+    return (
+      "$transaction" in client &&
+      typeof (client as any).$transaction === "function"
+    );
+  }
+
+  // DIされたものが PrismaClient か TransactionClient かで処理を分岐
+  private async withTransaction<T>(
+    operation: (client: TransactionCapablePrisma) => Promise<T>
+  ): Promise<T> {
+    if (this.isPrismaClient(this.prisma)) {
+      return await this.prisma.$transaction(operation);
+    } else {
+      return await operation(this.prisma);
+    }
   }
 
   // 設問の取得
@@ -28,11 +50,13 @@ class QuestionService {
     sessionId: string,
     options?: QuestionReturnType<T, U>
   ): Promise<PRS.QuestionGetPayload<{ include: T; select: U }>> {
-    const question = (await this.prisma.question.findUniqueOrThrow({
-      where: { id: sessionId },
-      ...options,
-    })) as PRS.QuestionGetPayload<{ include: T; select: U }>;
-    return question;
+    return await this.withTransaction(async (client) => {
+      const question = (await client.question.findUniqueOrThrow({
+        where: { id: sessionId },
+        ...options,
+      })) as PRS.QuestionGetPayload<{ include: T; select: U }>;
+      return question;
+    });
   }
 
   // 設問の新規作成・初期化
@@ -41,36 +65,41 @@ class QuestionService {
     sessionId: string,
     order: number = 1
   ): Promise<Question> {
-    // 1. 設問の作成
-    const question = await this.prisma.question.create({
-      data: {
-        sessionId,
-        order,
-        title: "設問X",
-      },
-    });
+    return await this.withTransaction(async (client) => {
+      // 1. 設問の作成
+      const question = await client.question.create({
+        data: {
+          sessionId,
+          order,
+          title: "設問X",
+        },
+      });
 
-    // 2. 選択肢群の作成
-    const initialOptionSet = Array.from({ length: optionSetSize }, (_, i) => ({
-      questionId: question.id,
-      order: i + 1,
-      title: `選択肢${i + 1}`,
-    }));
+      // 2. 選択肢群の作成
+      const initialOptionSet = Array.from(
+        { length: optionSetSize },
+        (_, i) => ({
+          questionId: question.id,
+          order: i + 1,
+          title: `選択肢${i + 1}`,
+        })
+      );
 
-    await this.prisma.option.createMany({
-      data: initialOptionSet,
-    });
+      await client.option.createMany({
+        data: initialOptionSet,
+      });
 
-    // 3. 選択肢の取得 (createManyの戻値が使えないため)
-    const options = await this.prisma.option.findMany({
-      where: { questionId: question.id },
-      orderBy: { order: "asc" },
-    });
+      // 3. 選択肢の取得 (createManyの戻値が使えないため)
+      const options = await client.option.findMany({
+        where: { questionId: question.id },
+        orderBy: { order: "asc" },
+      });
 
-    // 4. 設問にデフォルト選択肢を設定
-    return await this.prisma.question.update({
-      where: { id: question.id },
-      data: { defaultOptionId: options[0].id },
+      // 4. 設問にデフォルト選択肢を設定
+      return await client.question.update({
+        where: { id: question.id },
+        data: { defaultOptionId: options[0].id },
+      });
     });
   }
 }
