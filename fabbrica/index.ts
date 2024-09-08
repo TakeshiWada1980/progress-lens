@@ -796,7 +796,6 @@ defineAdminFactory.withTransientFields = defaultTransientFieldValues => options 
 type LearningSessionScalarOrEnumFields = {
     title: string;
     accessCode: string;
-    isActive: boolean;
 };
 
 type LearningSessionteacherFactory = {
@@ -857,8 +856,7 @@ function autoGenerateLearningSessionScalarsOrEnums({ seq }: {
 }): LearningSessionScalarOrEnumFields {
     return {
         title: getScalarFieldValueGenerator().String({ modelName: "LearningSession", fieldName: "title", isId: false, isUnique: false, seq }),
-        accessCode: getScalarFieldValueGenerator().String({ modelName: "LearningSession", fieldName: "accessCode", isId: false, isUnique: false, seq }),
-        isActive: getScalarFieldValueGenerator().Boolean({ modelName: "LearningSession", fieldName: "isActive", isId: false, isUnique: false, seq })
+        accessCode: getScalarFieldValueGenerator().String({ modelName: "LearningSession", fieldName: "accessCode", isId: false, isUnique: true, seq })
     };
 }
 
@@ -1135,12 +1133,12 @@ type QuestionFactoryDefineInput = {
     id?: string;
     order?: number;
     title?: string;
-    description?: string | null;
+    description?: string;
     updatedAt?: Date;
     session: QuestionsessionFactory | Prisma.LearningSessionCreateNestedOneWithoutQuestionsInput;
     options?: Prisma.OptionCreateNestedManyWithoutQuestionInput;
     responses?: Prisma.ResponseCreateNestedManyWithoutQuestionInput;
-    defaultOption: QuestiondefaultOptionFactory | Prisma.OptionCreateNestedOneWithoutDefaultForQuestionInput;
+    defaultOption?: QuestiondefaultOptionFactory | Prisma.OptionCreateNestedOneWithoutDefaultForQuestionInput;
 };
 
 type QuestionTransientFields = Record<string, unknown> & Partial<Record<keyof QuestionFactoryDefineInput, never>>;
@@ -1307,7 +1305,7 @@ type OptionFactoryDefineInput = {
     id?: string;
     order?: number;
     title?: string;
-    description?: string | null;
+    description?: string;
     rewardMessage?: string | null;
     rewardPoints?: number;
     effect?: boolean;

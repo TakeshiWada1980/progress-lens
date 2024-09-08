@@ -1,9 +1,24 @@
-import { Role } from "@prisma/client";
 import { z } from "zod";
+
+// フロントエンド <-> WebAPI層 の DTO
+// DB層の型定義（Prisma）のインポートは避けること
+// つまり import { Role } from "@prisma/client"; はあえて使わない
+
+export const Role = {
+  ADMIN: "ADMIN",
+  TEACHER: "TEACHER",
+  STUDENT: "STUDENT",
+} as const;
+
+export type Role = (typeof Role)[keyof typeof Role];
+
+///////////////////////////////////////////////////////////////
 
 const requiredMsg = "必須入力の項目です。";
 const uuidRegex =
   /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+///////////////////////////////////////////////////////////////
 
 export interface UserId {
   id: string;
@@ -12,6 +27,8 @@ export interface UserId {
 export const userIdSchema = z.object({
   id: z.string().regex(uuidRegex, "不正な形式です。Invalid UUID format."),
 });
+
+///////////////////////////////////////////////////////////////
 
 export interface UserNewRole {
   id: string;
@@ -23,6 +40,8 @@ export const userNewRoleSchema = z.object({
   newRole: z.enum([Role.ADMIN, Role.TEACHER, Role.STUDENT]),
 });
 
+///////////////////////////////////////////////////////////////
+
 export interface UserAuth {
   email: string;
   password: string;
@@ -32,6 +51,8 @@ export const userAuthSchema = z.object({
   email: z.string().email("メールアドレスの形式で入力してください。"),
   password: z.string().min(6, "パスワードには6文字以上が必要です。"),
 });
+
+///////////////////////////////////////////////////////////////
 
 export interface UserProfile {
   id: string;
