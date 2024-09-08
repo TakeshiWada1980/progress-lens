@@ -1,13 +1,9 @@
-import UserService, { teacherUserSchema } from "@/app/_services/userService";
-import SessionService, {
-  fullSessionSchema,
-} from "@/app/_services/sessionService";
+import UserService from "@/app/_services/userService";
+import SessionService from "@/app/_services/sessionService";
 import { Prisma as PRS } from "@prisma/client";
 import { Role } from "@/app/_types/UserTypes";
 import { v4 as uuid } from "uuid";
 import { PrismaClient } from "@prisma/client";
-import { Ruthie } from "next/font/google";
-import { use } from "react";
 
 interface SessionSeed {
   id?: string;
@@ -36,7 +32,7 @@ const studentWithEnrollmentsSchema = {
   },
 } as const;
 
-const testUserIdPrefix = "TEST-";
+const testUserIdPrefix = "TEST-I01-";
 const fabricateTestUserId = () => testUserIdPrefix + uuid().substring(0, 8);
 const Timeout = 30 * 1000;
 
@@ -141,7 +137,7 @@ describe("教員のLS作成と取得、学生のLS参加と取得のテスト", 
     );
   });
 
-  if (false) {
+  if (true) {
     describe("全てのLSの一覧（日付 desc [新]→[旧] の順番）の取得", () => {
       //prettier-ignore
       it("成功する", async () => {

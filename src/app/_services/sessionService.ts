@@ -1,5 +1,5 @@
 import { LearningSession, PrismaClient } from "@prisma/client";
-import { Prisma as PRS, Role } from "@prisma/client";
+import { Prisma as PRS } from "@prisma/client";
 import {
   DomainRuleViolationError,
   withErrorHandling,
