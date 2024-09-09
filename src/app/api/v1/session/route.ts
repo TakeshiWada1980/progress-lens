@@ -10,22 +10,18 @@ import { ApiError } from "@/app/api/_helpers/apiExceptions";
 import prisma from "@/lib/prisma";
 import { getAuthUser } from "@/app/api/_helpers/getAuthUser";
 import UserService from "@/app/_services/userService";
-import { fullUserSchema } from "@/app/_services/userService";
+import SessionService from "@/app/_services/sessionService";
 
 // 型定義・データ検証関連
-import { UserNewRole, userNewRoleSchema, Role } from "@/app/_types/UserTypes";
-import {
-  ZodValidationError,
-  NonAdminOperationError,
-} from "@/app/api/_helpers/apiExceptions";
-import { z } from "zod";
+import { UserProfile } from "@/app/_types/UserTypes";
+import { getAvatarImgUrl } from "@/app/api/_helpers/getAvatarImgUrl";
 
 export const revalidate = 0; // キャッシュを無効化
 
-// [POST] /api/v1/user/assign-role
-export const POST = async (req: NextRequest) => {
+// [GET] /api/v1/session/
+export const GET = async (req: NextRequest) => {
   const userService = new UserService(prisma);
-  let postBody: any;
+  const sessionService = new SessionService(prisma);
 
   try {
     // トークンが不正なときは InvalidTokenError がスローされる
@@ -34,33 +30,20 @@ export const POST = async (req: NextRequest) => {
     // ユーザが存在しない場合は UserService.NotFoundError がスローされる
     const appUser = await userService.getById(authUser.id);
 
-    // ユーザーが管理者でない場合は NonAdminOperationError がスローされる
-    if (appUser.role !== Role.ADMIN) {
-      throw new NonAdminOperationError(appUser.id, appUser.displayName);
-    }
-
-    postBody = await req.json();
-    const userNewRole = userNewRoleSchema.parse(postBody) as UserNewRole;
-
-    // ロールの更新
-    // 変更対象のユーザ (userNewRole.id) の存在確認と、
-    // 許可されたロール変更操作 (STUDENT -> TEACHER, TEACHER -> ADMIN) であるかの確認は、
-    // UserService.updateUserRole メソッドで行われる。
-    const updatedUser = await userService.updateRole(
-      userNewRole.id,
-      userNewRole.newRole,
-      fullUserSchema
-    );
+    // レスポンスデータの作成
+    const avatarImgUrl = await getAvatarImgUrl(appUser.avatarImgKey);
+    const res: UserProfile = {
+      id: appUser.id,
+      displayName: appUser.displayName,
+      role: appUser.role,
+      avatarImgKey: appUser.avatarImgKey ?? undefined,
+      avatarImgUrl: avatarImgUrl,
+    };
 
     return NextResponse.json(
-      new SuccessResponseBuilder(updatedUser)
-        .setHttpStatus(StatusCodes.OK)
-        .build()
+      new SuccessResponseBuilder(res).setHttpStatus(StatusCodes.OK).build()
     );
   } catch (error: any) {
-    if (error instanceof z.ZodError) {
-      error = new ZodValidationError(error.message, postBody);
-    }
     const payload = createErrorResponse(error);
     return NextResponse.json(payload, { status: payload.httpStatus });
   }

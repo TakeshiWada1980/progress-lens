@@ -1,18 +1,21 @@
-import prisma from "@/lib/prisma";
-
+// APIリクエスト・レスポンス関係
+import { NextResponse, NextRequest } from "next/server";
 import { ApiErrorResponse } from "@/app/_types/ApiResponse";
 import SuccessResponseBuilder from "@/app/api/_helpers/successResponseBuilder";
 import ErrorResponseBuilder from "@/app/api/_helpers/errorResponseBuilder";
 import { StatusCodes } from "@/app/_utils/extendedStatusCodes";
-import { NextResponse, NextRequest } from "next/server";
+import { ApiError } from "@/app/api/_helpers/apiExceptions";
+
+// ユーザ認証・サービスクラス関係
+import prisma from "@/lib/prisma";
+import { getAuthUser } from "@/app/api/_helpers/getAuthUser";
 import UserService from "@/app/_services/userService";
-import { getAuthUser, InvalidTokenError } from "@/app/api/_helpers/getAuthUser";
-import { UserProfile, userProfileSchema } from "@/app/_types/UserTypes";
-import { UserQueryOptions } from "@/app/_types/ServiceTypes";
-import { getAvatarImgUrl } from "@/app/api/_helpers/getAvatarImgUrl";
+
+// 型定義・データ検証関連
 import { ZodValidationError } from "@/app/api/_helpers/apiExceptions";
 import { z } from "zod";
-import { ApiError } from "@/app/api/_helpers/apiExceptions";
+import { UserProfile, userProfileSchema } from "@/app/_types/UserTypes";
+import { getAvatarImgUrl } from "@/app/api/_helpers/getAvatarImgUrl";
 
 export const revalidate = 0; // キャッシュを無効化
 
@@ -25,7 +28,7 @@ export const GET = async (req: NextRequest) => {
     const authUser = await getAuthUser(req);
 
     // ユーザが存在しない場合は UserService.NotFoundError がスローされる
-    const appUser = await userService.findUserById(authUser.id);
+    const appUser = await userService.getById(authUser.id);
 
     // レスポンスデータの作成
     const avatarImgUrl = await getAvatarImgUrl(appUser.avatarImgKey);
@@ -60,7 +63,7 @@ export const POST = async (req: NextRequest) => {
     userProfile.displayName = userProfile.displayName.trim();
 
     // 更新（対象は displayName と avatarImgKey のみ）
-    await userService.updateUser(authUser.id, userProfile);
+    await userService.update(authUser.id, userProfile);
 
     return NextResponse.json(
       new SuccessResponseBuilder(null).setHttpStatus(StatusCodes.OK).build()

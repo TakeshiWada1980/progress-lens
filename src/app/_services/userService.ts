@@ -1,45 +1,41 @@
 import { Role, PrismaClient } from "@prisma/client";
-import { Prisma as P } from "@prisma/client";
+import { Prisma as PRS } from "@prisma/client";
 import AppErrorCode from "@/app/_types/AppErrorCode";
 import { ApiError } from "@/app/api/_helpers/apiExceptions";
 import { Origin } from "@/app/_types/ApiResponse";
 import { StatusCodes } from "@/app/_utils/extendedStatusCodes";
-import type { UserQueryOptions } from "@/app/_types/ServiceTypes";
-import type { Prisma, User } from "@prisma/client";
 import {
   DomainRuleViolationError,
-  DatabaseOperationError,
+  withErrorHandling,
 } from "@/app/_services/servicesExceptions";
 
-type UserWithStudent = P.UserGetPayload<{ include: { student: true } }>;
-
-// 例外処理のためのエラーハンドリングデコレータ
-const handleErrors = () => {
-  return (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
-    const originalMethod = descriptor.value;
-    descriptor.value = async function (...args: any[]) {
-      try {
-        return await originalMethod.apply(this, args);
-      } catch (error: unknown) {
-        if (error instanceof ApiError) {
-          throw error;
-        }
-        const className = this.constructor.name;
-        let msg = `Error in ${className}.${propertyKey}: `;
-        if (error instanceof Error) {
-          msg += error.message;
-        } else if (error !== null && error !== undefined) {
-          msg += String(error);
-        }
-        throw new DatabaseOperationError(msg, error);
-      }
-    };
-
-    return descriptor;
-  };
+export type UserReturnType<
+  T extends PRS.UserInclude,
+  U extends PRS.UserSelect
+> = {
+  include?: T;
+  select?: U;
 };
 
-// Userサービスクラス
+export const studentUserSchema = {
+  include: { student: true },
+} as const;
+
+export const teacherUserSchema = {
+  include: { student: true, teacher: true },
+} as const;
+
+export const adminUserSchema = {
+  include: { admin: true, teacher: true, student: true },
+} as const;
+
+export const fullUserSchema = adminUserSchema;
+
+type CreateUserAsStudentReturnType = PRS.UserGetPayload<
+  typeof studentUserSchema
+>;
+
+// UserのCRUD操作を行なうクラス
 //   基本的に、このサービスクラスでは認証や認可の検証処理はしない
 //   呼び出す側で、認証・認可を確認して利用すること
 class UserService {
@@ -66,14 +62,11 @@ class UserService {
   }
 
   // IDによるユーザ情報の取得 (該当なしの場合は例外をスロー)
-  public async findUserById<
-    T extends Prisma.UserInclude,
-    U extends Prisma.UserSelect
-  >(
+  public async getById<T extends PRS.UserInclude, U extends PRS.UserSelect>(
     id: string,
-    options?: UserQueryOptions<T, U>
-  ): Promise<Prisma.UserGetPayload<{ include: T; select: U }>> {
-    const user = await this.tryFindUserById(id, options);
+    options?: UserReturnType<T, U>
+  ): Promise<PRS.UserGetPayload<{ include: T; select: U }>> {
+    const user = await this.tryGetById(id, options);
     if (!user) {
       throw new UserService.UserNotFoundError(id);
     }
@@ -81,25 +74,19 @@ class UserService {
   }
 
   // IDによるユーザ情報の取得 (該当なしの場合は null を返す)
-  public async tryFindUserById<
-    T extends Prisma.UserInclude,
-    U extends Prisma.UserSelect
-  >(
+  public async tryGetById<T extends PRS.UserInclude, U extends PRS.UserSelect>(
     id: string,
-    options?: UserQueryOptions<T, U>
-  ): Promise<Prisma.UserGetPayload<{ include: T; select: U }> | null> {
+    options?: UserReturnType<T, U>
+  ): Promise<PRS.UserGetPayload<{ include: T; select: U }> | null> {
     return (await this.prisma.user.findUnique({
       where: { id },
       ...options,
-    })) as P.UserGetPayload<{ include: T; select: U }> | null;
+    })) as PRS.UserGetPayload<{ include: T; select: U }> | null;
   }
 
   // ユーザ情報（ displayName と avatarImgKey ）の更新
-  @handleErrors()
-  public async updateUser(
-    id: string,
-    data: P.UserUpdateInput
-  ): Promise<boolean> {
+  @withErrorHandling()
+  public async update(id: string, data: PRS.UserUpdateInput): Promise<boolean> {
     // avatarImgKey が undefine のときは null に変換
     data.avatarImgKey ??= null;
     await this.prisma.user.update({
@@ -113,11 +100,11 @@ class UserService {
   }
 
   // ユーザ（学生ロール）の新規作成
-  @handleErrors()
-  public async createUserAsStudent(
+  @withErrorHandling()
+  public async createAsStudent(
     id: string,
     displayName: string
-  ): Promise<UserWithStudent> {
+  ): Promise<CreateUserAsStudentReturnType> {
     return await this.prisma.user.create({
       data: {
         id,
@@ -137,16 +124,13 @@ class UserService {
   }
 
   // ロールの昇格（変更）。現状、学生→教員、教員→管理者のみ許可
-  @handleErrors()
-  public async updateUserRole<
-    T extends Prisma.UserInclude,
-    U extends Prisma.UserSelect
-  >(
+  @withErrorHandling()
+  public async updateRole<T extends PRS.UserInclude, U extends PRS.UserSelect>(
     id: string,
     newRole: Role,
-    options?: UserQueryOptions<T, U>
-  ): Promise<Prisma.UserGetPayload<{ include: T; select: U }>> {
-    const user = await this.findUserById(id, options);
+    options?: UserReturnType<T, U>
+  ): Promise<PRS.UserGetPayload<{ include: T; select: U }>> {
+    const user = await this.getById(id, options);
     if (user.role === newRole) {
       return user;
     }
@@ -165,14 +149,14 @@ class UserService {
   }
 
   // ロール昇格（学生→教員）・初期データの設定
-  @handleErrors()
+  @withErrorHandling()
   private async assignToTeacherRole<
-    T extends Prisma.UserInclude,
-    U extends Prisma.UserSelect
+    T extends PRS.UserInclude,
+    U extends PRS.UserSelect
   >(
     id: string,
-    options?: UserQueryOptions<T, U>
-  ): Promise<Prisma.UserGetPayload<{ include: T; select: U }>> {
+    options?: UserReturnType<T, U>
+  ): Promise<PRS.UserGetPayload<{ include: T; select: U }>> {
     await this.prisma.user.update({
       where: { id },
       data: {
@@ -185,18 +169,18 @@ class UserService {
         },
       },
     });
-    return await this.findUserById(id, options);
+    return await this.getById(id, options);
   }
 
   // ロール変更（教員→管理者）・初期データの設定
-  @handleErrors()
+  @withErrorHandling()
   private async assignToAdminRole<
-    T extends Prisma.UserInclude,
-    U extends Prisma.UserSelect
+    T extends PRS.UserInclude,
+    U extends PRS.UserSelect
   >(
     id: string,
-    options?: UserQueryOptions<T, U>
-  ): Promise<Prisma.UserGetPayload<{ include: T; select: U }>> {
+    options?: UserReturnType<T, U>
+  ): Promise<PRS.UserGetPayload<{ include: T; select: U }>> {
     await this.prisma.user.update({
       where: { id },
       data: {
@@ -209,7 +193,7 @@ class UserService {
         },
       },
     });
-    return await this.findUserById(id, options);
+    return await this.getById(id, options);
   }
 
   public static UserNotFoundError = class extends ApiError {

@@ -1,14 +1,19 @@
-import prisma from "@/lib/prisma";
+// APIリクエスト・レスポンス関係
+import { NextResponse, NextRequest } from "next/server";
 import { ApiErrorResponse } from "@/app/_types/ApiResponse";
 import SuccessResponseBuilder from "@/app/api/_helpers/successResponseBuilder";
 import ErrorResponseBuilder from "@/app/api/_helpers/errorResponseBuilder";
 import { StatusCodes } from "@/app/_utils/extendedStatusCodes";
-import { NextResponse, NextRequest } from "next/server";
-import UserService from "@/app/_services/userService";
-import { getAuthUser } from "@/app/api/_helpers/getAuthUser";
-import { RedirectTo } from "@/app/_types/RedirectTo";
 import { ApiError } from "@/app/api/_helpers/apiExceptions";
-import { Role } from "@prisma/client";
+
+// ユーザ認証・サービスクラス関係
+import prisma from "@/lib/prisma";
+import { getAuthUser } from "@/app/api/_helpers/getAuthUser";
+import UserService from "@/app/_services/userService";
+
+// 型定義・データ検証関連
+import { Role } from "@/app/_types/UserTypes";
+import { RedirectTo } from "@/app/_types/RedirectTo";
 
 export const revalidate = 0; // キャッシュを無効化
 
@@ -19,19 +24,19 @@ export const GET = async (req: NextRequest) => {
   try {
     // トークンが不正なときは InvalidTokenError がスローされる
     const authUser = await getAuthUser(req);
-    const appUser = await userService.tryFindUserById(authUser.id);
+    const appUser = await userService.tryGetById(authUser.id);
 
     //TODO: appUser?.isGuest の場合は displayName と avatarImgKey を初期化
 
     // appUser が存在するなら早期リターン
     if (appUser) {
-      let redirectTo = "/"; // 学生用ページができたら変更
+      let redirectTo = "/student";
       switch (appUser.role) {
         case Role.TEACHER:
-          redirectTo = "/"; // 教員用ページができたら変更
+          redirectTo = "/teacher";
           break;
         case Role.ADMIN:
-          redirectTo = "/"; // 管理者用ページができたら変更
+          redirectTo = "/admin";
           break;
         default:
           break;
@@ -46,7 +51,7 @@ export const GET = async (req: NextRequest) => {
 
     // appUser が存在しないなら appUser にレコードを挿入（新規作成）
     const name = (authUser.email ?? "").split("@")[0]; // 仮の表示名
-    await userService.createUserAsStudent(authUser.id, name);
+    await userService.createAsStudent(authUser.id, name);
 
     // プロフィール設定画面にリダイレクト
     const res = {
