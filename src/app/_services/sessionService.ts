@@ -6,6 +6,8 @@ import {
 } from "@/app/_services/servicesExceptions";
 import QuestionService from "@/app/_services/questionService";
 
+///////////////////////////////////////////////////////////////
+
 export type SessionReturnType<
   T extends PRS.LearningSessionInclude,
   U extends PRS.LearningSessionSelect
@@ -24,9 +26,19 @@ export const fullSessionSchema = {
   },
 } as const;
 
+export const sessionWithEnrollmentsSchema = {
+  include: {
+    enrollments: true,
+  },
+} as const;
+
+///////////////////////////////////////////////////////////////
+
 type CreateSessionReturnType = PRS.LearningSessionGetPayload<
   typeof fullSessionSchema
 >;
+
+///////////////////////////////////////////////////////////////
 
 // LearningSessionのCRUD操作を行なうクラス
 class SessionService {
@@ -34,6 +46,47 @@ class SessionService {
 
   constructor(prisma: PrismaClient) {
     this.prisma = prisma;
+  }
+
+  // ユニークなアクセスコードの生成
+  @withErrorHandling()
+  private async generateAccessCode(): Promise<string> {
+    const batchSize = 5; // 1試行で生成するアクセスコード候補数
+    const generateDigits = (length: number): string =>
+      Array.from({ length }, () => Math.floor(Math.random() * 10)).join("");
+
+    while (true) {
+      // アクセスコードの候補を生成
+      const generatedCodes = new Set<string>();
+      while (generatedCodes.size < batchSize) {
+        generatedCodes.add(`${generateDigits(3)}-${generateDigits(4)}`);
+      }
+      // 既に使用されているコードを取得
+      const existingCodes = await this.prisma.learningSession.findMany({
+        where: {
+          accessCode: {
+            in: Array.from(generatedCodes),
+          },
+        },
+        select: {
+          accessCode: true,
+        },
+      });
+
+      // 既存のコードを除外
+      const existingCodesSet = new Set(
+        existingCodes.map((code) => code.accessCode)
+      );
+      const availableCodes = Array.from(generatedCodes).filter(
+        (code) => !existingCodesSet.has(code)
+      );
+
+      // 利用可能なコードがあればそのうちの1つを返す
+      if (availableCodes.length > 0) {
+        return availableCodes[0];
+      }
+      // 利用可能なコードがない場合は再試行
+    }
   }
 
   // Idによるラーニングセッション（単数）の取得。該当なしは例外をスロー
@@ -132,11 +185,10 @@ class SessionService {
   @withErrorHandling()
   public async create(
     teacherId: string,
-    title: string,
-    accessCode: string
+    title: string
   ): Promise<CreateSessionReturnType> {
     let session: LearningSession | null = null;
-
+    const accessCode = await this.generateAccessCode();
     // トランザクション内でセッションと初期設問を作成
     await this.prisma.$transaction(
       async (tx) => {

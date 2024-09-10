@@ -3,7 +3,7 @@
 import React from "react";
 import useRouteGuard from "@/app/_hooks/useRouteGuard";
 import LoadingPage from "@/app/_components/LoadingPage";
-import { Role } from "@prisma/client";
+import { Role } from "@/app/_types/UserTypes";
 import { useRouter } from "next/navigation";
 
 interface Props {

@@ -21,7 +21,7 @@ import LoadingSpinner from "@/app/_components/elements/LoadingSpinner";
 // 型・定数・ユーティリティ
 import { UserProfile, userProfileSchema } from "@/app/_types/UserTypes";
 import { roleEnum2str } from "@/app/_utils/roleEnum2str";
-import { Role } from "@prisma/client";
+import { Role } from "@/app/_types/UserTypes";
 
 const defaultValues: UserProfile = {
   id: "00000000-0000-0000-0000-000000000000",

@@ -1,5 +1,7 @@
 import UserService from "@/app/_services/userService";
-import SessionService from "@/app/_services/sessionService";
+import SessionService, {
+  sessionWithEnrollmentsSchema,
+} from "@/app/_services/sessionService";
 import { Prisma as PRS } from "@prisma/client";
 import { Role } from "@/app/_types/UserTypes";
 import { v4 as uuid } from "uuid";
@@ -8,7 +10,7 @@ import { PrismaClient } from "@prisma/client";
 interface SessionSeed {
   id?: string;
   title: string;
-  accessCode: string;
+  accessCode?: string;
 }
 
 interface TeacherSeed {
@@ -93,17 +95,18 @@ describe("教員のLS作成と取得、学生のLS参加と取得のテスト", 
     it("成功する", async () => {
         const teacher = teachers[0];
         teacher.sessions.push(
-          { title: "プログラミング基礎演習（第01回）", accessCode: "990-0001" },
-          { title: "プログラミング基礎演習（第02回）", accessCode: "990-0002" },
-          { title: "プログラミング基礎演習（第03回）", accessCode: "990-0003" }
+          { title: "プログラミング基礎演習（第01回）"},
+          { title: "プログラミング基礎演習（第02回）"},
+          { title: "プログラミング基礎演習（第03回）"}
         );
         // あえて1.1秒のウエイトを入れて追加
         for (const session of teacher.sessions) {
           await new Promise((resolve) => setTimeout(resolve, 1100));
           //prettier-ignore
           const createdSession = await sessionService.create(
-            teacher.id!, session.title, session.accessCode );
+            teacher.id!, session.title );
           session.id = createdSession.id;
+          session.accessCode = createdSession.accessCode;
           expect(createdSession.title).toBe(session.title);
           expect(createdSession.accessCode).toBe(session.accessCode);
         }
@@ -117,17 +120,18 @@ describe("教員のLS作成と取得、学生のLS参加と取得のテスト", 
     it("成功する", async () => {
         const teacher = teachers[1];
         teacher.sessions.push(
-          { title: "データベース工学（第03回）", accessCode: "991-0001" },
-          { title: "データベース工学（第05回）", accessCode: "991-0002" },
-          { title: "データベース工学（第07回）", accessCode: "991-0003" },
-          { title: "データベース工学（第14回）", accessCode: "991-0004" },
+          { title: "データベース工学（第03回）"},
+          { title: "データベース工学（第05回）"},
+          { title: "データベース工学（第07回）"},
+          { title: "データベース工学（第14回）"},
         );
         // ここでは追加順序が意味を持つので Promise.all は使わない
         for (const session of teacher.sessions) {
           //prettier-ignore
           const createdSession = await sessionService.create(
-            teacher.id!, session.title, session.accessCode );
+            teacher.id!, session.title );
           session.id = createdSession.id;
+          session.accessCode = createdSession.accessCode;
           expect(createdSession.title).toBe(session.title);
           expect(createdSession.accessCode).toBe(session.accessCode);
           // await new Promise((resolve) => setTimeout(resolve, 1100));
@@ -193,6 +197,7 @@ describe("教員のLS作成と取得、学生のLS参加と取得のテスト", 
     it("成功する", async () => {
       const teacher = teachers[1];
       const sessions = await sessionService.getAllByTeacherId(teacher.id!);
+      console.log(sessions);
       expect(sessions.length).toBe(teacher.sessions.length);
       expect(sessions).toEqual([...sessions].sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime()));      
     });
@@ -347,6 +352,20 @@ describe("教員のLS作成と取得、学生のLS参加と取得のテスト", 
       },
       Timeout
     );
+  });
+
+  describe("教員0（高負荷 耐子）のLS（参加数）の取得", () => {
+    // prettier-ignore
+    it("成功する", async () => {
+      const teacher = teachers[0];
+      // 引数省略すると updatedAtが 降順（Desc）新しい日付から古い日付になる
+      const sessions = await sessionService.getAllByTeacherId(teacher.id!,sessionWithEnrollmentsSchema);
+      expect(sessions.length).toBe(teacher.sessions.length);
+      expect(sessions).toEqual([...sessions].sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime()));
+      sessions.forEach((session) => {
+        expect(session.enrollments.length).toEqual(2); //「構文 誤次郎」と「仕様 曖昧子」
+      });
+    });
   });
 
   //

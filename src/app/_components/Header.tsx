@@ -5,12 +5,12 @@ import { usePathname } from "next/navigation";
 
 // カスタムフック・APIリクエスト系
 import useAuth from "@/app/_hooks/useAuth";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useHeaderVisibility } from "@/app/_hooks/useHeaderVisibility";
 import { UserNavWidget } from "@/app/_components/elements/UserNavWidget";
 
 // UIコンポーネント
 import Link from "@/app/_components/elements/Link";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faFan, faRightToBracket } from "@fortawesome/free-solid-svg-icons";
 
 // 型・定数・ユーティリティ

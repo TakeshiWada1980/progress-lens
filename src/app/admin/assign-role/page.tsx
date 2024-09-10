@@ -21,11 +21,11 @@ import useAuth from "@/app/_hooks/useAuth";
 
 // カスタム型定義
 import { UserNewRole, userNewRoleSchema } from "@/app/_types/UserTypes";
-import { Role } from "@prisma/client";
+import { Role } from "@/app/_types/UserTypes";
 
 const Page: React.FC = () => {
   // TODO: 現状では最低限の機能だけを実装。後日 UI/UX の改善
-  const ep = "/api/v1/user/assign-role";
+  const ep = "/api/v1/admin/assign-role";
   const { apiRequestHeader } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [apiResponse, setApiResponse] = useState<ApiResponse<any> | null>(null);

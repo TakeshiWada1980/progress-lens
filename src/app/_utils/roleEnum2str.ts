@@ -1,4 +1,4 @@
-import { Role } from "@prisma/client";
+import { Role } from "@/app/_types/UserTypes";
 
 export const roleEnum2str = (role: Role | undefined): string => {
   switch (role) {

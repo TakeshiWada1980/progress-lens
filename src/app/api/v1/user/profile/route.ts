@@ -58,6 +58,7 @@ export const POST = async (req: NextRequest) => {
     // トークンが不正なときは InvalidTokenError がスローされる
     const authUser = await getAuthUser(req);
 
+    // リクエストボディの検証
     postBody = await req.json();
     const userProfile = userProfileSchema.parse(postBody) as UserProfile;
     userProfile.displayName = userProfile.displayName.trim();

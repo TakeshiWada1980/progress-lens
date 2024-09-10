@@ -16,7 +16,7 @@ describe("LearningSessionServiceのテスト", () => {
 
   const seeds = Array.from({ length: 3 }, (_, i) => ({
     title: `セッション-${uuidv4().substring(0, 8)}`,
-    accessCode: `999-${(i + 1).toString().padStart(4, "0")}`,
+    accessCode: "",
   }));
 
   beforeAll(async () => {
@@ -45,12 +45,10 @@ describe("LearningSessionServiceのテスト", () => {
 
   describe("ラーニングセッション（LS）の新規作成", () => {
     it("成功する", async () => {
-      const session = await sessionService.create(
-        teacherId,
-        seeds[0].title,
-        seeds[0].accessCode
-      );
+      const seed = seeds[0];
+      const session = await sessionService.create(teacherId, seed.title);
       sessionId = session.id;
+      seed.accessCode = session.accessCode;
       const question = session.questions[0];
 
       // 1つの設問が作成されていること
@@ -80,18 +78,10 @@ describe("LearningSessionServiceのテスト", () => {
     });
   });
 
-  describe("重複したアクセスコードを引数にLSの新規作成", () => {
-    it("失敗する", async () => {
-      await expect(
-        sessionService.create(teacherId, seeds[0].title, seeds[0].accessCode)
-      ).rejects.toThrow(DomainRuleViolationError);
-    });
-  });
-
   describe("存在しないUserIdを引数にLSの新規作成", () => {
     it("失敗する", async () => {
       await expect(
-        sessionService.create("hoge", seeds[1].title, seeds[1].accessCode)
+        sessionService.create("hoge", seeds[1].title)
       ).rejects.toThrow(DomainRuleViolationError);
     });
   });
@@ -101,12 +91,11 @@ describe("LearningSessionServiceのテスト", () => {
       const sessionsSeeds2 = seeds.slice(1); // 先頭を除く
       const sessions = await Promise.all(
         sessionsSeeds2.map(({ title, accessCode }) =>
-          sessionService.create(teacherId, title, accessCode)
+          sessionService.create(teacherId, title)
         )
       );
       sessions.forEach((session, index) => {
         expect(session.title).toBe(sessionsSeeds2[index].title);
-        expect(session.accessCode).toBe(sessionsSeeds2[index].accessCode);
       });
     });
   });
