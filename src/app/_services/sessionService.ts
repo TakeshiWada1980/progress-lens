@@ -142,7 +142,7 @@ class SessionService {
   >(
     teacherId: string,
     options?: SessionReturnType<T, U>,
-    sortKey: "updatedAt" | "title" = "updatedAt",
+    sortKey: "updatedAt" | "createdAt" | "title" = "updatedAt",
     sortDirection: "asc" | "desc" = "desc"
   ): Promise<PRS.LearningSessionGetPayload<{ include: T; select: U }>[]> {
     return (await this.prisma.learningSession.findMany({
@@ -160,7 +160,7 @@ class SessionService {
   >(
     studentId: string,
     options?: SessionReturnType<T, U>,
-    sortKey: "updatedAt" | "title" = "updatedAt",
+    sortKey: "updatedAt" | "createdAt" | "title" = "updatedAt",
     sortDirection: "asc" | "desc" = "desc"
   ): Promise<PRS.LearningSessionGetPayload<{ include: T; select: U }>[]> {
     return (await this.prisma.learningSession.findMany({

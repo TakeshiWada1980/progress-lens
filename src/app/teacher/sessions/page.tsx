@@ -256,7 +256,7 @@ const Page: React.FC = () => {
         />
       </FormProvider>
 
-      <Accordion type="single" collapsible defaultValue={accordionValue}>
+      {/* <Accordion type="single" collapsible defaultValue={accordionValue}>
         <AccordionItem value="item-1" className="border-0">
           <AccordionTrigger className="text-slate-500 hover:cursor-pointer">
             <div>
@@ -269,7 +269,7 @@ const Page: React.FC = () => {
             <BeginnersGuide />
           </AccordionContent>
         </AccordionItem>
-      </Accordion>
+      </Accordion> */}
     </div>
   );
 };

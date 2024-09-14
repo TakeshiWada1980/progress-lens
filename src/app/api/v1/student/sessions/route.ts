@@ -53,6 +53,7 @@ export const GET = async (req: NextRequest) => {
         accessCode: s.accessCode,
         isActive: s.isActive,
         updatedAt: s.updatedAt,
+        createdAt: s.createdAt,
         enrollmentCount: s.enrollments.length,
         questionsCount: s.questions.length,
       };

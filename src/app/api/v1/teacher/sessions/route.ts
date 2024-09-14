@@ -46,7 +46,8 @@ export const GET = async (req: NextRequest) => {
     // レスポンスデータの作成
     const sessions = await sessionService.getAllByTeacherId(
       appUser.id,
-      forGetAllByTeacherIdSchema
+      forGetAllByTeacherIdSchema,
+      "createdAt"
     );
     const res: SessionSummary[] = sessions.map((s) => {
       return {

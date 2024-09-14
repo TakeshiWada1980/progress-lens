@@ -5,6 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import datetime2str from "@/app/_utils/datetime2str";
 import {
   faPen,
+  faClock,
   faSort,
   faEllipsisVertical,
   faClone,
@@ -36,14 +37,14 @@ const useTableColumns = ({
   deleteSession,
 }: RowActionHandlers): ColumnDef<SessionSummary>[] => {
   //
-  const handleRename = useCallback(
+  const renameTitle = useCallback(
     async (id: string, currentValue: string) => {
       await updateSessionSummary(id, "title", currentValue);
     },
     [updateSessionSummary]
   );
 
-  const handleSwitchActiveState = useCallback(
+  const switchActiveState = useCallback(
     async (id: string, currentValue: boolean) => {
       await updateSessionSummary(id, "isActive", !currentValue);
     },
@@ -54,11 +55,22 @@ const useTableColumns = ({
     () => [
       {
         accessorKey: "title",
-        header: () => <div className="font-bold">ラーニングセッション</div>,
+        header: ({ column }) => (
+          <div className="font-bold">
+            ラーニングセッション
+            <FontAwesomeIcon
+              className="ml-1 cursor-pointer text-slate-400 hover:text-slate-700"
+              icon={faSort}
+              onClick={() =>
+                column.toggleSorting(column.getIsSorted() === "asc")
+              }
+            />
+          </div>
+        ),
         cell: ({ row }) => {
           const id = row.original.id;
           const session = row.original;
-          const href = `/learning-session/${session.accessCode}`;
+          const href = `/teacher/sessions/${session.accessCode}`;
           return (
             <div
               className={twMerge(
@@ -72,7 +84,7 @@ const useTableColumns = ({
               <FontAwesomeIcon
                 className="ml-1 cursor-pointer text-xs text-slate-300 hover:text-slate-600"
                 icon={faPen}
-                onClick={() => handleRename(id, session.title)}
+                onClick={() => renameTitle(id, session.title)}
               />
             </div>
           );
@@ -92,7 +104,7 @@ const useTableColumns = ({
                 type="checkbox"
                 className="size-4 sm:size-5"
                 checked={isActive}
-                onChange={() => handleSwitchActiveState(id, isActive)}
+                onChange={() => switchActiveState(id, isActive)}
                 readOnly
               />
             </div>
@@ -174,7 +186,7 @@ const useTableColumns = ({
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
                   <DropdownMenuItem
-                    onClick={() => handleRename(id, title)}
+                    onClick={() => renameTitle(id, title)}
                     className="cursor-pointer"
                   >
                     <FontAwesomeIcon icon={faPen} className="mr-2" />
@@ -201,7 +213,7 @@ const useTableColumns = ({
         },
       },
     ],
-    [handleRename, handleSwitchActiveState]
+    [deleteSession, renameTitle, switchActiveState]
   );
 };
 
