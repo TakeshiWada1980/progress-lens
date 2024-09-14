@@ -16,6 +16,7 @@ const button = tv({
     width: {
       auto: "",
       stretch: "w-full",
+      slim: "px-3 py-1",
     },
     disabled: {
       true: "cursor-not-allowed opacity-50",

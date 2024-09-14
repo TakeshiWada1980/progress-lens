@@ -5,6 +5,7 @@ import {
   withErrorHandling,
 } from "@/app/_services/servicesExceptions";
 import QuestionService from "@/app/_services/questionService";
+import { type UpdateSessionRequest } from "@/app/_types/SessionTypes";
 
 ///////////////////////////////////////////////////////////////
 
@@ -26,9 +27,22 @@ export const fullSessionSchema = {
   },
 } as const;
 
-export const sessionWithEnrollmentsSchema = {
+export const forGetAllByTeacherIdSchema = {
   include: {
     enrollments: true,
+    questions: true,
+  },
+} as const;
+
+export const forGetAllByStudentIdSchema = {
+  include: {
+    enrollments: true,
+    questions: true,
+    teacher: {
+      include: {
+        user: true,
+      },
+    },
   },
 } as const;
 
@@ -162,7 +176,23 @@ class SessionService {
     })) as PRS.LearningSessionGetPayload<{ include: T; select: U }>[];
   }
 
-  // 名前（title属性）の変更
+  // 基本情報（title,isActive）の更新 セッションの存在は確認済みであること
+  @withErrorHandling()
+  public async update(
+    sessionId: string,
+    data: UpdateSessionRequest
+  ): Promise<void> {
+    await this.prisma.learningSession.update({
+      where: { id: sessionId },
+      data: { ...data },
+    });
+  }
+
+  /**
+   * 名前（title属性）の更新
+   * @deprecated Use update() instead.
+   * @see update
+   */
   @withErrorHandling()
   public async updateTitle(sessionId: string, title: string): Promise<void> {
     try {

@@ -4,21 +4,29 @@ import { ApiErrorResponse } from "@/app/_types/ApiResponse";
 import SuccessResponseBuilder from "@/app/api/_helpers/successResponseBuilder";
 import ErrorResponseBuilder from "@/app/api/_helpers/errorResponseBuilder";
 import { StatusCodes } from "@/app/_utils/extendedStatusCodes";
-import { ApiError } from "@/app/api/_helpers/apiExceptions";
+import {
+  ApiError,
+  ZodValidationError,
+  NonTeacherOperationError,
+} from "@/app/api/_helpers/apiExceptions";
 
 // ユーザ認証・サービスクラス関係
 import prisma from "@/lib/prisma";
 import { getAuthUser } from "@/app/api/_helpers/getAuthUser";
 import UserService from "@/app/_services/userService";
-import SessionService from "@/app/_services/sessionService";
+import SessionService, {
+  forGetAllByTeacherIdSchema,
+} from "@/app/_services/sessionService";
 
 // 型定義・データ検証関連
-import { UserProfile } from "@/app/_types/UserTypes";
+import { UserProfile, Role } from "@/app/_types/UserTypes";
 import { getAvatarImgUrl } from "@/app/api/_helpers/getAvatarImgUrl";
+import { SessionSummary } from "@/app/_types/SessionTypes";
 
 export const revalidate = 0; // キャッシュを無効化
 
-// [GET] /api/v1/session/
+// [GET] /api/v1/teacher/sessions/
+// ユーザーが [教員] として作成したセッションの一覧を取得
 export const GET = async (req: NextRequest) => {
   const userService = new UserService(prisma);
   const sessionService = new SessionService(prisma);
@@ -30,18 +38,34 @@ export const GET = async (req: NextRequest) => {
     // ユーザが存在しない場合は UserService.NotFoundError がスローされる
     const appUser = await userService.getById(authUser.id);
 
+    // ユーザーが 教員 または 管理者 のロールを持たない場合は Error がスローされる
+    if (appUser.role === Role.STUDENT) {
+      throw new NonTeacherOperationError(appUser.id, appUser.displayName);
+    }
+
     // レスポンスデータの作成
-    const avatarImgUrl = await getAvatarImgUrl(appUser.avatarImgKey);
-    const res: UserProfile = {
-      id: appUser.id,
-      displayName: appUser.displayName,
-      role: appUser.role,
-      avatarImgKey: appUser.avatarImgKey ?? undefined,
-      avatarImgUrl: avatarImgUrl,
-    };
+    const sessions = await sessionService.getAllByTeacherId(
+      appUser.id,
+      forGetAllByTeacherIdSchema
+    );
+    const res: SessionSummary[] = sessions.map((s) => {
+      return {
+        id: s.id,
+        title: s.title,
+        teacherName: appUser.displayName,
+        accessCode: s.accessCode,
+        isActive: s.isActive,
+        updatedAt: s.updatedAt,
+        createdAt: s.createdAt,
+        enrollmentCount: s.enrollments.length,
+        questionsCount: s.questions.length,
+      };
+    });
 
     return NextResponse.json(
-      new SuccessResponseBuilder(res).setHttpStatus(StatusCodes.OK).build()
+      new SuccessResponseBuilder<SessionSummary[]>(res)
+        .setHttpStatus(StatusCodes.OK)
+        .build()
     );
   } catch (error: any) {
     const payload = createErrorResponse(error);
