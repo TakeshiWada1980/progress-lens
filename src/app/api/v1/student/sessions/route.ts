@@ -4,11 +4,7 @@ import { ApiErrorResponse } from "@/app/_types/ApiResponse";
 import SuccessResponseBuilder from "@/app/api/_helpers/successResponseBuilder";
 import ErrorResponseBuilder from "@/app/api/_helpers/errorResponseBuilder";
 import { StatusCodes } from "@/app/_utils/extendedStatusCodes";
-import {
-  ApiError,
-  ZodValidationError,
-  NonTeacherOperationError,
-} from "@/app/api/_helpers/apiExceptions";
+import { ApiError } from "@/app/api/_helpers/apiExceptions";
 
 // ユーザ認証・サービスクラス関係
 import prisma from "@/lib/prisma";
@@ -20,8 +16,6 @@ import SessionService, {
 import { Prisma as PRS } from "@prisma/client";
 
 // 型定義・データ検証関連
-import { UserProfile, Role } from "@/app/_types/UserTypes";
-import { getAvatarImgUrl } from "@/app/api/_helpers/getAvatarImgUrl";
 import { SessionSummary } from "@/app/_types/SessionTypes";
 
 export const revalidate = 0; // キャッシュを無効化
@@ -45,17 +39,16 @@ export const GET = async (req: NextRequest) => {
       forGetAllByStudentIdSchema
     )) as PRS.LearningSessionGetPayload<typeof forGetAllByStudentIdSchema>[];
 
-    const res: SessionSummary[] = sessions.map((s) => {
+    const res: SessionSummary[] = sessions.map((session) => {
       return {
-        id: s.id,
-        title: s.title,
-        teacherName: s.teacher.user.displayName,
-        accessCode: s.accessCode,
-        isActive: s.isActive,
-        updatedAt: s.updatedAt,
-        createdAt: s.createdAt,
-        enrollmentCount: s.enrollments.length,
-        questionsCount: s.questions.length,
+        ...session,
+        _count: undefined,
+        teacher: undefined,
+        teacherName: session.teacher.user.displayName,
+        // @ts-ignore 型推論に失敗するが.enrollmentsは存在
+        enrollmentCount: session._count.enrollments,
+        // @ts-ignore 型推論に失敗するが.enrollmentsは存在
+        questionsCount: session._count.questions,
       };
     });
 

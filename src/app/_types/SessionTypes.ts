@@ -15,11 +15,11 @@ export const isCUID = (value: string) => /^c[a-z0-9]{24}$/.test(value);
 export interface SessionSummary {
   id: string;
   title: string;
-  teacherName: string;
+  teacherName: string; // *
   accessCode: string;
   isActive: boolean;
-  enrollmentCount: number;
-  questionsCount: number;
+  enrollmentCount: number; // *
+  questionsCount: number; // *
   updatedAt: Date;
   createdAt: Date;
 }

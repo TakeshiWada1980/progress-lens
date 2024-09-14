@@ -28,23 +28,57 @@ export const fullSessionSchema = {
 } as const;
 
 export const forGetAllByTeacherIdSchema = {
-  include: {
-    enrollments: true,
-    questions: true,
+  select: {
+    id: true,
+    title: true,
+    accessCode: true,
+    isActive: true,
+    updatedAt: true,
+    createdAt: true,
+    _count: {
+      select: {
+        enrollments: true,
+        questions: true,
+      },
+    },
   },
 } as const;
 
 export const forGetAllByStudentIdSchema = {
-  include: {
-    enrollments: true,
-    questions: true,
+  select: {
+    id: true,
+    title: true,
+    accessCode: true,
+    isActive: true,
+    updatedAt: true,
+    createdAt: true,
     teacher: {
       include: {
         user: true,
       },
     },
+    _count: {
+      select: {
+        enrollments: true,
+        questions: true,
+      },
+    },
   },
 } as const;
+
+///////////////////////////////////////////////////////////////
+
+export type PaginationOptions = {
+  page: number;
+  pageSize: number;
+};
+
+export type Pagination = {
+  total: number;
+  pageSize: number;
+  currentPage: number;
+  totalPages: number;
+};
 
 ///////////////////////////////////////////////////////////////
 
@@ -126,12 +160,45 @@ class SessionService {
   >(
     options?: SessionReturnType<T, U>,
     sortKey: "updatedAt" | "title" = "updatedAt",
-    sortDirection: "asc" | "desc" = "desc"
-  ): Promise<PRS.LearningSessionGetPayload<{ include: T; select: U }>[]> {
-    return (await this.prisma.learningSession.findMany({
+    sortDirection: "asc" | "desc" = "desc",
+    paginationOptions?: PaginationOptions
+  ): Promise<{
+    sessions: PRS.LearningSessionGetPayload<{ include: T; select: U }>[];
+    pagination?: Pagination;
+  }> {
+    // クエリオプションの構築
+    const queryOptions: any = {
       orderBy: { [sortKey]: sortDirection },
       ...options,
-    })) as PRS.LearningSessionGetPayload<{ include: T; select: U }>[];
+    };
+    if (paginationOptions) {
+      const { page, pageSize } = paginationOptions;
+      queryOptions.skip = (page - 1) * pageSize;
+      queryOptions.take = pageSize;
+    }
+
+    // データの取得
+    const sessions = await this.prisma.learningSession.findMany(queryOptions);
+    const result: any = {
+      sessions: sessions as PRS.LearningSessionGetPayload<{
+        include: T;
+        select: U;
+      }>[],
+    };
+
+    // ページ情報の取得
+    if (paginationOptions) {
+      const total = await this.prisma.learningSession.count();
+      const pagination: Pagination = {
+        total,
+        pageSize: paginationOptions.pageSize,
+        currentPage: paginationOptions.page,
+        totalPages: Math.ceil(total / paginationOptions.pageSize),
+      };
+      result.pagination = pagination;
+    }
+
+    return result;
   }
 
   // 指定IDの [教員] が作成した LS の取得

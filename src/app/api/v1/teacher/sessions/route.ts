@@ -49,19 +49,15 @@ export const GET = async (req: NextRequest) => {
       forGetAllByTeacherIdSchema,
       "createdAt"
     );
-    const res: SessionSummary[] = sessions.map((s) => {
-      return {
-        id: s.id,
-        title: s.title,
-        teacherName: appUser.displayName,
-        accessCode: s.accessCode,
-        isActive: s.isActive,
-        updatedAt: s.updatedAt,
-        createdAt: s.createdAt,
-        enrollmentCount: s.enrollments.length,
-        questionsCount: s.questions.length,
-      };
-    });
+    const res: SessionSummary[] = sessions.map((session) => ({
+      ...session,
+      _count: undefined,
+      teacherName: appUser.displayName,
+      // @ts-ignore 型推論に失敗するが.enrollmentsは存在
+      enrollmentCount: session._count.enrollments,
+      // @ts-ignore 型推論に失敗するが.enrollmentsは存在
+      questionsCount: session._count.questions,
+    }));
 
     return NextResponse.json(
       new SuccessResponseBuilder<SessionSummary[]>(res)
