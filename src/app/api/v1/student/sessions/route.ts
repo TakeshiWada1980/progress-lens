@@ -10,15 +10,18 @@ import { ApiError } from "@/app/api/_helpers/apiExceptions";
 import prisma from "@/lib/prisma";
 import { getAuthUser } from "@/app/api/_helpers/getAuthUser";
 import UserService from "@/app/_services/userService";
-import SessionService from "@/app/_services/sessionService";
+import SessionService, {
+  forGetAllByStudentIdSchema,
+} from "@/app/_services/sessionService";
+import { Prisma as PRS } from "@prisma/client";
 
 // 型定義・データ検証関連
-import { UserProfile } from "@/app/_types/UserTypes";
-import { getAvatarImgUrl } from "@/app/api/_helpers/getAvatarImgUrl";
+import { SessionSummary } from "@/app/_types/SessionTypes";
 
 export const revalidate = 0; // キャッシュを無効化
 
-// [GET] /api/v1/session/
+// [GET] /api/v1/student/sessions/
+// ユーザーが [学生] として作成したセッションの一覧を取得
 export const GET = async (req: NextRequest) => {
   const userService = new UserService(prisma);
   const sessionService = new SessionService(prisma);
@@ -31,17 +34,28 @@ export const GET = async (req: NextRequest) => {
     const appUser = await userService.getById(authUser.id);
 
     // レスポンスデータの作成
-    const avatarImgUrl = await getAvatarImgUrl(appUser.avatarImgKey);
-    const res: UserProfile = {
-      id: appUser.id,
-      displayName: appUser.displayName,
-      role: appUser.role,
-      avatarImgKey: appUser.avatarImgKey ?? undefined,
-      avatarImgUrl: avatarImgUrl,
-    };
+    const sessions = (await sessionService.getAllByStudentId(
+      appUser.id,
+      forGetAllByStudentIdSchema
+    )) as PRS.LearningSessionGetPayload<typeof forGetAllByStudentIdSchema>[];
+
+    const res: SessionSummary[] = sessions.map((session) => {
+      return {
+        ...session,
+        _count: undefined,
+        teacher: undefined,
+        teacherName: session.teacher.user.displayName,
+        // @ts-ignore 型推論に失敗するが.enrollmentsは存在
+        enrollmentCount: session._count.enrollments,
+        // @ts-ignore 型推論に失敗するが.enrollmentsは存在
+        questionsCount: session._count.questions,
+      };
+    });
 
     return NextResponse.json(
-      new SuccessResponseBuilder(res).setHttpStatus(StatusCodes.OK).build()
+      new SuccessResponseBuilder<SessionSummary[]>(res)
+        .setHttpStatus(StatusCodes.OK)
+        .build()
     );
   } catch (error: any) {
     const payload = createErrorResponse(error);

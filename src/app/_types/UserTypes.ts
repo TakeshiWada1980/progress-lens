@@ -63,10 +63,7 @@ export interface UserProfile {
 }
 
 export const userProfileSchema = z.object({
-  id: z
-    .string()
-    .regex(uuidRegex, "不正な形式です。Invalid UUID format.")
-    .optional(),
+  id: z.string().regex(uuidRegex, "Invalid UUID format.").optional(),
   role: z.enum([Role.ADMIN, Role.TEACHER, Role.STUDENT]).optional(),
   displayName: z
     .string()

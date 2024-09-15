@@ -22,7 +22,7 @@ import { z } from "zod";
 
 export const revalidate = 0; // キャッシュを無効化
 
-// [POST] /api/v1/user/assign-role
+// [POST] /api/v1/admin/assign-role
 export const POST = async (req: NextRequest) => {
   const userService = new UserService(prisma);
   let postBody: any;

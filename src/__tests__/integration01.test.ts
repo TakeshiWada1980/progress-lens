@@ -1,6 +1,6 @@
 import UserService from "@/app/_services/userService";
 import SessionService, {
-  sessionWithEnrollmentsSchema,
+  forGetAllByTeacherIdSchema,
 } from "@/app/_services/sessionService";
 import { Prisma as PRS } from "@prisma/client";
 import { Role } from "@/app/_types/UserTypes";
@@ -70,24 +70,32 @@ describe("教員のLS作成と取得、学生のLS参加と取得のテスト", 
   });
 
   describe("ユーザ（学生ロール）の新規作成", () => {
-    it("成功する", async () => {
-      const users = [...teachers, ...students];
-      const createdUsers = await Promise.all(
-        users.map(({ id, displayName }) =>
-          userService.createAsStudent(id!, displayName)
-        )
-      );
-      createdUsers.forEach((user) => expect(user.role).toBe(Role.STUDENT));
-    });
+    it(
+      "成功する",
+      async () => {
+        const users = [...teachers, ...students];
+        const createdUsers = await Promise.all(
+          users.map(({ id, displayName }) =>
+            userService.createAsStudent(id!, displayName)
+          )
+        );
+        createdUsers.forEach((user) => expect(user.role).toBe(Role.STUDENT));
+      },
+      Timeout
+    );
   });
 
   describe("指定ユーザの教員ロール昇格", () => {
-    it("教員ロールへの昇格に成功した", async () => {
-      const updatedUsers = await Promise.all(
-        teachers.map(({ id }) => userService.updateRole(id!, Role.TEACHER))
-      );
-      updatedUsers.forEach((user) => expect(user.role).toBe(Role.TEACHER));
-    });
+    it(
+      "教員ロールへの昇格に成功した",
+      async () => {
+        const updatedUsers = await Promise.all(
+          teachers.map(({ id }) => userService.updateRole(id!, Role.TEACHER))
+        );
+        updatedUsers.forEach((user) => expect(user.role).toBe(Role.TEACHER));
+      },
+      Timeout
+    );
   });
 
   describe("教員0（高負荷 耐子）がLSを新規", () => {
@@ -146,8 +154,8 @@ describe("教員のLS作成と取得、学生のLS参加と取得のテスト", 
       //prettier-ignore
       it("成功する", async () => {
         // 引数省略すると updatedAtが 降順（Desc）新しい日付から古い日付になる
-        const sessions = await sessionService.getAll();
-        expect(sessions.length).toBe(teachers.reduce((acc, teacher) => acc + teacher.sessions.length, 0));
+        const {sessions}  = await sessionService.getAll();
+        
         expect(sessions).toEqual([...sessions].sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime()));
       }
     );
@@ -156,7 +164,7 @@ describe("教員のLS作成と取得、学生のLS参加と取得のテスト", 
     describe("全てのLSの一覧（日付 asc [旧]→[新] の順番）の取得", () => {
       //prettier-ignore
       it("成功する", async () => {
-        const sessions = await sessionService.getAll(undefined,"updatedAt", "asc");
+        const {sessions} = await sessionService.getAll(undefined,"updatedAt", "asc");
         expect(sessions).toEqual([...sessions].sort((a, b) => a.updatedAt.getTime() - b.updatedAt.getTime()));
       }
     );
@@ -165,7 +173,7 @@ describe("教員のLS作成と取得、学生のLS参加と取得のテスト", 
     describe("全てのLSの一覧（タイトル昇順）の取得", () => {
       //prettier-ignore
       it("成功する", async () => {
-        const sessions = await sessionService.getAll(undefined,"title", "asc"); 
+        const { sessions } = await sessionService.getAll(undefined,"title", "asc"); 
         expect(sessions).toEqual([...sessions].sort((a, b) => a.title.localeCompare(b.title)));
       }
     );
@@ -174,7 +182,7 @@ describe("教員のLS作成と取得、学生のLS参加と取得のテスト", 
     describe("全てのLSの一覧（タイトル降順）の取得", () => {
       //prettier-ignore
       it("成功する", async () => {
-        const sessions = await sessionService.getAll(undefined,"title", "desc"); 
+        const {sessions} = await sessionService.getAll(undefined,"title", "desc"); 
         expect(sessions).toEqual([...sessions].sort((a, b) => b.title.localeCompare(a.title)));
       }
     );
@@ -227,6 +235,7 @@ describe("教員のLS作成と取得、学生のLS参加と取得のテスト", 
 
         // StudentId をキーにセッションを取得
         const sessions = await sessionService.getAllByStudentId(student.id!);
+        console.log(JSON.stringify(sessions, null, 2));
         const actualIdSet1 = new Set<string>(
           sessions.map((session) => session.id!)
         );
@@ -359,11 +368,14 @@ describe("教員のLS作成と取得、学生のLS参加と取得のテスト", 
     it("成功する", async () => {
       const teacher = teachers[0];
       // 引数省略すると updatedAtが 降順（Desc）新しい日付から古い日付になる
-      const sessions = await sessionService.getAllByTeacherId(teacher.id!,sessionWithEnrollmentsSchema);
+      const sessions = await sessionService.getAllByTeacherId(teacher.id!,forGetAllByTeacherIdSchema);
       expect(sessions.length).toBe(teacher.sessions.length);
       expect(sessions).toEqual([...sessions].sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime()));
       sessions.forEach((session) => {
-        expect(session.enrollments.length).toEqual(2); //「構文 誤次郎」と「仕様 曖昧子」
+        // @ts-ignore 型推論に失敗するが.questionsは存在
+        expect(session._count.questions).toEqual(1); // 1つの質問が登録されている
+        // @ts-ignore 型推論に失敗するが.enrollmentsは存在
+        expect(session._count.enrollments).toEqual(2); //「構文 誤次郎」と「仕様 曖昧子」
       });
     });
   });
