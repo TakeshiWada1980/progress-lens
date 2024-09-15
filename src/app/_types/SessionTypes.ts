@@ -84,6 +84,6 @@ export interface AccessCode {
 
 export const accessCodeSchema = z.object({
   accessCode: z.string().refine(isAccessCode, {
-    message: "NNN-NNNN の形式で入力してください。",
+    message: "NNN-NNNN の形式で入力してください（Nは半角数字）",
   }),
 });

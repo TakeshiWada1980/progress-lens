@@ -92,6 +92,17 @@ const useTeacherSessionTableColumns = ({
       },
 
       {
+        accessorKey: "accessCode",
+        header: () => (
+          <div className="text-center text-sm font-bold sm:px-1">Code</div>
+        ),
+        cell: ({ row }) => {
+          const accessCode = row.original.accessCode;
+          return <div className="text-center">{accessCode}</div>;
+        },
+      },
+
+      {
         accessorKey: "isActive",
         header: () => <div className="text-center font-bold sm:px-1">有効</div>,
         cell: ({ row }) => {
@@ -102,7 +113,7 @@ const useTeacherSessionTableColumns = ({
               <input
                 name={`isActive_${id}`}
                 type="checkbox"
-                className="size-4 sm:size-5"
+                className="size-4"
                 checked={isActive}
                 onChange={() => switchActiveState(id, isActive)}
                 readOnly
@@ -127,29 +138,29 @@ const useTeacherSessionTableColumns = ({
         },
       },
 
-      {
-        accessorKey: "questionsCount",
-        header: () => (
-          <div className="hidden px-1 text-center sm:block sm:px-2">
-            <FontAwesomeIcon icon={faFileLines} />
-          </div>
-        ),
-        cell: ({ row }) => {
-          const questionsCount = row.original.questionsCount;
-          return (
-            <div className="hidden text-center sm:block">{questionsCount}</div>
-          );
-        },
-      },
+      // {
+      //   accessorKey: "questionsCount",
+      //   header: () => (
+      //     <div className="hidden px-1 text-center sm:block sm:px-2">
+      //       <FontAwesomeIcon icon={faFileLines} />
+      //     </div>
+      //   ),
+      //   cell: ({ row }) => {
+      //     const questionsCount = row.original.questionsCount;
+      //     return (
+      //       <div className="hidden text-center sm:block">{questionsCount}</div>
+      //     );
+      //   },
+      // },
 
       {
         accessorKey: "createdAt",
         header: ({ column }) => (
-          <div className="flex flex-row items-center justify-center text-center font-bold">
+          <div className="flex flex-row items-center justify-center px-1 text-center font-bold">
             <div>作成</div>
             <div className="hidden sm:block">日</div>
             <FontAwesomeIcon
-              className="ml-1 cursor-pointer text-slate-400 hover:text-slate-700"
+              className="cursor-pointer text-slate-400 hover:text-slate-700 sm:ml-1"
               icon={faSort}
               onClick={() =>
                 column.toggleSorting(column.getIsSorted() === "asc")

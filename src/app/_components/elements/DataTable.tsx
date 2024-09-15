@@ -87,9 +87,8 @@ export const DataTable = <TData, TValue>({
                 className="bg-sky-50 hover:bg-sky-50"
               >
                 {headerGroup.headers.map((header) => {
-                  let style = header.column.id === "title" ? "" : "px-0.5";
-                  style = twMerge(
-                    style,
+                  const style = twMerge(
+                    header.column.id === "title" ? "pr-0.5" : "px-0.5",
                     header.column.id === "actions" && "px-1"
                   );
                   return (
@@ -114,8 +113,12 @@ export const DataTable = <TData, TValue>({
                   data-state={row.getIsSelected() && "selected"}
                 >
                   {row.getVisibleCells().map((cell) => {
-                    const style =
-                      cell.column.id === "title" ? "" : "px-0.5 sm:max-w-10";
+                    const style = twMerge(
+                      cell.column.id === "title" ? "pr-0.5" : "px-0.5",
+                      !["title", "teacher", "accessCode"].includes(
+                        cell.column.id
+                      ) && "sm:max-w-10"
+                    );
                     return (
                       <TableCell
                         key={cell.id}

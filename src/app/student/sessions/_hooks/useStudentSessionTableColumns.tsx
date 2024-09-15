@@ -95,7 +95,7 @@ const useStudentSessionTableColumns = ({
       {
         accessorKey: "createdAt",
         header: ({ column }) => (
-          <div className="flex flex-row items-center justify-center text-center font-bold">
+          <div className="flex flex-row items-center justify-center px-1 text-center font-bold">
             <div>作成</div>
             <div className="hidden sm:block">日</div>
             <FontAwesomeIcon
