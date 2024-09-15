@@ -4,8 +4,13 @@ import {
   DomainRuleViolationError,
   withErrorHandling,
 } from "@/app/_services/servicesExceptions";
+import { BadRequestError } from "@/app/api/_helpers/apiExceptions";
 import QuestionService from "@/app/_services/questionService";
-import { type UpdateSessionRequest } from "@/app/_types/SessionTypes";
+import {
+  type UpdateSessionRequest,
+  isAccessCode,
+} from "@/app/_types/SessionTypes";
+import AppErrorCode from "@/app/_types/AppErrorCode";
 
 ///////////////////////////////////////////////////////////////
 
@@ -131,6 +136,12 @@ class SessionService {
 
       // 利用可能なコードがあればそのうちの1つを返す
       if (availableCodes.length > 0) {
+        if (!isAccessCode(availableCodes[0])) {
+          throw new DomainRuleViolationError(
+            "アクセスコードの生成で問題が発生しました。既定のパータンに合致しません。",
+            { accessCode: availableCodes[0] }
+          );
+        }
         return availableCodes[0];
       }
       // 利用可能なコードがない場合は再試行
@@ -150,6 +161,29 @@ class SessionService {
       where: { id: sessionId },
       ...options,
     })) as PRS.LearningSessionGetPayload<{ include: T; select: U }>;
+  }
+
+  // AccessCode によるラーニングセッション（単数）の取得。該当なしは例外をスロー
+  @withErrorHandling()
+  public async getByAccessCode<
+    T extends PRS.LearningSessionInclude,
+    U extends PRS.LearningSessionSelect
+  >(
+    accessCode: string,
+    options?: SessionReturnType<T, U>
+  ): Promise<PRS.LearningSessionGetPayload<{ include: T; select: U }>> {
+    const session = await this.prisma.learningSession.findUnique({
+      where: { accessCode },
+      ...options,
+    });
+    if (!session) {
+      const err = new BadRequestError(`Session (${accessCode}) not found.`, {
+        accessCode,
+      });
+      err.appErrorCode = AppErrorCode.SESSION_NOT_FOUND;
+      throw err;
+    }
+    return session as PRS.LearningSessionGetPayload<{ include: T; select: U }>;
   }
 
   // すべてのラーニングセッションの取得（Admin用途）
@@ -235,6 +269,7 @@ class SessionService {
         enrollments: {
           some: {
             studentId: studentId,
+            isDeleted: false,
           },
         },
       },
@@ -327,16 +362,78 @@ class SessionService {
     )) as CreateSessionReturnType;
   }
 
-  // ラーニングセッションに参加する学生の登録
+  /**
+   * ラーニングセッションに学生を参加登録する
+   * @param sessionId 呼び出し元で有効性を保証すべきセッションID
+   * @param studentId 呼び出し元で有効性を保証すべきユーザーID
+   * @note セッションについては isActive が True であることも事前に確認しておくこと
+   * @note 重複登録には事前確認不要（upsertで対応）
+   */
   @withErrorHandling()
   public async enrollStudent(
     sessionId: string,
     studentId: string
   ): Promise<void> {
-    await this.prisma.sessionEnrollment.create({
-      data: {
+    await this.prisma.sessionEnrollment.upsert({
+      where: {
+        sessionId_studentId: {
+          sessionId,
+          studentId,
+        },
+      },
+      create: {
         sessionId,
         studentId,
+        isDeleted: false,
+      },
+      update: {
+        isDeleted: false,
+      },
+    });
+  }
+
+  /**
+   * ラーニングセッションに学生が参加登録されているかを確認する
+   * @param sessionId 呼び出し元で有効性を【保証不要】のセッションID
+   * @param studentId 呼び出し元で有効性を【保証不要】のユーザーID
+   */
+  @withErrorHandling()
+  public async isStudentEnrolled(
+    sessionId: string,
+    studentId: string
+  ): Promise<boolean> {
+    const enrollment = await this.prisma.sessionEnrollment.findUnique({
+      where: {
+        sessionId_studentId: {
+          sessionId,
+          studentId,
+        },
+      },
+    });
+    return !!enrollment && !enrollment.isDeleted;
+  }
+
+  /**
+   * ラーニングセッションの参加登録を解除する
+   * @param sessionId 呼び出し元で有効性を保証すべきセッションID
+   * @param studentId 呼び出し元で有効性を保証すべきユーザーID
+   * @note 事前に sessionEnrollment にレコードが存在することを確認しておくこと
+   * @note 実際の削除はせずに isDeleted フラグの更新するだけ。
+   */
+  @withErrorHandling()
+  public async unenrollStudent(
+    sessionId: string,
+    studentId: string
+  ): Promise<void> {
+    await this.prisma.sessionEnrollment.update({
+      where: {
+        sessionId_studentId: {
+          sessionId,
+          studentId,
+        },
+      },
+      data: {
+        isDeleted: true,
       },
     });
   }

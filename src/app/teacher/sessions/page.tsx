@@ -12,16 +12,17 @@ import {
 } from "@/app/_utils/createApiRequest";
 import { ApiResponse } from "@/app/_types/ApiResponse";
 import SuccessResponseBuilder from "@/app/api/_helpers/successResponseBuilder";
-import useTableColumns from "./_hooks/useTableColumns";
+import useTeacherSessionTableColumns from "./_hooks/useTeacherSessionTableColumns";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import useAuth from "@/app/_hooks/useAuth";
 import { StatusCodes } from "@/app/_utils/extendedStatusCodes";
+import useConfirmDialog from "@/app/_hooks/useConfirmDialog";
 
 // UIコンポーネント
 import PageTitle from "@/app/_components/elements/PageTitle";
 import LoadingSpinner from "@/app/_components/elements/LoadingSpinner";
-import { SessionTable } from "./_components/SessionTable";
+import { DataTable } from "@/app/_components/elements/DataTable";
 import BeginnersGuide from "./_components/BeginnersGuide";
 import {
   Accordion,
@@ -32,6 +33,7 @@ import {
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faChildReaching } from "@fortawesome/free-solid-svg-icons";
 import { EditTitleDialog } from "./_components/TitleEditorDialog";
+import { ConfirmDialog } from "@/app/_components/elements/ConfirmDialog";
 
 // 型・定数・ユーティリティ
 import { produce, Draft } from "immer";
@@ -68,6 +70,7 @@ const Page: React.FC = () => {
   const [dialogSubmitButtonLabel, setDialogSubmitButtonLabel] = useState("");
 
   const router = useRouter();
+  const confirmDeleteDialog = useConfirmDialog<{ id: string }>();
 
   // prettier-ignore
   const postApiCaller = useMemo(() => createPostRequest<CreateSessionRequest, ApiResponse<SessionSummary>>(),[]);
@@ -188,7 +191,7 @@ const Page: React.FC = () => {
         const res = await putApiCaller(postEp, reqBody, apiRequestHeader);
         res.error && console.error(JSON.stringify(res.error, null, 2));
         // 負荷軽減のため、mutate() の実行は一旦保留
-        // mutate();
+        //mutate();
 
         return; // 更新成功
       } catch (error) {
@@ -199,12 +202,9 @@ const Page: React.FC = () => {
     [apiRequestHeader, data?.data, mutate, putApiCaller, titleEditFormMethods]
   );
 
-  // 既存セッションの削除処理
+  //
   const deleteSession = useCallback(
-    async (id: string): Promise<void> => {
-      // あとでいい感じに
-      if (!confirm("削除してもよろしいですか？")) return;
-
+    async ({ id }: { id: string }): Promise<void> => {
       // 楽観的UI更新処理
       const newData = produce(data?.data, (draft: Draft<SessionSummary[]>) => {
         const targetIndex = draft.findIndex((s) => s.id === id);
@@ -219,17 +219,39 @@ const Page: React.FC = () => {
       const deleteEp = `/api/v1/teacher/sessions/${id}`;
       const res = await deleteApiCaller(deleteEp, apiRequestHeader);
       res.error && console.error(JSON.stringify(res.error, null, 2));
+
+      // mutate(); // 負荷軽減のため、mutate() の実行は一旦保留
     },
     [apiRequestHeader, data?.data, deleteApiCaller, mutate]
   );
 
-  const columns = useTableColumns({ updateSessionSummary, deleteSession });
+  // 既存セッションの削除処理
+  const confirmDeleteSession = useCallback(
+    async (id: string, name: string): Promise<void> => {
+      confirmDeleteDialog.openDialog(
+        "削除確認",
+        `セッション "${name}" を削除しますか？実行後は元に戻せません。`,
+        deleteSession,
+        { id }
+      );
+    },
+    [confirmDeleteDialog, deleteSession]
+  );
+
+  const columns = useTeacherSessionTableColumns({
+    updateSessionSummary,
+    confirmDeleteSession: confirmDeleteSession,
+  });
+  const filterableColumn = {
+    accessorKey: c_Title,
+    msg: "Filter learning session names...",
+  };
 
   return (
     <div>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-0">
         <div>
-          <PageTitle title="ラーニングセッションの管理" />
+          <PageTitle title="ラーニングセッション管理" />
         </div>
 
         <div className="flex flex-row justify-end">
@@ -239,7 +261,11 @@ const Page: React.FC = () => {
 
       <div className="mt-4 px-0 md:px-2">
         {data?.data ? (
-          <SessionTable columns={columns} data={data.data} />
+          <DataTable
+            columns={columns}
+            data={data.data}
+            filterableColumn={filterableColumn}
+          />
         ) : (
           <LoadingSpinner message="バックグラウンドでデータを読み込んでいます..." />
         )}
@@ -270,6 +296,8 @@ const Page: React.FC = () => {
           </AccordionContent>
         </AccordionItem>
       </Accordion> */}
+
+      <ConfirmDialog {...confirmDeleteDialog} />
     </div>
   );
 };

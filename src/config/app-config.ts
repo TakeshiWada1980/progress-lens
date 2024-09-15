@@ -1,6 +1,5 @@
 // 開発環境かどうか
-export const isDevelopmentEnv =
-  process.env.NEXT_PUBLIC_IS_DEVELOPMENT_ENV === "true";
+export const isDevelopmentEnv = process.env.NODE_ENV === "development";
 
 // API取得時の遅延時間（ミリ秒）
 export const apiDelay = 0;

@@ -29,54 +29,69 @@ import {
 interface Props<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
+  filterableColumn?: {
+    accessorKey: string;
+    msg: string;
+  };
 }
 
-export const SessionTable = <TData, TValue>({
+export const DataTable = <TData, TValue>({
   columns,
   data,
+  filterableColumn,
 }: Props<TData, TValue>) => {
   const [sorting, setSorting] = React.useState<SortingState>([]);
-
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-
+  // prettier-ignore
   const table = useReactTable({
-    data,
-    columns,
+    data, columns,
     getCoreRowModel: getCoreRowModel(),
     onColumnFiltersChange: setColumnFilters,
     getFilteredRowModel: getFilteredRowModel(),
     onSortingChange: setSorting,
     getSortedRowModel: getSortedRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
-    state: {
-      sorting,
-      columnFilters,
-    },
+    state: { sorting, columnFilters },
   });
 
   return (
     <div className="space-y-2">
-      {/* フィルタテキストボックス */}
-      <div className="flex items-center">
-        <Input
-          name="SessionTableFilter"
-          placeholder="Filter learning session names..."
-          value={(table.getColumn("title")?.getFilterValue() as string) ?? ""}
-          onChange={(event) =>
-            table.getColumn("title")?.setFilterValue(event.target.value)
-          }
-          className="max-w-sm"
-        />
-      </div>
+      {/* フィルタテキストボックス (オプション)*/}
+      {filterableColumn && (
+        <div className="flex items-center">
+          <Input
+            name="SessionTableFilter"
+            placeholder={filterableColumn.msg}
+            value={
+              (table
+                .getColumn(filterableColumn.accessorKey)
+                ?.getFilterValue() as string) ?? ""
+            }
+            onChange={(event) =>
+              table
+                .getColumn(filterableColumn.accessorKey)
+                ?.setFilterValue(event.target.value)
+            }
+            className="max-w-sm"
+          />
+        </div>
+      )}
 
       {/* テーブル本体 */}
       <div className="rounded-md border">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
+              <TableRow
+                key={headerGroup.id}
+                className="bg-sky-50 hover:bg-sky-50"
+              >
                 {headerGroup.headers.map((header) => {
-                  const style = header.column.id === "title" ? "" : "px-0";
+                  let style = header.column.id === "title" ? "" : "px-0.5";
+                  style = twMerge(
+                    style,
+                    header.column.id === "actions" && "px-1"
+                  );
                   return (
                     <TableHead key={header.id} className={style}>
                       {header.isPlaceholder
@@ -100,7 +115,7 @@ export const SessionTable = <TData, TValue>({
                 >
                   {row.getVisibleCells().map((cell) => {
                     const style =
-                      cell.column.id === "title" ? "" : "px-0 sm:max-w-10";
+                      cell.column.id === "title" ? "" : "px-0.5 sm:max-w-10";
                     return (
                       <TableCell
                         key={cell.id}
@@ -121,9 +136,7 @@ export const SessionTable = <TData, TValue>({
                   colSpan={columns.length}
                   className="h-24 text-center"
                 >
-                  データが存在しません
-                  <br />
-                  [新規作成]のボタンからラーニングセッションを追加します
+                  表示可能なデータが存在しません
                 </TableCell>
               </TableRow>
             )}

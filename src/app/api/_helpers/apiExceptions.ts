@@ -46,7 +46,7 @@ export const NonTeacherOperationError = class extends ApiError {
 
 export const BadRequestError = class extends ApiError {
   readonly httpStatus: StatusCodes = StatusCodes.BAD_REQUEST;
-  readonly appErrorCode: string = AppErrorCode.BAD_REQUEST_BODY;
+  appErrorCode: string = AppErrorCode.BAD_REQUEST_BODY;
   readonly origin: Origin = Origin.CLIENT;
   readonly technicalInfo: string;
   readonly technicalInfoObject?: any;

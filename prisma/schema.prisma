@@ -107,6 +107,7 @@ model LearningSession {
 model SessionEnrollment {
   sessionId         String          @map("session_id")
   studentId         String          @map("student_id")
+  isDeleted         Boolean         @default(false) @map("is_deleted")
   enrolledAt        DateTime        @default(now()) @map("enrolled_at")
   learningSession   LearningSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   student           Student         @relation(fields: [studentId], references: [userId], onDelete: Cascade)
