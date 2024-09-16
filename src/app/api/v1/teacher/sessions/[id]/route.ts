@@ -71,6 +71,7 @@ export const PUT = async (req: NextRequest, { params: { id } }: Params) => {
     );
   } catch (error: any) {
     const payload = createErrorResponse(error);
+    console.error(JSON.stringify(payload, null, 2));
     return NextResponse.json(payload, { status: payload.httpStatus });
   }
 };

@@ -7,7 +7,8 @@ import { z } from "zod";
 ///////////////////////////////////////////////////////////////
 
 const requiredMsg = "必須入力の項目です。";
-export const AccessCodePattern = /^\d{3}-\d{4}$/;
+// export const AccessCodePattern = /^\d{3}-\d{4}$/;
+export const isAccessCode = (value: string) => /^\d{3}-\d{4}$/.test(value);
 export const isCUID = (value: string) => /^c[a-z0-9]{24}$/.test(value);
 
 ///////////////////////////////////////////////////////////////
@@ -65,4 +66,24 @@ export const updateSessionRequestSchema = z.object({
     })
     .optional(),
   isActive: z.boolean().optional(),
+});
+
+///////////////////////////////////////////////////////////////
+
+export interface SessionEnrollmentResponse {
+  id: string;
+  title: string;
+  accessCode: string;
+}
+
+///////////////////////////////////////////////////////////////
+
+export interface AccessCode {
+  accessCode: string;
+}
+
+export const accessCodeSchema = z.object({
+  accessCode: z.string().refine(isAccessCode, {
+    message: "NNN-NNNN の形式で入力してください（Nは半角数字）",
+  }),
 });

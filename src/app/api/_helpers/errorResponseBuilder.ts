@@ -6,6 +6,7 @@ import {
 import { StatusCodes } from "@/app/_utils/extendedStatusCodes";
 import AppErrorCode from "@/app/_types/AppErrorCode";
 import { ApiError } from "./apiExceptions";
+import { isDevelopmentEnv } from "@/config/app-config";
 
 // APIエラーレスポンスのビルダークラス
 class ErrorResponseBuilder {
@@ -58,6 +59,9 @@ class ErrorResponseBuilder {
   }
 
   build(): ApiErrorResponse {
+    if (isDevelopmentEnv) {
+      console.error("■ " + JSON.stringify(this.response, null, 2));
+    }
     return this.response;
   }
 }

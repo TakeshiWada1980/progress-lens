@@ -5,7 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import datetime2str from "@/app/_utils/datetime2str";
 import {
   faPen,
-  faClock,
+  faBoltLightning,
   faSort,
   faEllipsisVertical,
   faClone,
@@ -24,7 +24,7 @@ import Link from "@/app/_components/elements/Link";
 import { twMerge } from "tailwind-merge";
 
 interface RowActionHandlers {
-  deleteSession: (id: string) => Promise<void>;
+  confirmDeleteSession: (id: string, name: string) => Promise<void>;
   updateSessionSummary: <K extends keyof SessionSummary>(
     id: string,
     key: K,
@@ -32,9 +32,9 @@ interface RowActionHandlers {
   ) => Promise<void>;
 }
 
-const useTableColumns = ({
+const useTeacherSessionTableColumns = ({
   updateSessionSummary,
-  deleteSession,
+  confirmDeleteSession,
 }: RowActionHandlers): ColumnDef<SessionSummary>[] => {
   //
   const renameTitle = useCallback(
@@ -92,6 +92,17 @@ const useTableColumns = ({
       },
 
       {
+        accessorKey: "accessCode",
+        header: () => (
+          <div className="text-center text-sm font-bold sm:px-1">Code</div>
+        ),
+        cell: ({ row }) => {
+          const accessCode = row.original.accessCode;
+          return <div className="text-center">{accessCode}</div>;
+        },
+      },
+
+      {
         accessorKey: "isActive",
         header: () => <div className="text-center font-bold sm:px-1">有効</div>,
         cell: ({ row }) => {
@@ -102,7 +113,7 @@ const useTableColumns = ({
               <input
                 name={`isActive_${id}`}
                 type="checkbox"
-                className="size-4 sm:size-5"
+                className="size-4"
                 checked={isActive}
                 onChange={() => switchActiveState(id, isActive)}
                 readOnly
@@ -127,28 +138,29 @@ const useTableColumns = ({
         },
       },
 
-      {
-        accessorKey: "questionsCount",
-        header: () => (
-          <div className="hidden px-1 text-center sm:block sm:px-2">
-            <FontAwesomeIcon icon={faFileLines} />
-          </div>
-        ),
-        cell: ({ row }) => {
-          const questionsCount = row.original.questionsCount;
-          return (
-            <div className="hidden text-center sm:block">{questionsCount}</div>
-          );
-        },
-      },
+      // {
+      //   accessorKey: "questionsCount",
+      //   header: () => (
+      //     <div className="hidden px-1 text-center sm:block sm:px-2">
+      //       <FontAwesomeIcon icon={faFileLines} />
+      //     </div>
+      //   ),
+      //   cell: ({ row }) => {
+      //     const questionsCount = row.original.questionsCount;
+      //     return (
+      //       <div className="hidden text-center sm:block">{questionsCount}</div>
+      //     );
+      //   },
+      // },
 
       {
         accessorKey: "createdAt",
         header: ({ column }) => (
-          <div className="text-center font-bold">
-            作成日
+          <div className="flex flex-row items-center justify-center px-1 text-center font-bold">
+            <div>作成</div>
+            <div className="hidden sm:block">日</div>
             <FontAwesomeIcon
-              className="ml-1 cursor-pointer text-slate-400 hover:text-slate-700"
+              className="cursor-pointer text-slate-400 hover:text-slate-700 sm:ml-1"
               icon={faSort}
               onClick={() =>
                 column.toggleSorting(column.getIsSorted() === "asc")
@@ -173,6 +185,11 @@ const useTableColumns = ({
       },
       {
         id: "actions",
+        header: () => (
+          <div className="items-center text-center">
+            <FontAwesomeIcon icon={faBoltLightning} />
+          </div>
+        ),
         cell: ({ row }) => {
           const id = row.original.id;
           const title = row.original.title;
@@ -200,7 +217,7 @@ const useTableColumns = ({
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
-                    onClick={() => deleteSession(id)}
+                    onClick={() => confirmDeleteSession(id, title)}
                     className="cursor-pointer"
                   >
                     <FontAwesomeIcon icon={faTrash} className="mr-2" />
@@ -213,8 +230,8 @@ const useTableColumns = ({
         },
       },
     ],
-    [deleteSession, renameTitle, switchActiveState]
+    [confirmDeleteSession, renameTitle, switchActiveState]
   );
 };
 
-export default useTableColumns;
+export default useTeacherSessionTableColumns;

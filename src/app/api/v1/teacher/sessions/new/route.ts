@@ -78,6 +78,7 @@ export const POST = async (req: NextRequest) => {
       error = new ZodValidationError(error.message, reqBody);
     }
     const payload = createErrorResponse(error);
+    console.error(JSON.stringify(payload, null, 2));
     return NextResponse.json(payload, { status: payload.httpStatus });
   }
 };
