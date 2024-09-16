@@ -1,47 +1,38 @@
 import { useState } from "react";
-import { set } from "zod";
 
-type SubmitFunction<T> = (data: T) => void | Promise<void>;
-
-const useConfirmDialog = <T>() => {
+const useConfirmDialog = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [onSubmit, setOnSubmit] = useState<SubmitFunction<T>>(() => () => {});
-  const [data, setData] = useState<T | null>(null);
+  const [onSubmit, setOnSubmit] = useState<() => void>(() => {});
 
   const openDialog = (
     newTitle: string,
     newDescription: string,
-    newOnSubmit: SubmitFunction<T>,
-    newData: T
+    newOnSubmitFunction: () => void
   ) => {
     setTitle(newTitle);
     setDescription(newDescription);
-    setOnSubmit(() => newOnSubmit);
-    setData(newData);
+    setOnSubmit(() => newOnSubmitFunction);
     setIsOpen(true);
   };
 
-  const closeDialog = () => {
+  const close = () => {
     setIsOpen(false);
-    setData(null);
   };
 
   const submitAction = () => {
-    if (data !== null) {
-      onSubmit(data);
-    }
-    closeDialog();
+    onSubmit();
+    close();
   };
 
   return {
     isOpen,
-    setIsOpen,
     title,
     description,
     openDialog,
     submitAction,
+    close,
   };
 };
 

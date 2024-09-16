@@ -269,7 +269,7 @@ class SessionService {
         enrollments: {
           some: {
             studentId: studentId,
-            isDeleted: false,
+            deletedAt: null,
           },
         },
       },
@@ -384,10 +384,10 @@ class SessionService {
       create: {
         sessionId,
         studentId,
-        isDeleted: false,
+        deletedAt: null,
       },
       update: {
-        isDeleted: false,
+        deletedAt: null,
       },
     });
   }
@@ -410,7 +410,7 @@ class SessionService {
         },
       },
     });
-    return !!enrollment && !enrollment.isDeleted;
+    return !!enrollment && !enrollment.deletedAt;
   }
 
   /**
@@ -433,7 +433,7 @@ class SessionService {
         },
       },
       data: {
-        isDeleted: true,
+        deletedAt: new Date(),
       },
     });
   }

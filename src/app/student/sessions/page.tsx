@@ -54,7 +54,7 @@ const Page: React.FC = () => {
   const [errorMsg, setErrorMsg] = useState<string>("");
 
   const router = useRouter();
-  const confirmUnenrollDialog = useConfirmDialog<{ id: string }>();
+  const confirmUnenrollDialog = useConfirmDialog();
 
   // prettier-ignore
   const getApiCaller = useMemo(() => createGetRequest<ApiResponse<SessionEnrollmentResponse>>(),[]);
@@ -96,7 +96,7 @@ const Page: React.FC = () => {
 
   // 既存セッションからの参加解除処理
   const unenrollSession = useCallback(
-    async ({ id }: { id: string }): Promise<void> => {
+    async (id: string): Promise<void> => {
       // 楽観的UI更新処理
       const newData = produce(data?.data, (draft: Draft<SessionSummary[]>) => {
         const targetIndex = draft.findIndex((s) => s.id === id);
@@ -122,8 +122,7 @@ const Page: React.FC = () => {
       confirmUnenrollDialog.openDialog(
         "削除確認",
         `リストからセッション "${name}" を削除しますか？`,
-        unenrollSession,
-        { id }
+        () => unenrollSession(id)
       );
     },
     [confirmUnenrollDialog, unenrollSession]

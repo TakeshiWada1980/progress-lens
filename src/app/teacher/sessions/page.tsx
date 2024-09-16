@@ -70,7 +70,8 @@ const Page: React.FC = () => {
   const [dialogSubmitButtonLabel, setDialogSubmitButtonLabel] = useState("");
 
   const router = useRouter();
-  const confirmDeleteDialog = useConfirmDialog<{ id: string }>();
+  // const confirmDeleteDialog = useConfirmDialog<{ id: string }>();
+  const confirmDeleteDialog = useConfirmDialog();
 
   // prettier-ignore
   const postApiCaller = useMemo(() => createPostRequest<CreateSessionRequest, ApiResponse<SessionSummary>>(),[]);
@@ -204,7 +205,7 @@ const Page: React.FC = () => {
 
   //
   const deleteSession = useCallback(
-    async ({ id }: { id: string }): Promise<void> => {
+    async (id: string): Promise<void> => {
       // 楽観的UI更新処理
       const newData = produce(data?.data, (draft: Draft<SessionSummary[]>) => {
         const targetIndex = draft.findIndex((s) => s.id === id);
@@ -231,8 +232,7 @@ const Page: React.FC = () => {
       confirmDeleteDialog.openDialog(
         "削除確認",
         `セッション "${name}" を削除しますか？実行後は元に戻せません。`,
-        deleteSession,
-        { id }
+        () => deleteSession(id)
       );
     },
     [confirmDeleteDialog, deleteSession]

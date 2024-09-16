@@ -26,8 +26,8 @@ import {
   TableRow,
 } from "@/app/_components/shadcn/ui/table";
 
-interface Props<TData, TValue> {
-  columns: ColumnDef<TData, TValue>[];
+interface Props<TData> {
+  columns: ColumnDef<TData>[];
   data: TData[];
   filterableColumn?: {
     accessorKey: string;
@@ -35,11 +35,10 @@ interface Props<TData, TValue> {
   };
 }
 
-export const DataTable = <TData, TValue>({
-  columns,
-  data,
-  filterableColumn,
-}: Props<TData, TValue>) => {
+// prettier-ignore
+export const DataTable: <TData>(props: Props<TData>) => React.ReactElement = ({
+  columns, data, filterableColumn,
+}) => {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   // prettier-ignore

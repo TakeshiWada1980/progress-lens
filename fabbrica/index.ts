@@ -966,7 +966,7 @@ type SessionEnrollmentstudentFactory = {
 };
 
 type SessionEnrollmentFactoryDefineInput = {
-    isDeleted?: boolean;
+    deletedAt?: Date | null;
     enrolledAt?: Date;
     learningSession: SessionEnrollmentlearningSessionFactory | Prisma.LearningSessionCreateNestedOneWithoutEnrollmentsInput;
     student: SessionEnrollmentstudentFactory | Prisma.StudentCreateNestedOneWithoutEnrollmentsInput;

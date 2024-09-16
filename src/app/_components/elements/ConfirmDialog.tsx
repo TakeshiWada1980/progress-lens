@@ -8,20 +8,19 @@ import {
   DialogClose,
 } from "@/app/_components/shadcn/ui/dialog";
 import { Button } from "@/app/_components/shadcn/ui/button";
-import { Dispatch, SetStateAction } from "react";
 
 type Props = {
   isOpen: boolean;
-  setIsOpen: Dispatch<SetStateAction<boolean>>;
   title: string;
   description: string;
   submitAction: () => void;
+  close: () => void;
 };
 
 export const ConfirmDialog: React.FC<Props> = (props) => {
-  const { isOpen, setIsOpen, title, description, submitAction } = props;
+  const { isOpen, close, title, description, submitAction } = props;
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={close}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
