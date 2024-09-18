@@ -8,6 +8,7 @@ import { Question, EditSessionActions } from "./_types/types";
 import { BackendSyncContext } from "./_hooks/useBackendSync";
 import { v4 as uuid } from "uuid";
 import dev from "@/app/_utils/devConsole";
+import { set } from "zod";
 
 const Page: React.FC = () => {
   // prettier-ignore
@@ -19,11 +20,10 @@ const Page: React.FC = () => {
     { id: "3", title: "設問3", defaultOptionId:"3-1", compareKey: uuid(),
       options: [{id:"3-1",title:"A",questionId:"3"},{id:"3-2",title:"B",questionId:"3"}, {id:"3-3",title:"C",questionId:"3"}]},
   ]);
-
   const nextQuestionIdNum = useRef(4);
 
-  // optimisticSession は、子コンポーネントにおける楽観的更新と同期をとっているもの
-  // setSession(optimisticSession) は、全ての子コンポーネントで再レンダリングが必要なときに発動
+  // optimisticSession は、子コンポーネントの楽観的UI更新と同期をとっているもの
+  // setSession(optimisticSession) は、全ての子コンポーネントで再レンダリングが必要なときに実行する
   const optimisticSession = useRef<Question[]>([...questions]);
 
   // バックエンドとの同期は全てココで実行する
@@ -42,23 +42,25 @@ const Page: React.FC = () => {
       // dummy 実際はここでバックエンドに送信
       await new Promise((resolve) => setTimeout(resolve, 2000));
     },
+
     // 選択肢タイトルの更新
     updateOptionTitle: async (id, title) => {
       optimisticSession.current = produce(
         optimisticSession.current,
         (draft: Draft<Question[]>) => {
-          const option = draft
+          const target = draft
             .flatMap((q) => q.options)
             .find((o) => o.id === id);
-          if (!option) throw new Error(`Option (id=${id}) not found.`);
-          option.title = title;
-          option.compareKey = uuid();
+          if (!target) throw new Error(`Option (id=${id}) not found.`);
+          target.title = title;
+          target.compareKey = uuid();
         }
       );
       // dummy 実際はここでバックエンドに送信
       await new Promise((resolve) => setTimeout(resolve, 2000)); //dummy
     },
 
+    // デフォルト選択肢の更新
     changeDefaultOption: async (questionId, optionId) => {
       optimisticSession.current = produce(
         optimisticSession.current,
@@ -73,6 +75,7 @@ const Page: React.FC = () => {
       await new Promise((resolve) => setTimeout(resolve, 2000)); //dummy
     },
 
+    // 設問の削除
     deleteQuestion: async (id) => {
       optimisticSession.current = produce(
         optimisticSession.current,
@@ -83,20 +86,26 @@ const Page: React.FC = () => {
         }
       );
       // この処理は楽観的UI更新（＝子コンポーネント自身によるUI更新）ができないため
-      // setQuestions を更新して全ての子コンポーネントを再レンダリングすることでUIを更新
+      // setQuestions を実行して全ての子コンポーネントを再レンダリングすることでUIを更新
       setQuestions(optimisticSession.current);
       await new Promise((resolve) => setTimeout(resolve, 2000)); //dummy
     },
 
+    // 設問の追加
     addQuestion: async () => {
       const newQuestion: Question = {
         id: String(nextQuestionIdNum.current),
         title: `設問${nextQuestionIdNum.current}`,
+        compareKey: uuid(),
+        defaultOptionId: `${nextQuestionIdNum.current}-1`,
         // prettier-ignore
         options: [
-          { id: `${nextQuestionIdNum.current}-1`, title: "A", questionId: String(nextQuestionIdNum.current) },
-          { id: `${nextQuestionIdNum.current}-2`, title: "B", questionId: String(nextQuestionIdNum.current) },
-          { id: `${nextQuestionIdNum.current}-3`, title: "C", questionId: String(nextQuestionIdNum.current) },
+          { id: `${nextQuestionIdNum.current}-1`, title: "A", 
+            questionId: String(nextQuestionIdNum.current), compareKey: uuid() },
+          { id: `${nextQuestionIdNum.current}-2`, title: "B", 
+            questionId: String(nextQuestionIdNum.current), compareKey: uuid() },
+          { id: `${nextQuestionIdNum.current}-3`, title: "C", 
+            questionId: String(nextQuestionIdNum.current), compareKey: uuid() },
         ],
       };
       nextQuestionIdNum.current++;
@@ -107,7 +116,7 @@ const Page: React.FC = () => {
         }
       );
       // この処理は楽観的UI更新（＝子コンポーネント自身によるUI更新）ができないため
-      // setQuestions を更新して全ての子コンポーネントを再レンダリングすることでUIを更新
+      // setQuestions を実行して全ての子コンポーネントを再レンダリングすることでUIを更新
       setQuestions(optimisticSession.current);
       await new Promise((resolve) => setTimeout(resolve, 2000)); //dummy
     },
@@ -117,18 +126,27 @@ const Page: React.FC = () => {
     <div>
       <PageTitle title="状態管理に関する実験" className="mb-6" />
 
+      <div className="mb-4 flex space-x-4">
+        <button
+          className="rounded-md border px-3 py-1 text-sm"
+          onClick={editActions.addQuestion}
+        >
+          設問追加
+        </button>
+
+        <button
+          className="rounded-md border px-3 py-1 text-sm"
+          onClick={() => setQuestions(optimisticSession.current)}
+        >
+          強制・再レンダリング
+        </button>
+      </div>
+
       <BackendSyncContext.Provider value={editActions}>
         {questions.map((question) => (
           <QuestionView key={question.id} question={question} />
         ))}
       </BackendSyncContext.Provider>
-
-      <button
-        className="rounded-md border px-3 py-1 text-sm"
-        onClick={editActions.addQuestion}
-      >
-        設問追加
-      </button>
     </div>
   );
 };

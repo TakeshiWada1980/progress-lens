@@ -48,7 +48,7 @@ const OptionView: React.FC<Props> = memo(
               タイトルを変更
             </button>
           </div>
-          <div className="flex space-x-1">
+          <div className="flex items-center space-x-1">
             <input
               type="radio"
               id={option.id}
