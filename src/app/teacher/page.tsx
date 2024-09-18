@@ -3,8 +3,10 @@
 import React from "react";
 import Link from "@/app/_components/elements/Link";
 import PageTitle from "@/app/_components/elements/PageTitle";
+import dev from "@/app/_utils/devConsole";
 
 const Page: React.FC = () => {
+  dev.console.log("Hoge");
   return (
     <div>
       <PageTitle title="教員のトップページ" />

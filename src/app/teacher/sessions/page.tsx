@@ -18,6 +18,7 @@ import { useRouter } from "next/navigation";
 import useAuth from "@/app/_hooks/useAuth";
 import { StatusCodes } from "@/app/_utils/extendedStatusCodes";
 import useConfirmDialog from "@/app/_hooks/useConfirmDialog";
+import { useRenderCount } from "@/app/_hooks/useRenderCount";
 
 // UIコンポーネント
 import PageTitle from "@/app/_components/elements/PageTitle";
@@ -34,6 +35,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faChildReaching } from "@fortawesome/free-solid-svg-icons";
 import { EditTitleDialog } from "./_components/TitleEditorDialog";
 import { ConfirmDialog } from "@/app/_components/elements/ConfirmDialog";
+import { RenderCount } from "@/app/_components/elements/RenderCount";
 
 // 型・定数・ユーティリティ
 import { produce, Draft } from "immer";
@@ -55,6 +57,7 @@ enum Mode {
 
 const Page: React.FC = () => {
   let accordionValue = undefined;
+  const { renderCount, resetRenderCount } = useRenderCount();
 
   const c_Id = "id";
   const c_Title = "title";
@@ -249,6 +252,7 @@ const Page: React.FC = () => {
 
   return (
     <div>
+      <RenderCount renderCount={renderCount} />
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-0">
         <div>
           <PageTitle title="ラーニングセッション管理" />
