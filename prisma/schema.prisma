@@ -144,7 +144,7 @@ model Option {
   title          String
   description    String   @default("")
   rewardMessage  String?  @map("reward_message")
-  rewardPoints   Int      @default(0) @map("reward_points")
+  rewardPoint    Int      @default(0) @map("reward_point")
   effect         Boolean  @default(false)
   updatedAt      DateTime @updatedAt @map("updated_at")
 

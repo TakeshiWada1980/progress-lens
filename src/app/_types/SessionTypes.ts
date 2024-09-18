@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { boolean, StringValidation, z } from "zod";
 
 // フロントエンド <-> WebAPI層 の DTO
 // DB層の型定義（Prisma）のインポートは避けること
@@ -87,3 +87,33 @@ export const accessCodeSchema = z.object({
     message: "NNN-NNNN の形式で入力してください（Nは半角数字）",
   }),
 });
+
+///////////////////////////////////////////////////////////////
+
+export interface SessionEditModel {
+  id: string;
+  title: string;
+  accessCode: string;
+  isActive: boolean;
+  teacherId: string;
+  questions: QuestionEditModel[];
+}
+
+export interface QuestionEditModel {
+  id: string;
+  order: number;
+  title: string;
+  description: string;
+  defaultOptionId: string;
+  options: OptionEditModel[];
+}
+
+export interface OptionEditModel {
+  id: string;
+  order: number;
+  title: string;
+  description: string;
+  rewardMessage?: string;
+  rewardPoint: number;
+  effect: boolean;
+}

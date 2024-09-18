@@ -99,7 +99,7 @@ const Page: React.FC = () => {
         case Mode.Creation:
           res = await postApiCaller(postEp, payload, apiRequestHeader);
           if (!res.success) new Error(res.error.technicalInfo);
-          router.push(`/teacher/sessions/${res.data.accessCode!}`);
+          router.push(`/teacher/sessions/${res.data.id}`);
           break;
 
         // [セッションのタイトルの更新]

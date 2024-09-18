@@ -1308,7 +1308,7 @@ type OptionFactoryDefineInput = {
     title?: string;
     description?: string;
     rewardMessage?: string | null;
-    rewardPoints?: number;
+    rewardPoint?: number;
     effect?: boolean;
     updatedAt?: Date;
     question: OptionquestionFactory | Prisma.QuestionCreateNestedOneWithoutOptionsInput;

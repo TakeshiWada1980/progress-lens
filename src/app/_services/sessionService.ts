@@ -11,6 +11,8 @@ import {
   isAccessCode,
 } from "@/app/_types/SessionTypes";
 import AppErrorCode from "@/app/_types/AppErrorCode";
+import { Description } from "@radix-ui/react-dialog";
+import { title } from "process";
 
 ///////////////////////////////////////////////////////////////
 
@@ -66,6 +68,36 @@ export const forGetAllByStudentIdSchema = {
       select: {
         enrollments: true,
         questions: true,
+      },
+    },
+  },
+} as const;
+
+export const forEditQuestionsSchema = {
+  select: {
+    id: true,
+    title: true,
+    accessCode: true,
+    isActive: true,
+    teacherId: true,
+    questions: {
+      select: {
+        id: true,
+        order: true,
+        title: true,
+        description: true,
+        defaultOptionId: true,
+        options: {
+          select: {
+            id: true,
+            order: true,
+            title: true,
+            description: true,
+            rewardMessage: true,
+            rewardPoint: true,
+            effect: true,
+          },
+        },
       },
     },
   },

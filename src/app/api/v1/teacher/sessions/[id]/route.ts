@@ -13,7 +13,10 @@ import {
 import prisma from "@/lib/prisma";
 import { getAuthUser } from "@/app/api/_helpers/getAuthUser";
 import UserService from "@/app/_services/userService";
-import SessionService from "@/app/_services/sessionService";
+import SessionService, {
+  forEditQuestionsSchema,
+} from "@/app/_services/sessionService";
+import { Prisma as PRS } from "@prisma/client";
 
 // 型定義・データ検証関連
 import { Role } from "@/app/_types/UserTypes";
@@ -26,6 +29,48 @@ import {
 export const revalidate = 0; // キャッシュを無効化
 
 type Params = { params: { id: string } };
+
+// [GET] /api/v1/teacher/sessions/[id] 編集のためのセッション情報を取得
+export const GET = async (req: NextRequest, { params: { id } }: Params) => {
+  const userService = new UserService(prisma);
+  const sessionService = new SessionService(prisma);
+  const sessionId = id;
+
+  try {
+    // トークンが不正なときは InvalidTokenError がスローされる
+    const authUser = await getAuthUser(req);
+
+    // ユーザが存在しない場合は UserService.NotFoundError がスローされる
+    const appUser = await userService.getById(authUser.id);
+
+    // ユーザーが 教員 または 管理者 のロールを持たない場合は Error がスローされる
+    if (appUser.role === Role.STUDENT) {
+      throw new NonTeacherOperationError(appUser.id, appUser.displayName);
+    }
+
+    // セッションが存在しない場合は Error がスローされる
+    const session = (await sessionService.getById(
+      sessionId,
+      forEditQuestionsSchema
+    )) as PRS.LearningSessionGetPayload<typeof forEditQuestionsSchema>;
+
+    // セッションが appUser の所有であるかを確認
+    if (session.teacherId !== appUser.id) {
+      throw new DomainRuleViolationError(
+        `${appUser.displayName} は、SessionID: ${sessionId} の削除権限を持ちません。`,
+        { userId: appUser.id, userDisplayName: appUser.displayName, sessionId }
+      );
+    }
+
+    return NextResponse.json(
+      new SuccessResponseBuilder(session).setHttpStatus(StatusCodes.OK).build()
+    );
+  } catch (error: any) {
+    const payload = createErrorResponse(error);
+    console.error(JSON.stringify(payload, null, 2));
+    return NextResponse.json(payload, { status: payload.httpStatus });
+  }
+};
 
 // [PUT] /api/v1/teacher/sessions/[id] 指定IDのセッション情報を更新
 export const PUT = async (req: NextRequest, { params: { id } }: Params) => {
