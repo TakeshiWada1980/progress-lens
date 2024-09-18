@@ -1,13 +1,15 @@
-import React from "react";
+"use client";
 
-interface Props {
-  renderCount: number;
-}
+import React, { useRef, useEffect } from "react";
 
-export const RenderCount: React.FC<Props> = ({ renderCount }) => {
+export const RenderCount: React.FC = () => {
+  const renderCount = useRef(0);
+
+  useEffect(() => {
+    renderCount.current += 1;
+  });
+
   return (
-    <div className="text-xs font-bold text-rose-400">
-      ■ Render count: {renderCount}
-    </div>
+    <div className="text-xs text-rose-400">Renders: {renderCount.current}</div>
   );
 };
