@@ -34,6 +34,12 @@ const Home: React.FC = () => {
           <Link href="/admin" label="/admin" />
           &nbsp;(Login required - ADMIN only)
         </li>
+        <li>
+          <Link
+            href="/playground/state-management"
+            label="/playground/state-management"
+          />
+        </li>
       </ul>
     </div>
   );

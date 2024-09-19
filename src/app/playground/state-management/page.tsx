@@ -8,8 +8,11 @@ import { Question, EditSessionActions } from "./_types/types";
 import { BackendSyncContext } from "./_hooks/useBackendSync";
 import { v4 as uuid } from "uuid";
 import dev from "@/app/_utils/devConsole";
+import LoadingSpinner from "@/app/_components/elements/LoadingSpinner";
 
 const Page: React.FC = () => {
+  const [isSaving, setIsSaving] = useState(false);
+
   // prettier-ignore
   const [questions, setQuestions] = useState<Question[]>([
     { id: "1", title: "設問1", defaultOptionId:"1-1", compareKey: uuid(), 
@@ -43,7 +46,9 @@ const Page: React.FC = () => {
       }
     );
     // [PUT] /api/v1/teacher/questions/[id]/title
-    await new Promise((resolve) => setTimeout(resolve, 2000)); // Dummy
+    setIsSaving(true);
+    await new Promise((resolve) => setTimeout(resolve, 1000)); // Dummy
+    setIsSaving(false);
     // 通信負荷・描画負荷の軽減のために基本的に再検証はしない（各コンポーネントの楽観的UI更新を信頼）
   }, []);
 
@@ -58,7 +63,9 @@ const Page: React.FC = () => {
       }
     );
     // [PUT] /api/v1/teacher/options/[id]/title
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    setIsSaving(true);
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    setIsSaving(false);
   }, []);
 
   const changeDefaultOption = useCallback(
@@ -74,7 +81,9 @@ const Page: React.FC = () => {
         }
       );
       // [PUT] /api/v1/teacher/options/[id]/default-option
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      setIsSaving(true);
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      setIsSaving(false);
     },
     []
   );
@@ -94,13 +103,18 @@ const Page: React.FC = () => {
       setQuestions(optimisticSession.current);
 
       // [DELETE] /api/v1/teacher/questions/[id]
-      await new Promise((resolve) => setTimeout(resolve, 2000)); // Dummy
+      setIsSaving(true);
+      await new Promise((resolve) => setTimeout(resolve, 1000)); // Dummy
+      setIsSaving(false);
     },
     [setQuestions]
   );
 
   const addQuestion = useCallback(async () => {
+    // [POST] /api/v1/teacher/sessions/[id]/add-question
+    await new Promise((resolve) => setTimeout(resolve, 1000)); // Dummy
     const newQuestion: Question = {
+      // Question の id は、上記 [POST] の応答により設定
       id: String(nextQuestionIdNum.current),
       title: `設問${nextQuestionIdNum.current}`,
       compareKey: uuid(),
@@ -126,7 +140,7 @@ const Page: React.FC = () => {
         },
       ],
     };
-    nextQuestionIdNum.current++;
+    //
     optimisticSession.current = produce(
       optimisticSession.current,
       (draft: Draft<Question[]>) => {
@@ -134,12 +148,7 @@ const Page: React.FC = () => {
       }
     );
     setQuestions(optimisticSession.current);
-
-    // [POST] /api/v1/teacher/sessions/[id]/add-question
-    // 本来は、設問IDはバックエンドで生成するべきものなので、ここではAPIを叩いて、
-    // レスを受け取り、optimisticSession.current = produce(...) して
-    // setQuestions(optimisticSession.current) を実行する
-    await new Promise((resolve) => setTimeout(resolve, 2000)); // Dummy
+    nextQuestionIdNum.current++;
   }, [setQuestions]);
 
   const editActions: EditSessionActions = useMemo(
@@ -158,6 +167,14 @@ const Page: React.FC = () => {
     <div>
       <PageTitle title="状態管理に関する実験" className="mb-6" />
 
+      <p className="mb-4">
+        ラーニングセッションの設問編集画面の「状態管理」に関する設計・実装プロトタイプです。
+        <br />
+        ドラッグアンドドロップを含んだ複雑なUIを構成する予定のため、描画負荷を最小限にするような楽観的UI更新を基本的な方針としています。自動的な再検証も考えていません（手動で再検証のボタンは用意する予定です）。
+        <br />
+        操作性を考えてGoogleFormなどでも採用されているオートセーブスタイル（明示的な保存をしない方法）を採用しようと考えています。ただ、明示的な保存を採用したほうが、バックエンドのDBアクセスコストを抑えることができると思うので悩みどころです。
+      </p>
+
       <div className="mb-4 flex space-x-4">
         <button
           className="rounded-md border px-3 py-1 text-sm"
@@ -172,6 +189,7 @@ const Page: React.FC = () => {
         >
           強制・再レンダリング
         </button>
+        {isSaving && <LoadingSpinner message="変更を保存中..." />}
       </div>
 
       <BackendSyncContext.Provider value={editActions}>

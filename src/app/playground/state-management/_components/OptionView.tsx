@@ -28,7 +28,7 @@ const OptionView: React.FC<Props> = memo(
     ) => {
       if (event.target.checked) {
         dev.console.log(
-          `設問（${option.questionId}）のデフォルト回答が ${option.id} に設定されました`
+          `設問（${option.questionId}）のデフォルト回答が ${option.id} に変更されました`
         );
         await backendSync.changeDefaultOption(option.questionId, option.id);
       }
