@@ -251,7 +251,6 @@ const Page: React.FC = () => {
 
   return (
     <div>
-      <RenderCount renderCount={renderCount} />
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-0">
         <div>
           <PageTitle title="ラーニングセッション管理" />
