@@ -56,7 +56,6 @@ enum Mode {
 
 const Page: React.FC = () => {
   let accordionValue = undefined;
-  const { renderCount, resetRenderCount } = useRenderCount();
 
   const c_Id = "id";
   const c_Title = "title";
@@ -251,7 +250,6 @@ const Page: React.FC = () => {
 
   return (
     <div>
-      <RenderCount renderCount={renderCount} />
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-0">
         <div>
           <PageTitle title="ラーニングセッション管理" />
