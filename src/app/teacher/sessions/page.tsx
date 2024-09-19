@@ -18,7 +18,6 @@ import { useRouter } from "next/navigation";
 import useAuth from "@/app/_hooks/useAuth";
 import { StatusCodes } from "@/app/_utils/extendedStatusCodes";
 import useConfirmDialog from "@/app/_hooks/useConfirmDialog";
-import { useRenderCount } from "@/app/_hooks/useRenderCount";
 
 // UIコンポーネント
 import PageTitle from "@/app/_components/elements/PageTitle";
