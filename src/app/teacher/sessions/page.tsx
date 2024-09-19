@@ -56,7 +56,6 @@ enum Mode {
 
 const Page: React.FC = () => {
   let accordionValue = undefined;
-  const { renderCount, resetRenderCount } = useRenderCount();
 
   const c_Id = "id";
   const c_Title = "title";
