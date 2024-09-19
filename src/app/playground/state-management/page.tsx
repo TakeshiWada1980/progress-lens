@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useCallback, useMemo } from "react";
 import PageTitle from "@/app/_components/elements/PageTitle";
 import QuestionView from "./_components/QuestionView";
 import { produce, Draft } from "immer";
@@ -8,7 +8,6 @@ import { Question, EditSessionActions } from "./_types/types";
 import { BackendSyncContext } from "./_hooks/useBackendSync";
 import { v4 as uuid } from "uuid";
 import dev from "@/app/_utils/devConsole";
-import { set } from "zod";
 
 const Page: React.FC = () => {
   // prettier-ignore
@@ -26,42 +25,44 @@ const Page: React.FC = () => {
   // setSession(optimisticSession) は、全ての子コンポーネントで再レンダリングが必要なときに実行する
   const optimisticSession = useRef<Question[]>([...questions]);
 
-  // バックエンドとの同期は全てココで実行する
-  const editActions: EditSessionActions = {
-    // 設問タイトルの更新
-    updateQuestionTitle: async (id, title) => {
-      optimisticSession.current = produce(
-        optimisticSession.current,
-        (draft: Draft<Question[]>) => {
-          const target = draft.find((question) => question.id === id);
-          if (!target) throw new Error(`Question (id=${id}) not found.`);
-          target.title = title;
-          target.compareKey = uuid();
-        }
-      );
-      // dummy 実際はここでバックエンドに送信
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-    },
+  const reRender = useCallback(() => {
+    dev.console.log(JSON.stringify(optimisticSession, null, 2));
+    setQuestions(optimisticSession.current);
+  }, []);
 
-    // 選択肢タイトルの更新
-    updateOptionTitle: async (id, title) => {
-      optimisticSession.current = produce(
-        optimisticSession.current,
-        (draft: Draft<Question[]>) => {
-          const target = draft
-            .flatMap((q) => q.options)
-            .find((o) => o.id === id);
-          if (!target) throw new Error(`Option (id=${id}) not found.`);
-          target.title = title;
-          target.compareKey = uuid();
-        }
-      );
-      // dummy 実際はここでバックエンドに送信
-      await new Promise((resolve) => setTimeout(resolve, 2000)); //dummy
-    },
+  // フロントエンドとバックエンドの同期処理は、このPageコンポーネントで実施する
+  // 以下、EditSessionActions で定義された各関数の実装
+  const updateQuestionTitle = useCallback(async (id: string, title: string) => {
+    optimisticSession.current = produce(
+      optimisticSession.current,
+      (draft: Draft<Question[]>) => {
+        const target = draft.find((question) => question.id === id);
+        if (!target) throw new Error(`Question (id=${id}) not found.`);
+        target.title = title;
+        target.compareKey = uuid();
+      }
+    );
+    // [PUT] /api/v1/teacher/questions/[id]/title
+    await new Promise((resolve) => setTimeout(resolve, 2000)); // Dummy
+    // 通信負荷・描画負荷の軽減のために基本的に再検証はしない（各コンポーネントの楽観的UI更新を信頼）
+  }, []);
 
-    // デフォルト選択肢の更新
-    changeDefaultOption: async (questionId, optionId) => {
+  const updateOptionTitle = useCallback(async (id: string, title: string) => {
+    optimisticSession.current = produce(
+      optimisticSession.current,
+      (draft: Draft<Question[]>) => {
+        const target = draft.flatMap((q) => q.options).find((o) => o.id === id);
+        if (!target) throw new Error(`Option (id=${id}) not found.`);
+        target.title = title;
+        target.compareKey = uuid();
+      }
+    );
+    // [PUT] /api/v1/teacher/options/[id]/title
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+  }, []);
+
+  const changeDefaultOption = useCallback(
+    async (questionId: string, optionId: string) => {
       optimisticSession.current = produce(
         optimisticSession.current,
         (draft: Draft<Question[]>) => {
@@ -72,11 +73,14 @@ const Page: React.FC = () => {
           target.compareKey = uuid();
         }
       );
-      await new Promise((resolve) => setTimeout(resolve, 2000)); //dummy
+      // [PUT] /api/v1/teacher/options/[id]/default-option
+      await new Promise((resolve) => setTimeout(resolve, 2000));
     },
+    []
+  );
 
-    // 設問の削除
-    deleteQuestion: async (id) => {
+  const deleteQuestion = useCallback(
+    async (id: string) => {
       optimisticSession.current = produce(
         optimisticSession.current,
         (draft: Draft<Question[]>) => {
@@ -85,42 +89,70 @@ const Page: React.FC = () => {
           draft.splice(index, 1);
         }
       );
-      // この処理は楽観的UI更新（＝子コンポーネント自身によるUI更新）ができないため
-      // setQuestions を実行して全ての子コンポーネントを再レンダリングすることでUIを更新
+      // この処理は楽観的UI更新（＝子コンポーネント自身によるUI更新）が不可能なため
+      // setQuestions の実行により、全ての子コンポーネントを再レンダリングしてUIを更新
       setQuestions(optimisticSession.current);
-      await new Promise((resolve) => setTimeout(resolve, 2000)); //dummy
-    },
 
-    // 設問の追加
-    addQuestion: async () => {
-      const newQuestion: Question = {
-        id: String(nextQuestionIdNum.current),
-        title: `設問${nextQuestionIdNum.current}`,
-        compareKey: uuid(),
-        defaultOptionId: `${nextQuestionIdNum.current}-1`,
-        // prettier-ignore
-        options: [
-          { id: `${nextQuestionIdNum.current}-1`, title: "A", 
-            questionId: String(nextQuestionIdNum.current), compareKey: uuid() },
-          { id: `${nextQuestionIdNum.current}-2`, title: "B", 
-            questionId: String(nextQuestionIdNum.current), compareKey: uuid() },
-          { id: `${nextQuestionIdNum.current}-3`, title: "C", 
-            questionId: String(nextQuestionIdNum.current), compareKey: uuid() },
-        ],
-      };
-      nextQuestionIdNum.current++;
-      optimisticSession.current = produce(
-        optimisticSession.current,
-        (draft: Draft<Question[]>) => {
-          draft.push(newQuestion);
-        }
-      );
-      // この処理は楽観的UI更新（＝子コンポーネント自身によるUI更新）ができないため
-      // setQuestions を実行して全ての子コンポーネントを再レンダリングすることでUIを更新
-      setQuestions(optimisticSession.current);
-      await new Promise((resolve) => setTimeout(resolve, 2000)); //dummy
+      // [DELETE] /api/v1/teacher/questions/[id]
+      await new Promise((resolve) => setTimeout(resolve, 2000)); // Dummy
     },
-  };
+    [setQuestions]
+  );
+
+  const addQuestion = useCallback(async () => {
+    const newQuestion: Question = {
+      id: String(nextQuestionIdNum.current),
+      title: `設問${nextQuestionIdNum.current}`,
+      compareKey: uuid(),
+      defaultOptionId: `${nextQuestionIdNum.current}-1`,
+      options: [
+        {
+          id: `${nextQuestionIdNum.current}-1`,
+          title: "A",
+          questionId: String(nextQuestionIdNum.current),
+          compareKey: uuid(),
+        },
+        {
+          id: `${nextQuestionIdNum.current}-2`,
+          title: "B",
+          questionId: String(nextQuestionIdNum.current),
+          compareKey: uuid(),
+        },
+        {
+          id: `${nextQuestionIdNum.current}-3`,
+          title: "C",
+          questionId: String(nextQuestionIdNum.current),
+          compareKey: uuid(),
+        },
+      ],
+    };
+    nextQuestionIdNum.current++;
+    optimisticSession.current = produce(
+      optimisticSession.current,
+      (draft: Draft<Question[]>) => {
+        draft.push(newQuestion);
+      }
+    );
+    setQuestions(optimisticSession.current);
+
+    // [POST] /api/v1/teacher/sessions/[id]/add-question
+    // 本来は、設問IDはバックエンドで生成するべきものなので、ここではAPIを叩いて、
+    // レスを受け取り、optimisticSession.current = produce(...) して
+    // setQuestions(optimisticSession.current) を実行する
+    await new Promise((resolve) => setTimeout(resolve, 2000)); // Dummy
+  }, [setQuestions]);
+
+  const editActions: EditSessionActions = useMemo(
+    () => ({
+      updateQuestionTitle,
+      updateOptionTitle,
+      changeDefaultOption,
+      deleteQuestion,
+      addQuestion,
+    }),
+    // prettier-ignore
+    [updateQuestionTitle,updateOptionTitle,changeDefaultOption,deleteQuestion,addQuestion,]
+  );
 
   return (
     <div>
@@ -136,7 +168,7 @@ const Page: React.FC = () => {
 
         <button
           className="rounded-md border px-3 py-1 text-sm"
-          onClick={() => setQuestions(optimisticSession.current)}
+          onClick={reRender}
         >
           強制・再レンダリング
         </button>

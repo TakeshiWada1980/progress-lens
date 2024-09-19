@@ -19,13 +19,14 @@ const QuestionView: React.FC<Props> = memo(
     const [title, setTitle] = useState(question.title);
 
     const updateTitle = async () => {
-      const newTitle = title + "+";
-      setTitle(newTitle); // 楽観的UI更新
-      await backendSync.updateQuestionTitle(question.id, newTitle); // バックエンド同期
+      dev.console.log(
+        `設問（${question.id}）のタイトルを「${title}」に変更しました`
+      );
+      await backendSync.updateQuestionTitle(question.id, title); // バックエンド同期
     };
 
     const deleteQuestion = async () => {
-      console.log(`設問（${question.id}）を削除しました`);
+      dev.console.log(`設問（${question.id}）を削除しました`);
       await backendSync.deleteQuestion(question.id); // バックエンド同期
     };
 
@@ -33,15 +34,16 @@ const QuestionView: React.FC<Props> = memo(
       <div className="m-1 border p-1">
         <RenderCount />
         <div className="flex items-center space-x-2">
-          <div>
-            {title}（id: {question.id}）
+          <div className="text-sm text-blue-500">
+            id=&quot;{question.id}&quot;
           </div>
-          <button
-            className="rounded-md border px-3 py-1 text-sm"
-            onClick={updateTitle}
-          >
-            タイトルを変更
-          </button>
+          <input
+            type="text"
+            value={title}
+            className="rounded-md border px-1"
+            onChange={(e) => setTitle(e.target.value)}
+            onBlur={updateTitle}
+          />
           <button
             className="rounded-md border px-3 py-1 text-sm"
             onClick={deleteQuestion}

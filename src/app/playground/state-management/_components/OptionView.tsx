@@ -17,16 +17,17 @@ const OptionView: React.FC<Props> = memo(
     const [title, setTitle] = useState(option.title);
 
     const updateTitle = async () => {
-      const newTitle = title + "+";
-      setTitle(newTitle); // 楽観的UI更新
-      await backendSync.updateOptionTitle(option.id, newTitle); // バックエンドに送信
+      dev.console.log(
+        `選択肢（${option.id}）の見出しを「${title}」に変更しました`
+      );
+      await backendSync.updateOptionTitle(option.id, title); // バックエンドに送信
     };
 
     const changeDefaultOption = async (
       event: React.ChangeEvent<HTMLInputElement>
     ) => {
       if (event.target.checked) {
-        console.log(
+        dev.console.log(
           `設問（${option.questionId}）のデフォルト回答が ${option.id} に設定されました`
         );
         await backendSync.changeDefaultOption(option.questionId, option.id);
@@ -37,16 +38,17 @@ const OptionView: React.FC<Props> = memo(
       <div className="m-1 border p-1">
         <RenderCount />
         <div className="flex space-x-3">
-          <div className="flex items-center">
-            <div>
-              {title}（id: {option.id}）
+          <div className="flex items-center space-x-2">
+            <div className="text-sm text-blue-500">
+              id=&quot;{option.id}&quot;
             </div>
-            <button
-              className="rounded-md border px-3 py-1 text-sm"
-              onClick={updateTitle}
-            >
-              タイトルを変更
-            </button>
+            <input
+              type="text"
+              value={title}
+              className="rounded-md border px-1"
+              onChange={(e) => setTitle(e.target.value)}
+              onBlur={updateTitle}
+            />
           </div>
           <div className="flex items-center space-x-1">
             <input
