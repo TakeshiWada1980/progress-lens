@@ -117,3 +117,65 @@ export interface OptionEditModel {
   rewardPoint: number;
   effect: boolean;
 }
+
+///////////////////////////////////////////////////////////////
+
+export interface UpdateOptionTitleRequest {
+  id: string;
+  title: string;
+}
+
+// export interface UpdateDefaultOptionRequest {
+//   questionId: string;
+//   optionId: string;
+// }
+
+// export interface UpdateQuestionTitleRequest {
+//   id: string;
+//   title: string;
+// }
+
+// export const updateQuestionTitleSchema = z.object({
+//   id: z.string().refine(isCUID, {
+//     message: "Invalid CUID format.",
+//   }),
+//   title: z
+//     .string()
+//     .min(1, requiredMsg)
+//     .max(30, "30文字以内で入力してください。")
+//     .transform((v) => v.trim())
+//     .refine((v) => v.length >= 3, {
+//       message:
+//         "必須入力項目です。前後の空白文字を除いて 3文字以上 を入力してください。",
+//     }),
+// });
+
+export interface UpdateQuestionRequest {
+  id: string;
+  title?: string;
+  defaultOptionId?: string;
+  description?: string;
+}
+
+export const updateQuestionSchema = z.object({
+  id: z.string().refine(isCUID, {
+    message: "Invalid CUID format.",
+  }),
+  title: z
+    .string()
+    .min(1, requiredMsg)
+    .max(30, "30文字以内で入力してください。")
+    .transform((v) => v.trim())
+    .refine((v) => v.length >= 3, {
+      message:
+        "必須入力項目です。前後の空白文字を除いて 3文字以上 を入力してください。",
+    })
+    .optional(),
+  defaultOptionId: z
+    .string()
+    .refine(isCUID, {
+      message: "Invalid CUID format.",
+    })
+    .optional(),
+  description: z.string().optional(),
+});

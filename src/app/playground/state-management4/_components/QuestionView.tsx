@@ -24,22 +24,24 @@ import { UpdateQuestionRequest } from "@/app/_types/SessionTypes";
 import { createPutRequest } from "@/app/_utils/createApiRequest";
 import useAuth from "@/app/_hooks/useAuth";
 import { useExitInputOnEnter } from "@/app/_hooks/useExitInputOnEnter";
+import { useStateManagement } from "../_hooks/useStateManagement";
 
 type Props = {
   question: Question;
   getOptimisticLatestData: () => Question[] | undefined;
-  mutate: KeyedMutator<ApiResponse<Question[]>>;
+  // mutate: KeyedMutator<ApiResponse<Question[]>>;
 };
 
 // memoでラップすることで、親コンポーネントに連鎖する再レンダリングを抑制し
 // Props (compareKey属性) が変更されたときだけ 再レンダリング されるようにしている
 const QuestionView: React.FC<Props> = memo(
-  ({ question, getOptimisticLatestData, mutate }) => {
+  ({ question, getOptimisticLatestData }) => {
     let id = question.id;
     const [title, setTitle] = useState(question.title);
     const prevTitle = useRef(question.title);
     const { apiRequestHeader } = useAuth();
     const exitInputOnEnter = useExitInputOnEnter();
+    const { mutate } = useStateManagement();
 
     // prettier-ignore
     const putApiCaller = useMemo(() => createPutRequest<UpdateQuestionRequest, ApiResponse<null>>(),[]);
@@ -160,7 +162,7 @@ const QuestionView: React.FC<Props> = memo(
               option={option}
               isDefaultSelected={option.id === question.defaultOptionId}
               getOptimisticLatestData={getOptimisticLatestData}
-              mutate={mutate}
+              // mutate={mutate}
               onUpdateDefaultOption={publishUpdateDefaultOption}
             />
           ))}

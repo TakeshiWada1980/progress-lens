@@ -11,8 +11,6 @@ import {
   isAccessCode,
 } from "@/app/_types/SessionTypes";
 import AppErrorCode from "@/app/_types/AppErrorCode";
-import { Description } from "@radix-ui/react-dialog";
-import { title } from "process";
 
 ///////////////////////////////////////////////////////////////
 
@@ -310,15 +308,21 @@ class SessionService {
     })) as PRS.LearningSessionGetPayload<{ include: T; select: U }>[];
   }
 
-  // 基本情報（title,isActive）の更新 セッションの存在は確認済みであること
+  /**
+   * ラーニングセッションの基本情報（title,isActive）の更新
+   * @param sessionId 呼び出し元で有効性を保証すべきセッションID
+   * @param data バリデーション済みの更新データ
+   * @note dataに id が含まれていても内部処理で無視するので問題ない
+   */
   @withErrorHandling()
   public async update(
     sessionId: string,
     data: UpdateSessionRequest
   ): Promise<void> {
+    const { id, ...updateData } = data; // id は更新させない
     await this.prisma.learningSession.update({
       where: { id: sessionId },
-      data: { ...data },
+      data: { ...updateData },
     });
   }
 

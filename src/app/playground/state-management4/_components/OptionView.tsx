@@ -12,12 +12,13 @@ import { KeyedMutator } from "swr";
 import { ApiResponse } from "@/app/_types/ApiResponse";
 import { UpdateQuestionRequest } from "@/app/_types/SessionTypes";
 import { useExitInputOnEnter } from "@/app/_hooks/useExitInputOnEnter";
+import { useStateManagement } from "../_hooks/useStateManagement";
 
 type Props = {
   option: Option;
   isDefaultSelected: boolean;
   getOptimisticLatestData: () => Question[] | undefined;
-  mutate: KeyedMutator<ApiResponse<Question[]>>;
+  // mutate: KeyedMutator<ApiResponse<Question[]>>;
   onUpdateDefaultOption: (req: UpdateQuestionRequest) => void;
 };
 
@@ -26,13 +27,14 @@ const OptionView: React.FC<Props> = memo(
     option,
     isDefaultSelected,
     getOptimisticLatestData,
-    mutate,
+    // mutate,
     onUpdateDefaultOption,
   }) => {
     const id = option.id;
     const [title, setTitle] = useState(option.title);
     const prevTitle = useRef(option.title);
     const exitInputOnEnter = useExitInputOnEnter();
+    const { mutate } = useStateManagement();
 
     //【回答選択肢タイトルの変更】
     const updateTitle = async () => {
