@@ -36,8 +36,14 @@ const Home: React.FC = () => {
         </li>
         <li>
           <Link
-            href="/playground/state-management"
-            label="/playground/state-management"
+            href="/playground/state-management3"
+            label="/playground/state-management3"
+          />
+        </li>
+        <li>
+          <Link
+            href="/playground/state-management5"
+            label="/playground/state-management5"
           />
         </li>
       </ul>

@@ -14,14 +14,18 @@ import prisma from "@/lib/prisma";
 import { getAuthUser } from "@/app/api/_helpers/getAuthUser";
 import UserService from "@/app/_services/userService";
 import SessionService, {
-  forEditQuestionsSchema,
+  forEditSessionSchema,
 } from "@/app/_services/sessionService";
 import { Prisma as PRS } from "@prisma/client";
 
 // 型定義・データ検証関連
+import { v4 as uuid } from "uuid";
 import { Role } from "@/app/_types/UserTypes";
 import { DomainRuleViolationError } from "@/app/_services/servicesExceptions";
 import {
+  SessionEditableFields,
+  QuestionEditFields,
+  OptionEditFields,
   UpdateSessionRequest,
   updateSessionRequestSchema,
 } from "@/app/_types/SessionTypes";
@@ -37,33 +41,51 @@ export const GET = async (req: NextRequest, { params: { id } }: Params) => {
   const sessionId = id;
 
   try {
-    // トークンが不正なときは InvalidTokenError がスローされる
-    const authUser = await getAuthUser(req);
+    // prettier-ignore
+    // セッションの所有権と操作権限を確認
+    await verifySessionOwnershipAndPermissions(req, sessionId, userService, sessionService);
 
-    // ユーザが存在しない場合は UserService.NotFoundError がスローされる
-    const appUser = await userService.getById(authUser.id);
-
-    // ユーザーが 教員 または 管理者 のロールを持たない場合は Error がスローされる
-    if (appUser.role === Role.STUDENT) {
-      throw new NonTeacherOperationError(appUser.id, appUser.displayName);
-    }
-
-    // セッションが存在しない場合は Error がスローされる
     const session = (await sessionService.getById(
       sessionId,
-      forEditQuestionsSchema
-    )) as PRS.LearningSessionGetPayload<typeof forEditQuestionsSchema>;
+      forEditSessionSchema
+    )) as PRS.LearningSessionGetPayload<typeof forEditSessionSchema>;
 
-    // セッションが appUser の所有であるかを確認
-    if (session.teacherId !== appUser.id) {
-      throw new DomainRuleViolationError(
-        `${appUser.displayName} は、SessionID: ${sessionId} の削除権限を持ちません。`,
-        { userId: appUser.id, userDisplayName: appUser.displayName, sessionId }
-      );
-    }
+    const res: SessionEditableFields = {
+      id: session.id,
+      title: session.title,
+      accessCode: session.accessCode,
+      isActive: session.isActive,
+      teacherId: session.teacherId,
+      compareKey: uuid(),
+      questions: session.questions.map((q): QuestionEditFields => {
+        return {
+          id: q.id,
+          order: q.order,
+          title: q.title,
+          description: q.description,
+          defaultOptionId: q.defaultOptionId,
+          compareKey: uuid(),
+          options: q.options.map((o): OptionEditFields => {
+            return {
+              id: o.id,
+              order: o.order,
+              title: o.title,
+              questionId: o.questionId,
+              description: o.description,
+              rewardMessage: o.rewardMessage ?? "",
+              rewardPoint: o.rewardPoint,
+              effect: o.effect,
+              compareKey: uuid(),
+            };
+          }),
+        } as QuestionEditFields;
+      }),
+    };
 
     return NextResponse.json(
-      new SuccessResponseBuilder(session).setHttpStatus(StatusCodes.OK).build()
+      new SuccessResponseBuilder<SessionEditableFields>(res)
+        .setHttpStatus(StatusCodes.OK)
+        .build()
     );
   } catch (error: any) {
     const payload = createErrorResponse(error);
@@ -80,27 +102,32 @@ export const PUT = async (req: NextRequest, { params: { id } }: Params) => {
   let reqBody: any;
 
   try {
-    // トークンが不正なときは InvalidTokenError がスローされる
-    const authUser = await getAuthUser(req);
+    // prettier-ignore
+    // セッションの所有権と操作権限を確認
+    await verifySessionOwnershipAndPermissions(req, sessionId, userService, sessionService);
 
-    // ユーザが存在しない場合は UserService.NotFoundError がスローされる
-    const appUser = await userService.getById(authUser.id);
+    // TODO: 検証後に消す
+    // // トークンが不正なときは InvalidTokenError がスローされる
+    // const authUser = await getAuthUser(req);
 
-    // ユーザーが 教員 または 管理者 のロールを持たない場合は Error がスローされる
-    if (appUser.role === Role.STUDENT) {
-      throw new NonTeacherOperationError(appUser.id, appUser.displayName);
-    }
+    // // ユーザが存在しない場合は UserService.NotFoundError がスローされる
+    // const appUser = await userService.getById(authUser.id);
 
-    // セッションが存在しない場合は Error がスローされる
-    const session = await sessionService.getById(sessionId);
+    // // ユーザーが 教員 または 管理者 のロールを持たない場合は Error がスローされる
+    // if (appUser.role === Role.STUDENT) {
+    //   throw new NonTeacherOperationError(appUser.id, appUser.displayName);
+    // }
 
-    // セッションが appUser の所有であるかを確認
-    if (session.teacherId !== appUser.id) {
-      throw new DomainRuleViolationError(
-        `${appUser.displayName} は、SessionID: ${sessionId} の削除権限を持ちません。`,
-        { userId: appUser.id, userDisplayName: appUser.displayName, sessionId }
-      );
-    }
+    // // セッションが存在しない場合は Error がスローされる
+    // const session = await sessionService.getById(sessionId);
+
+    // // セッションが appUser の所有であるかを確認
+    // if (session.teacherId !== appUser.id) {
+    //   throw new DomainRuleViolationError(
+    //     `${appUser.displayName} は、SessionID: ${sessionId} の削除権限を持ちません。`,
+    //     { userId: appUser.id, userDisplayName: appUser.displayName, sessionId }
+    //   );
+    // }
 
     // リクエストボディの検証
     reqBody = await req.json();
@@ -128,27 +155,9 @@ export const DELETE = async (req: NextRequest, { params: { id } }: Params) => {
   const sessionId = id;
 
   try {
-    // トークンが不正なときは InvalidTokenError がスローされる
-    const authUser = await getAuthUser(req);
-
-    // ユーザが存在しない場合は UserService.NotFoundError がスローされる
-    const appUser = await userService.getById(authUser.id);
-
-    // ユーザーが 教員 または 管理者 のロールを持たない場合は Error がスローされる
-    if (appUser.role === Role.STUDENT) {
-      throw new NonTeacherOperationError(appUser.id, appUser.displayName);
-    }
-
-    // セッションが存在しない場合は Error がスローされる
-    const session = await sessionService.getById(sessionId);
-
-    // セッションが appUser の所有であるかを確認
-    if (session.teacherId !== appUser.id) {
-      throw new DomainRuleViolationError(
-        `${appUser.displayName} は、SessionID: ${sessionId} の削除権限を持ちません。`,
-        { userId: appUser.id, userDisplayName: appUser.displayName, sessionId }
-      );
-    }
+    // prettier-ignore
+    // セッションの所有権と操作権限を確認
+    await verifySessionOwnershipAndPermissions(req, sessionId, userService, sessionService);
 
     // 削除処理の実行
     await sessionService.delete(sessionId);
@@ -168,4 +177,36 @@ const createErrorResponse = (error: unknown): ApiErrorResponse => {
     return new ErrorResponseBuilder(error).build();
   }
   return new ErrorResponseBuilder().setUnknownError(error).build();
+};
+
+// [共通] セッションの所有権と操作権限を確認
+const verifySessionOwnershipAndPermissions = async (
+  req: NextRequest,
+  sessionId: string,
+  userService: UserService,
+  sessionService: SessionService
+): Promise<{ appUser: any; session: any }> => {
+  // トークンが不正なときは InvalidTokenError がスローされる
+  const authUser = await getAuthUser(req);
+
+  // ユーザが存在しない場合は UserService.NotFoundError がスローされる
+  const appUser = await userService.getById(authUser.id);
+
+  // ユーザーが 教員 または 管理者 のロールを持たない場合は Error がスローされる
+  if (appUser.role === Role.STUDENT) {
+    throw new NonTeacherOperationError(appUser.id, appUser.displayName);
+  }
+
+  // セッションが存在しない場合は Error がスローされる
+  const session = await sessionService.getById(sessionId);
+
+  // セッションが appUser の所有であるかを確認
+  if (session.teacherId !== appUser.id) {
+    throw new DomainRuleViolationError(
+      `${appUser.displayName} は、SessionID: ${sessionId} の削除権限を持ちません。`,
+      { userId: appUser.id, userDisplayName: appUser.displayName, sessionId }
+    );
+  }
+
+  return { appUser, session };
 };

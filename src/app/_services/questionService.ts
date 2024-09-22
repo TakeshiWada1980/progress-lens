@@ -3,13 +3,24 @@ import { optionSetSize } from "@/config/app-config";
 import type { Question } from "@prisma/client";
 import { withErrorHandling } from "@/app/_services/servicesExceptions";
 import { Prisma as PRS } from "@prisma/client";
-import { type UpdateQuestionRequest } from "@/app/_types/SessionTypes";
+import {
+  type UpdateQuestionRequest,
+  type UpdateOptionRequest,
+} from "@/app/_types/SessionTypes";
 
 ///////////////////////////////////////////////////////////////
 
 export type QuestionReturnType<
   T extends PRS.QuestionInclude,
   U extends PRS.QuestionSelect
+> = {
+  include?: T;
+  select?: U;
+};
+
+export type OptionReturnType<
+  T extends PRS.OptionInclude,
+  U extends PRS.OptionSelect
 > = {
   include?: T;
   select?: U;
@@ -22,6 +33,26 @@ export const forUpdateQuestionSchema = {
     session: {
       select: {
         teacherId: true,
+      },
+    },
+    options: {
+      select: {
+        id: true,
+      },
+    },
+  },
+} as const;
+
+export const forUpdateOptionSchema = {
+  include: {
+    question: {
+      select: {
+        id: true,
+        session: {
+          select: {
+            teacherId: true,
+          },
+        },
       },
     },
   },
@@ -60,7 +91,7 @@ class QuestionService {
 
   /**
    * Idによる設問（単数）の取得
-   * @param id 呼び出し元で有効性を【保証不要】のセッションID
+   * @param id 呼び出し元で有効性を【保証不要】の設問ID
    * @param options include / selectの指定
    * @note 該当なしは例外をスロー
    */
@@ -82,20 +113,61 @@ class QuestionService {
   }
 
   /**
+   * Idによる回答選択肢（単数）の取得
+   * @param id 呼び出し元で有効性を【保証不要】の回答選択肢ID
+   * @param options include / selectの指定
+   * @note 該当なしは例外をスロー
+   */
+  @withErrorHandling()
+  public async getOptionById<
+    T extends PRS.OptionInclude,
+    U extends PRS.OptionSelect
+  >(
+    id: string,
+    options?: OptionReturnType<T, U>
+  ): Promise<PRS.OptionGetPayload<{ include: T; select: U }>> {
+    return await this.withTransaction(async (client) => {
+      const question = (await client.option.findUniqueOrThrow({
+        where: { id: id },
+        ...options,
+      })) as PRS.OptionGetPayload<{ include: T; select: U }>;
+      return question;
+    });
+  }
+
+  /**
    * 設問の基本情報の更新
    * @param questionId 呼び出し元で有効性を保証すべきセッションID
    * @param data バリデーション済みの更新データ
-   * @note dataに id が含まれていても内部処理で無視するので問題ない
+   * @note dataに id を含むが、これは更新対象から除外する実装になっている
    */
   @withErrorHandling()
   public async update(
     questionId: string,
     data: UpdateQuestionRequest
   ): Promise<void> {
-    const { id, ...updateData } = data; // id は更新させない
+    const { id, ...updateData } = data; // id を除外する
     await this.prisma.question.update({
       where: { id: questionId },
-      data: { ...data },
+      data: { ...updateData },
+    });
+  }
+
+  /**
+   * 回答選択肢の基本情報の更新
+   * @param optionId 呼び出し元で有効性を保証すべきセッションID
+   * @param data バリデーション済みの更新データ
+   * @note dataに id を含むが、これは更新対象から除外する実装になっている
+   */
+  @withErrorHandling()
+  public async updateOption(
+    optionId: string,
+    data: UpdateOptionRequest
+  ): Promise<void> {
+    const { id, ...updateData } = data; // id を除外する
+    await this.prisma.option.update({
+      where: { id: optionId },
+      data: { ...updateData },
     });
   }
 

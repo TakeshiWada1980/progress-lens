@@ -71,7 +71,7 @@ export const forGetAllByStudentIdSchema = {
   },
 } as const;
 
-export const forEditQuestionsSchema = {
+export const forEditSessionSchema = {
   select: {
     id: true,
     title: true,
@@ -90,6 +90,7 @@ export const forEditQuestionsSchema = {
             id: true,
             order: true,
             title: true,
+            questionId: true,
             description: true,
             rewardMessage: true,
             rewardPoint: true,

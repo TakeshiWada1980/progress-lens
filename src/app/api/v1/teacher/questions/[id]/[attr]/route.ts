@@ -7,6 +7,7 @@ import { StatusCodes } from "@/app/_utils/extendedStatusCodes";
 import {
   ApiError,
   NonTeacherOperationError,
+  BadRequestError,
 } from "@/app/api/_helpers/apiExceptions";
 
 // ユーザ認証・サービスクラス関係
@@ -20,7 +21,6 @@ import { Prisma as PRS } from "@prisma/client";
 
 // 型定義・データ検証関連
 import { Role } from "@/app/_types/UserTypes";
-import { DomainRuleViolationError } from "@/app/_services/servicesExceptions";
 import {
   UpdateQuestionRequest,
   updateQuestionSchema,
@@ -28,13 +28,24 @@ import {
 
 export const revalidate = 0; // キャッシュを無効化
 
-type Params = { params: { id: string } };
+const Attr = {
+  title: "title",
+  defaultOptionId: "default-option-id",
+} as const;
+type Attr = (typeof Attr)[keyof typeof Attr];
 
-// [PUT] /api/v1/teacher/questions/[id]/title
-export const PUT = async (req: NextRequest, { params: { id } }: Params) => {
+const requiredFields: Record<Attr, keyof UpdateQuestionRequest> = {
+  [Attr.title]: Attr.title,
+  [Attr.defaultOptionId]: "defaultOptionId",
+};
+
+type Params = { params: { id: string; attr: Attr } };
+
+// [PUT] /api/v1/teacher/questions/[id]/[attr]
+export const PUT = async (req: NextRequest, { params }: Params) => {
+  const { id: questionId, attr } = params;
   const userService = new UserService(prisma);
   const questionService = new QuestionService(prisma);
-  const questionId = id;
   let reqBody: any;
 
   try {
@@ -57,29 +68,56 @@ export const PUT = async (req: NextRequest, { params: { id } }: Params) => {
 
     // 設問が appUser の所有であるかを確認
     if (question.session.teacherId !== appUser.id) {
-      throw new DomainRuleViolationError(
+      throw new BadRequestError(
         `${appUser.displayName} は、QuestionID: ${questionId} の編集権限を持ちません。`,
         { userId: appUser.id, userDisplayName: appUser.displayName, questionId }
       );
     }
 
-    // リクエストボディの基本検証
+    // リクエストボディの基本検証 問題があれば ZodValidationError がスローされる
     reqBody = await req.json();
-    const updateQuestionTitleRequest = updateQuestionSchema.parse(reqBody);
-    // title が存在することを確認
-    if (!updateQuestionTitleRequest.title) {
-      throw new DomainRuleViolationError("title は必須入力項目です。", {
-        userId: appUser.id,
-        userDisplayName: appUser.displayName,
-        questionId,
+    const updateQuestionRequest = updateQuestionSchema.parse(reqBody);
+
+    // URLとBodyのIDが一致することを確認
+    if (questionId !== updateQuestionRequest.id) {
+      throw new BadRequestError(`URLとリクエストボディの ID が一致しません。`, {
+        urlId: questionId,
+        bodyId: updateQuestionRequest.id,
       });
     }
 
+    // defaultOptionId に関するチェック
+    if (attr === Attr.defaultOptionId) {
+      // prettier-ignore
+      if (!question.options.map((o) => o.id).includes(updateQuestionRequest.defaultOptionId!)) {
+        throw new BadRequestError(`指定の defaultOptionId は、当該設問の選択肢に存在しません`, reqBody);
+      }
+    }
+
+    // パスに応じた必須属性の検証
+    // 例えば /teacher/questions/[id]/title なら title 属性が必須
+    if (!updateQuestionRequest[requiredFields[attr]]) {
+      throw new BadRequestError(
+        `エンドポイント ${req.nextUrl.pathname} に対するリクエストボディに ${attr} は必須です。`,
+        reqBody
+      );
+    }
+
     // 更新処理の実行
-    await questionService.update(questionId, {
-      id: questionId,
-      title: updateQuestionTitleRequest.title.trim(),
-    });
+    switch (attr) {
+      case Attr.title:
+        await questionService.update(questionId, {
+          id: questionId,
+          title: updateQuestionRequest.title,
+        });
+        break;
+      case Attr.defaultOptionId:
+        await questionService.update(questionId, {
+          id: questionId,
+          defaultOptionId: updateQuestionRequest.defaultOptionId,
+        });
+        break;
+    }
 
     return NextResponse.json(
       new SuccessResponseBuilder(null).setHttpStatus(StatusCodes.OK).build()

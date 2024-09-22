@@ -162,6 +162,8 @@ const ProfileUpdateForm: React.FC<Props> = ({ disabled, email }) => {
             </div>
           </div>
           <ActionButton
+            tabIndex={-1}
+            type="button"
             variant="delete"
             className="px-2 py-1 text-sm"
             onClick={avatarDeleteAction}
@@ -181,6 +183,7 @@ const ProfileUpdateForm: React.FC<Props> = ({ disabled, email }) => {
           Role
         </label>
         <TextInputField
+          tabIndex={-1}
           id={c_Role}
           type="text"
           value={roleValue}
@@ -195,6 +198,7 @@ const ProfileUpdateForm: React.FC<Props> = ({ disabled, email }) => {
           メールアドレス（ログインID）
         </label>
         <TextInputField
+          tabIndex={-1}
           id={c_Mail}
           type="text"
           value={email}
@@ -224,6 +228,7 @@ const ProfileUpdateForm: React.FC<Props> = ({ disabled, email }) => {
           AvatarImageKey (Debug)
         </label>
         <TextInputField
+          tabIndex={-1}
           {...register(c_AvatarImgKey)}
           id={c_AvatarImgKey}
           type="text"
@@ -242,6 +247,7 @@ const ProfileUpdateForm: React.FC<Props> = ({ disabled, email }) => {
           AvatarImageUrl (Debug)
         </label>
         <TextInputField
+          tabIndex={-1}
           {...register(c_AvatarImgUrl)}
           id={c_AvatarImgUrl}
           type="text"

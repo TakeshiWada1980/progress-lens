@@ -64,9 +64,9 @@ const Page: React.FC = () => {
     mutate(undefined);
   };
 
-  if (!data?.data) return <LoadingPage />;
+  if (!data) return <LoadingPage />;
 
-  const questions = data.data;
+  const questions = data.data!;
   dataRef.current = questions;
   const getOptimisticLatestData = () => {
     return dataRef.current;

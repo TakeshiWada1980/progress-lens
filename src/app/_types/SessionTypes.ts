@@ -27,6 +27,40 @@ export interface SessionSummary {
 
 ///////////////////////////////////////////////////////////////
 
+export interface SessionEditableFields {
+  id: string;
+  title: string;
+  accessCode: string;
+  isActive: boolean;
+  teacherId: string;
+  questions: QuestionEditFields[];
+  compareKey?: string;
+}
+
+export interface QuestionEditFields {
+  id: string;
+  order: number;
+  title: string;
+  description: string;
+  defaultOptionId: string;
+  options: OptionEditFields[];
+  compareKey?: string;
+}
+
+export interface OptionEditFields {
+  id: string;
+  questionId: string;
+  order: number;
+  title: string;
+  description: string;
+  rewardMessage: string;
+  rewardPoint: number;
+  effect: boolean;
+  compareKey?: string;
+}
+
+///////////////////////////////////////////////////////////////
+
 export interface CreateSessionRequest {
   title: string;
 }
@@ -90,65 +124,41 @@ export const accessCodeSchema = z.object({
 
 ///////////////////////////////////////////////////////////////
 
-export interface SessionEditModel {
+export interface UpdateOptionRequest {
   id: string;
-  title: string;
-  accessCode: string;
-  isActive: boolean;
-  teacherId: string;
-  questions: QuestionEditModel[];
-}
-
-export interface QuestionEditModel {
-  id: string;
-  order: number;
-  title: string;
-  description: string;
-  defaultOptionId: string;
-  options: OptionEditModel[];
-}
-
-export interface OptionEditModel {
-  id: string;
-  order: number;
-  title: string;
-  description: string;
+  title?: string;
+  order?: number;
+  description?: string;
   rewardMessage?: string;
-  rewardPoint: number;
-  effect: boolean;
+  rewardPoint?: number;
+  effect?: boolean;
 }
+
+export const updateOptionSchema = z.object({
+  id: z.string().refine(isCUID, {
+    message: "Invalid CUID format.",
+  }),
+  title: z
+    .string()
+    .min(1, requiredMsg)
+    .max(30, "30文字以内で入力してください。")
+    .transform((v) => v.trim())
+    .refine((v) => v.length >= 2, {
+      message: "前後の空白文字を除いて 2文字以上 を入力してください。",
+    })
+    .optional(),
+  order: z.number().int().min(1, "1以上の整数を入力してください。").optional(),
+  description: z.string().optional(),
+  rewardMessage: z.string().optional(),
+  rewardPoint: z
+    .number()
+    .int()
+    .min(0, "0以上の整数を入力してください。")
+    .optional(),
+  effect: z.boolean().optional(),
+});
 
 ///////////////////////////////////////////////////////////////
-
-export interface UpdateOptionTitleRequest {
-  id: string;
-  title: string;
-}
-
-// export interface UpdateDefaultOptionRequest {
-//   questionId: string;
-//   optionId: string;
-// }
-
-// export interface UpdateQuestionTitleRequest {
-//   id: string;
-//   title: string;
-// }
-
-// export const updateQuestionTitleSchema = z.object({
-//   id: z.string().refine(isCUID, {
-//     message: "Invalid CUID format.",
-//   }),
-//   title: z
-//     .string()
-//     .min(1, requiredMsg)
-//     .max(30, "30文字以内で入力してください。")
-//     .transform((v) => v.trim())
-//     .refine((v) => v.length >= 3, {
-//       message:
-//         "必須入力項目です。前後の空白文字を除いて 3文字以上 を入力してください。",
-//     }),
-// });
 
 export interface UpdateQuestionRequest {
   id: string;
@@ -166,9 +176,8 @@ export const updateQuestionSchema = z.object({
     .min(1, requiredMsg)
     .max(30, "30文字以内で入力してください。")
     .transform((v) => v.trim())
-    .refine((v) => v.length >= 3, {
-      message:
-        "必須入力項目です。前後の空白文字を除いて 3文字以上 を入力してください。",
+    .refine((v) => v.length >= 2, {
+      message: "前後の空白文字を除いて 2文字以上 を入力してください。",
     })
     .optional(),
   defaultOptionId: z
