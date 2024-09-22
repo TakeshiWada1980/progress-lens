@@ -28,22 +28,11 @@ import {
 
 export const revalidate = 0; // キャッシュを無効化
 
-const Attr = {
-  title: "title",
-  defaultOptionId: "default-option-id",
-} as const;
-type Attr = (typeof Attr)[keyof typeof Attr];
+type Params = { params: { id: string } };
 
-const requiredFields: Record<Attr, keyof UpdateQuestionRequest> = {
-  [Attr.title]: Attr.title,
-  [Attr.defaultOptionId]: "defaultOptionId",
-};
-
-type Params = { params: { id: string; attr: Attr } };
-
-// [PUT] /api/v1/teacher/questions/[id]/[attr]
-export const PUT = async (req: NextRequest, { params }: Params) => {
-  const { id: questionId, attr } = params;
+// [DELETE] /api/v1/teacher/questions/[id]
+export const DELETE = async (req: NextRequest, { params }: Params) => {
+  const { id: questionId } = params;
   const userService = new UserService(prisma);
   const questionService = new QuestionService(prisma);
   let reqBody: any;
@@ -69,55 +58,13 @@ export const PUT = async (req: NextRequest, { params }: Params) => {
     // 設問が appUser の所有であるかを確認
     if (question.session.teacherId !== appUser.id) {
       throw new BadRequestError(
-        `${appUser.displayName} は、QuestionID: ${questionId} の編集権限を持ちません。`,
+        `${appUser.displayName} は、QuestionID: ${questionId} の削除権限を持ちません。`,
         { userId: appUser.id, userDisplayName: appUser.displayName, questionId }
       );
     }
 
-    // リクエストボディの基本検証 問題があれば ZodValidationError がスローされる
-    reqBody = await req.json();
-    const updateQuestionRequest = updateQuestionSchema.parse(reqBody);
-
-    // URLとBodyのIDが一致することを確認
-    if (questionId !== updateQuestionRequest.id) {
-      throw new BadRequestError(`URLとリクエストボディの ID が一致しません。`, {
-        urlId: questionId,
-        bodyId: updateQuestionRequest.id,
-      });
-    }
-
-    // defaultOptionId に関するチェック
-    if (attr === Attr.defaultOptionId) {
-      // prettier-ignore
-      if (!question.options.map((o) => o.id).includes(updateQuestionRequest.defaultOptionId!)) {
-        throw new BadRequestError(`指定の defaultOptionId は、当該設問の選択肢に存在しません`, reqBody);
-      }
-    }
-
-    // パスに応じた必須属性の検証
-    // 例えば /teacher/questions/[id]/title なら title 属性が必須
-    if (!updateQuestionRequest[requiredFields[attr]]) {
-      throw new BadRequestError(
-        `エンドポイント ${req.nextUrl.pathname} に対するリクエストボディに ${attr} は必須です。`,
-        reqBody
-      );
-    }
-
-    // 更新処理の実行
-    switch (attr) {
-      case Attr.title:
-        await questionService.update(questionId, {
-          id: questionId,
-          title: updateQuestionRequest.title,
-        });
-        break;
-      case Attr.defaultOptionId:
-        await questionService.update(questionId, {
-          id: questionId,
-          defaultOptionId: updateQuestionRequest.defaultOptionId,
-        });
-        break;
-    }
+    // 削除処理の実行
+    await questionService.delete(questionId);
 
     return NextResponse.json(
       new SuccessResponseBuilder(null).setHttpStatus(StatusCodes.OK).build()

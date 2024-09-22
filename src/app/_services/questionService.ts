@@ -170,10 +170,12 @@ class QuestionService {
     questionId: string,
     data: UpdateQuestionRequest
   ): Promise<void> {
-    const { id, ...updateData } = data; // id を除外する
-    await this.prisma.question.update({
-      where: { id: questionId },
-      data: { ...updateData },
+    await this.withTransaction(async (client) => {
+      const { id, ...updateData } = data; // id を除外する
+      await client.question.update({
+        where: { id: questionId },
+        data: { ...updateData },
+      });
     });
   }
 
@@ -188,16 +190,29 @@ class QuestionService {
     optionId: string,
     data: UpdateOptionRequest
   ): Promise<void> {
-    const { id, ...updateData } = data; // id を除外する
-    await this.prisma.option.update({
-      where: { id: optionId },
-      data: { ...updateData },
+    await this.withTransaction(async (client) => {
+      const { id, ...updateData } = data; // id を除外する
+      await client.option.update({
+        where: { id: optionId },
+        data: { ...updateData },
+      });
+    });
+  }
+
+  /**
+   * 設問の削除
+   * @param questionId 呼び出し元で有効性を保証すべきセッションID
+   */
+  @withErrorHandling()
+  public async delete(questionId: string): Promise<void> {
+    await this.withTransaction(async (client) => {
+      await client.question.delete({ where: { id: questionId } });
     });
   }
 
   // 設問の新規作成・初期化
   @withErrorHandling()
-  public async createQuestion(
+  public async create(
     sessionId: string,
     order: number = 1,
     title: string = "設問01"

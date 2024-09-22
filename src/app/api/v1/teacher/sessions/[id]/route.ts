@@ -24,8 +24,8 @@ import { Role } from "@/app/_types/UserTypes";
 import { DomainRuleViolationError } from "@/app/_services/servicesExceptions";
 import {
   SessionEditableFields,
-  QuestionEditFields,
-  OptionEditFields,
+  QuestionEditableFields,
+  OptionEditableFields,
   UpdateSessionRequest,
   updateSessionRequestSchema,
 } from "@/app/_types/SessionTypes";
@@ -57,28 +57,21 @@ export const GET = async (req: NextRequest, { params: { id } }: Params) => {
       isActive: session.isActive,
       teacherId: session.teacherId,
       compareKey: uuid(),
-      questions: session.questions.map((q): QuestionEditFields => {
+      questions: session.questions.map((q): QuestionEditableFields => {
         return {
           id: q.id,
           order: q.order,
           title: q.title,
           description: q.description,
-          defaultOptionId: q.defaultOptionId,
+          defaultOptionId: q.defaultOptionId!,
           compareKey: uuid(),
-          options: q.options.map((o): OptionEditFields => {
+          options: q.options.map((option): OptionEditableFields => {
             return {
-              id: o.id,
-              order: o.order,
-              title: o.title,
-              questionId: o.questionId,
-              description: o.description,
-              rewardMessage: o.rewardMessage ?? "",
-              rewardPoint: o.rewardPoint,
-              effect: o.effect,
+              ...option,
               compareKey: uuid(),
             };
           }),
-        } as QuestionEditFields;
+        };
       }),
     };
 

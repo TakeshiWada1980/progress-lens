@@ -371,7 +371,7 @@ class SessionService {
 
         // 2. 設問の作成
         const questionService = new QuestionService(tx);
-        await questionService.createQuestion(session.id);
+        await questionService.create(session.id);
       },
       { timeout: 5000 }
     );

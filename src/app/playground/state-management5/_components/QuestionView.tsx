@@ -12,8 +12,7 @@ import { RenderCount } from "@/app/_components/elements/RenderCount";
 import OptionView from "../_components/OptionView";
 import {
   SessionEditableFields,
-  QuestionEditFields,
-  OptionEditFields,
+  QuestionEditableFields,
 } from "@/app/_types/SessionTypes";
 import dev from "@/app/_utils/devConsole";
 import { produce, Draft } from "immer";
@@ -25,12 +24,15 @@ import { ApiResponse } from "@/app/_types/ApiResponse";
 import { Subject } from "rxjs";
 import { debounceTime, throttleTime } from "rxjs/operators";
 import { UpdateQuestionRequest } from "@/app/_types/SessionTypes";
-import { createPutRequest } from "@/app/_utils/createApiRequest";
+import {
+  createPutRequest,
+  createDeleteRequest,
+} from "@/app/_utils/createApiRequest";
 import useAuth from "@/app/_hooks/useAuth";
 import { useExitInputOnEnter } from "@/app/_hooks/useExitInputOnEnter";
 
 type Props = {
-  question: QuestionEditFields;
+  question: QuestionEditableFields;
   getOptimisticLatestData: () => SessionEditableFields | undefined;
   mutate: KeyedMutator<ApiResponse<SessionEditableFields>>;
 };
@@ -47,6 +49,8 @@ const QuestionView: React.FC<Props> = memo(
 
     // prettier-ignore
     const putApiCaller = useMemo(() => createPutRequest<UpdateQuestionRequest, ApiResponse<null>>(),[]);
+    // prettier-ignore
+    const deleteApiCaller = useMemo(() => createDeleteRequest<ApiResponse<null>>(),[]);
 
     //【設問タイトルの変更】
     const updateTitle = async () => {
@@ -74,9 +78,9 @@ const QuestionView: React.FC<Props> = memo(
       // [PUT] /api/v1/teacher/questions/[id]/title
       const ep = `/api/v1/teacher/questions/${id}/title`;
       const reqBody: UpdateQuestionRequest = { id, title };
+      dev.console.log("■ >>> " + JSON.stringify(reqBody, null, 2));
       const res = await putApiCaller(ep, reqBody, apiRequestHeader);
-      !res.success &&
-        dev.console.error("■ <<< " + JSON.stringify(res, null, 2));
+      dev.console.log("■ <<< " + JSON.stringify(res, null, 2));
     };
 
     //【デフォルト選択肢の変更】
@@ -94,12 +98,9 @@ const QuestionView: React.FC<Props> = memo(
           // [PUT] /api/v1/teacher/questions/[id]/default-option-id
           const ep = `/api/v1/teacher/questions/${id}/default-option-id`;
           const reqBody: UpdateQuestionRequest = { id, defaultOptionId };
+          dev.console.log("■ >>> " + JSON.stringify(reqBody, null, 2));
           const res = await putApiCaller(ep, reqBody, apiRequestHeader);
-          !res.success &&
-            dev.console.error("■ <<< " + JSON.stringify(res, null, 2));
-          dev.console.log(
-            `設問（${id}）の既定回答を ${defaultOptionId} にするAPIを実行`
-          );
+          dev.console.log("■ <<< " + JSON.stringify(res, null, 2));
         });
       return () => {
         subscription.unsubscribe();
@@ -132,7 +133,10 @@ const QuestionView: React.FC<Props> = memo(
         false
       );
       // [DELETE] /api/v1/teacher/questions/[id]
-      await new Promise((resolve) => setTimeout(resolve, 1000)); // Dummy
+      const ep = `/api/v1/teacher/questions/${id}`;
+      dev.console.log("■ >>> ");
+      const res = await deleteApiCaller(ep, apiRequestHeader);
+      dev.console.log("■ <<< " + JSON.stringify(res, null, 2));
     };
 
     return (

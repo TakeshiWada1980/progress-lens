@@ -1307,7 +1307,7 @@ type OptionFactoryDefineInput = {
     order?: number;
     title?: string;
     description?: string;
-    rewardMessage?: string | null;
+    rewardMessage?: string;
     rewardPoint?: number;
     effect?: boolean;
     updatedAt?: Date;

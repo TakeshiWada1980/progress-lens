@@ -4,8 +4,8 @@ import React, { useState, useRef, memo, useMemo } from "react";
 import { RenderCount } from "@/app/_components/elements/RenderCount";
 import {
   SessionEditableFields,
-  QuestionEditFields,
-  OptionEditFields,
+  QuestionEditableFields,
+  OptionEditableFields,
 } from "@/app/_types/SessionTypes";
 import dev from "@/app/_utils/devConsole";
 import { produce, Draft } from "immer";
@@ -23,7 +23,7 @@ import useAuth from "@/app/_hooks/useAuth";
 import { useExitInputOnEnter } from "@/app/_hooks/useExitInputOnEnter";
 
 type Props = {
-  option: OptionEditFields;
+  option: OptionEditableFields;
   isDefaultSelected: boolean;
   getOptimisticLatestData: () => SessionEditableFields | undefined;
   mutate: KeyedMutator<ApiResponse<SessionEditableFields>>;
@@ -52,9 +52,6 @@ const OptionView: React.FC<Props> = memo(
       // TODO: バリデーションが必要
       if (title === prevTitle.current) return;
       prevTitle.current = title;
-      dev.console.log(
-        `選択肢（${option.id}）の見出しを「${title}」に変更しました`
-      );
 
       const optimisticLatestData = produce(
         getOptimisticLatestData(),
@@ -87,10 +84,6 @@ const OptionView: React.FC<Props> = memo(
       event: React.ChangeEvent<HTMLInputElement>
     ) => {
       if (event.target.checked) {
-        dev.console.log(
-          `設問（${option.questionId}）のデフォルト回答が ${option.id} に変更されました`
-        );
-
         const optimisticLatestData = produce(
           getOptimisticLatestData(),
           (draft: Draft<SessionEditableFields>) => {

@@ -25,8 +25,8 @@ import { v4 as uuid } from "uuid";
 import { Role } from "@/app/_types/UserTypes";
 import {
   addQuestionRequestSchema,
-  AddQuestionResponse,
-  OptionEditFields,
+  OptionEditableFields,
+  QuestionEditableFields,
 } from "@/app/_types/SessionTypes";
 
 export const revalidate = 0; // キャッシュを無効化
@@ -73,7 +73,7 @@ export const POST = async (req: NextRequest) => {
     }
 
     // 設問の追加
-    const { id: questionId } = await questionService.createQuestion(
+    const { id: questionId } = await questionService.create(
       sessionId,
       addQuestionRequest.order,
       addQuestionRequest.title
@@ -85,30 +85,23 @@ export const POST = async (req: NextRequest) => {
       forEditQuestionSchema
     )) as PRS.QuestionGetPayload<typeof forEditQuestionSchema>;
 
-    const res: AddQuestionResponse = {
+    const res: QuestionEditableFields = {
       id: questionId,
       order: question.order,
       title: question.title,
       description: question.description,
-      defaultOptionId: question.defaultOptionId,
+      defaultOptionId: question.defaultOptionId!,
       compareKey: uuid(),
-      options: question.options.map((o): OptionEditFields => {
+      options: question.options.map((option): OptionEditableFields => {
         return {
-          id: o.id,
-          order: o.order,
-          title: o.title,
-          questionId: o.questionId,
-          description: o.description,
-          rewardMessage: o.rewardMessage ?? "",
-          rewardPoint: o.rewardPoint,
-          effect: o.effect,
+          ...option,
           compareKey: uuid(),
         };
       }),
-    } as AddQuestionResponse;
+    };
 
     return NextResponse.json(
-      new SuccessResponseBuilder(res).setHttpStatus(StatusCodes.OK).build()
+      new SuccessResponseBuilder(res).setHttpStatus(StatusCodes.CREATED).build()
     );
   } catch (error: any) {
     const payload = createErrorResponse(error);

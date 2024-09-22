@@ -9,10 +9,10 @@ import dev from "@/app/_utils/devConsole";
 import {
   SessionEditableFields,
   AddQuestionRequest,
-  AddQuestionResponse,
+  sessionEditableFieldsSchema,
   addQuestionRequestSchema,
-  addQuestionResponseSchema,
-  QuestionEditFields,
+  questionEditableFieldsSchema,
+  QuestionEditableFields,
 } from "@/app/_types/SessionTypes";
 import { ApiResponse } from "@/app/_types/ApiResponse";
 
@@ -24,7 +24,7 @@ import useAuth from "@/app/_hooks/useAuth";
 import { Question } from "@prisma/client";
 
 const Page: React.FC = () => {
-  const id = "cm1cwbud4000lua0bxfmxkwl0"; // TODO: デバッグ用
+  const id = "cm1dmmv0s0002dg0zwgbt5vna"; // TODO: デバッグ用
   const ep = `/api/v1/teacher/sessions/${id}`;
   const { data, mutate } =
     useAuthenticatedGetRequest<SessionEditableFields>(ep);
@@ -33,7 +33,7 @@ const Page: React.FC = () => {
   const nextQuestionIdNum = useRef(4);
 
   // prettier-ignore
-  const postApiCaller = useMemo(() => createPostRequest<AddQuestionRequest, ApiResponse<AddQuestionResponse>>(),[]);
+  const postApiCaller = useMemo(() => createPostRequest<AddQuestionRequest, ApiResponse<QuestionEditableFields>>(),[]);
 
   //【再取得（再検証）】
   const revalidate = () => {
@@ -54,8 +54,7 @@ const Page: React.FC = () => {
     const res = await postApiCaller(ep, reqBody, apiRequestHeader);
     dev.console.log("■ <<< " + JSON.stringify(res, null, 2));
 
-    const newQuestion = addQuestionResponseSchema.parse(res.data!);
-
+    const newQuestion = questionEditableFieldsSchema.parse(res.data!);
     const optimisticLatestData = produce(
       dataRef.current,
       (draft: Draft<SessionEditableFields>) => {
@@ -73,12 +72,10 @@ const Page: React.FC = () => {
 
   if (!data) return <LoadingPage />;
 
-  dataRef.current = data.data!;
+  dataRef.current = sessionEditableFieldsSchema.parse(data.data);
   const getOptimisticLatestData = () => {
     return dataRef.current;
   };
-
-  const questions = data.data!.questions;
 
   return (
     <div>
@@ -99,7 +96,7 @@ const Page: React.FC = () => {
       </div>
 
       <div>
-        {questions.map((question) => (
+        {dataRef.current.questions.map((question) => (
           <QuestionView
             key={question.id}
             question={question}
