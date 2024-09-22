@@ -11,6 +11,27 @@ const requiredMsg = "必須入力の項目です。";
 export const isAccessCode = (value: string) => /^\d{3}-\d{4}$/.test(value);
 export const isCUID = (value: string) => /^c[a-z0-9]{24}$/.test(value);
 
+const questionTitleSchema = z
+  .string()
+  .trim()
+  .min(2, "2文字以上32文字以内で入力してください。")
+  .max(32, "2文字以上32文字以内で入力してください。");
+
+const optionTitleSchema = z
+  .string()
+  .trim()
+  .min(2, "2文字以上16文字以内で入力してください。")
+  .max(16, "2文字以上16文字以内で入力してください。");
+
+const cuidSchema = z.string().refine(isCUID, {
+  message: "Invalid CUID format.",
+});
+
+const orderSchema = z.number().int().min(1, "1以上の整数を入力してください。");
+const rewardPointSchema = z
+  .number()
+  .int()
+  .min(0, "0以上の整数を入力してください。");
 ///////////////////////////////////////////////////////////////
 
 export interface SessionSummary {
@@ -58,6 +79,28 @@ export interface OptionEditFields {
   effect: boolean;
   compareKey?: string;
 }
+
+export const addQuestionResponseSchema = z.object({
+  id: cuidSchema,
+  order: orderSchema,
+  title: questionTitleSchema,
+  description: z.string(),
+  defaultOptionId: cuidSchema,
+  compareKey: z.string().optional(),
+  options: z.array(
+    z.object({
+      id: cuidSchema,
+      questionId: cuidSchema,
+      order: orderSchema,
+      title: optionTitleSchema,
+      description: z.string(),
+      rewardMessage: z.string(),
+      rewardPoint: rewardPointSchema,
+      effect: z.boolean(),
+      compareKey: z.string().optional(),
+    })
+  ),
+});
 
 ///////////////////////////////////////////////////////////////
 
@@ -121,6 +164,18 @@ export const accessCodeSchema = z.object({
     message: "NNN-NNNN の形式で入力してください（Nは半角数字）",
   }),
 });
+
+///////////////////////////////////////////////////////////////
+
+export const addQuestionRequestSchema = z.object({
+  sessionId: cuidSchema,
+  title: questionTitleSchema.optional(),
+  order: orderSchema.optional(),
+});
+
+export type AddQuestionRequest = z.infer<typeof addQuestionRequestSchema>;
+
+export type AddQuestionResponse = z.infer<typeof addQuestionResponseSchema>;
 
 ///////////////////////////////////////////////////////////////
 

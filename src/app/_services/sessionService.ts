@@ -5,7 +5,9 @@ import {
   withErrorHandling,
 } from "@/app/_services/servicesExceptions";
 import { BadRequestError } from "@/app/api/_helpers/apiExceptions";
-import QuestionService from "@/app/_services/questionService";
+import QuestionService, {
+  forEditQuestionSchema,
+} from "@/app/_services/questionService";
 import {
   type UpdateSessionRequest,
   isAccessCode,
@@ -79,25 +81,7 @@ export const forEditSessionSchema = {
     isActive: true,
     teacherId: true,
     questions: {
-      select: {
-        id: true,
-        order: true,
-        title: true,
-        description: true,
-        defaultOptionId: true,
-        options: {
-          select: {
-            id: true,
-            order: true,
-            title: true,
-            questionId: true,
-            description: true,
-            rewardMessage: true,
-            rewardPoint: true,
-            effect: true,
-          },
-        },
-      },
+      select: forEditQuestionSchema.select,
     },
   },
 } as const;

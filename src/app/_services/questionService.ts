@@ -28,6 +28,30 @@ export type OptionReturnType<
 
 ///////////////////////////////////////////////////////////////
 
+export const forEditQuestionSchema = {
+  select: {
+    id: true,
+    order: true,
+    title: true,
+    description: true,
+    defaultOptionId: true,
+    options: {
+      select: {
+        id: true,
+        order: true,
+        title: true,
+        questionId: true,
+        description: true,
+        rewardMessage: true,
+        rewardPoint: true,
+        effect: true,
+      },
+    },
+  },
+};
+
+///////////////////////////////////////////////////////////////
+
 export const forUpdateQuestionSchema = {
   include: {
     session: {
@@ -175,7 +199,8 @@ class QuestionService {
   @withErrorHandling()
   public async createQuestion(
     sessionId: string,
-    order: number = 1
+    order: number = 1,
+    title: string = "設問01"
   ): Promise<Question> {
     return await this.withTransaction(async (client) => {
       // 1. 設問の作成
@@ -183,7 +208,7 @@ class QuestionService {
         data: {
           sessionId,
           order,
-          title: "設問X",
+          title,
         },
       });
 
