@@ -21,17 +21,13 @@ import { Prisma as PRS } from "@prisma/client";
 
 // 型定義・データ検証関連
 import { Role } from "@/app/_types/UserTypes";
-import {
-  UpdateQuestionRequest,
-  updateQuestionSchema,
-} from "@/app/_types/SessionTypes";
 
 export const revalidate = 0; // キャッシュを無効化
 
 type Params = { params: { id: string } };
 
 // [DELETE] /api/v1/teacher/questions/[id]
-export const DELETE = async (req: NextRequest, { params }: Params) => {
+const DELETE_ = async (req: NextRequest, { params }: Params) => {
   const { id: questionId } = params;
   const userService = new UserService(prisma);
   const questionService = new QuestionService(prisma);

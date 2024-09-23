@@ -13,6 +13,7 @@ import {
   isAccessCode,
 } from "@/app/_types/SessionTypes";
 import AppErrorCode from "@/app/_types/AppErrorCode";
+import { orderColumns } from "@tanstack/react-table";
 
 ///////////////////////////////////////////////////////////////
 
@@ -22,6 +23,9 @@ export type SessionReturnType<
 > = {
   include?: T;
   select?: U;
+  // orderBy?:
+  //   | PRS.LearningSessionOrderByWithRelationInput
+  //   | PRS.LearningSessionOrderByWithRelationInput[];
 };
 
 export const fullSessionSchema = {
@@ -172,8 +176,12 @@ class SessionService {
     sessionId: string,
     options?: SessionReturnType<T, U>
   ): Promise<PRS.LearningSessionGetPayload<{ include: T; select: U }>> {
+    // const { include, select } = options || {};
     return (await this.prisma.learningSession.findUniqueOrThrow({
       where: { id: sessionId },
+      // ...(include ? { include } : {}),
+      // ...(select ? { select } : {}),
+
       ...options,
     })) as PRS.LearningSessionGetPayload<{ include: T; select: U }>;
   }
@@ -187,8 +195,11 @@ class SessionService {
     accessCode: string,
     options?: SessionReturnType<T, U>
   ): Promise<PRS.LearningSessionGetPayload<{ include: T; select: U }>> {
+    // const { include, select } = options || {};
     const session = await this.prisma.learningSession.findUnique({
       where: { accessCode },
+      // ...(include ? { include } : {}),
+      // ...(select ? { select } : {}),
       ...options,
     });
     if (!session) {

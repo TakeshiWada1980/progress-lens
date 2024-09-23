@@ -16,6 +16,9 @@ export type QuestionReturnType<
 > = {
   include?: T;
   select?: U;
+  // orderBy?:
+  //   | PRS.QuestionOrderByWithRelationInput
+  //   | PRS.QuestionOrderByWithRelationInput[];
 };
 
 export type OptionReturnType<
@@ -24,6 +27,9 @@ export type OptionReturnType<
 > = {
   include?: T;
   select?: U;
+  // orderBy?:
+  //   | PRS.OptionOrderByWithRelationInput
+  //   | PRS.OptionOrderByWithRelationInput[];
 };
 
 ///////////////////////////////////////////////////////////////

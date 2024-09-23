@@ -35,12 +35,16 @@ type Props = {
   question: QuestionEditableFields;
   getOptimisticLatestData: () => SessionEditableFields | undefined;
   mutate: KeyedMutator<ApiResponse<SessionEditableFields>>;
+  confirmDeleteQuestion: (
+    questionId: string,
+    questionTitle: string
+  ) => Promise<void>;
 };
 
 // memoでラップすることで、親コンポーネントに連鎖する再レンダリングを抑制し
 // Props (compareKey属性) が変更されたときだけ 再レンダリング されるようにしている
 const QuestionView: React.FC<Props> = memo(
-  ({ question, getOptimisticLatestData, mutate }) => {
+  ({ question, getOptimisticLatestData, mutate, confirmDeleteQuestion }) => {
     const id = question.id;
     const [title, setTitle] = useState(question.title);
     const prevTitle = useRef(question.title);
@@ -116,27 +120,29 @@ const QuestionView: React.FC<Props> = memo(
 
     //【設問の削除】
     const deleteQuestion = async () => {
-      dev.console.log(`設問（${question.id}）を削除しました`);
+      await confirmDeleteQuestion(id, title);
 
-      const optimisticLatestData = produce(
-        getOptimisticLatestData(),
-        (draft: Draft<SessionEditableFields>) => {
-          const index = draft.questions.findIndex((q) => q.id === id);
-          if (index === -1) throw new Error(`Question (id=${id}) not found.`);
-          draft.questions.splice(index, 1);
-        }
-      );
-      mutate(
-        new SuccessResponseBuilder<SessionEditableFields>(optimisticLatestData!)
-          .setHttpStatus(StatusCodes.OK)
-          .build(),
-        false
-      );
-      // [DELETE] /api/v1/teacher/questions/[id]
-      const ep = `/api/v1/teacher/questions/${id}`;
-      dev.console.log("■ >>> ");
-      const res = await deleteApiCaller(ep, apiRequestHeader);
-      dev.console.log("■ <<< " + JSON.stringify(res, null, 2));
+      // dev.console.log(`設問（${question.id}）を削除しました`);
+
+      // const optimisticLatestData = produce(
+      //   getOptimisticLatestData(),
+      //   (draft: Draft<SessionEditableFields>) => {
+      //     const index = draft.questions.findIndex((q) => q.id === id);
+      //     if (index === -1) throw new Error(`Question (id=${id}) not found.`);
+      //     draft.questions.splice(index, 1);
+      //   }
+      // );
+      // mutate(
+      //   new SuccessResponseBuilder<SessionEditableFields>(optimisticLatestData!)
+      //     .setHttpStatus(StatusCodes.OK)
+      //     .build(),
+      //   false
+      // );
+      // // [DELETE] /api/v1/teacher/questions/[id]
+      // const ep = `/api/v1/teacher/questions/${id}`;
+      // dev.console.log("■ >>> ");
+      // const res = await deleteApiCaller(ep, apiRequestHeader);
+      // dev.console.log("■ <<< " + JSON.stringify(res, null, 2));
     };
 
     return (
