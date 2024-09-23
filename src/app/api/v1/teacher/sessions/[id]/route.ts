@@ -99,34 +99,10 @@ export const PUT = async (req: NextRequest, { params: { id } }: Params) => {
     // セッションの所有権と操作権限を確認
     await verifySessionOwnershipAndPermissions(req, sessionId, userService, sessionService);
 
-    // TODO: 検証後に消す
-    // // トークンが不正なときは InvalidTokenError がスローされる
-    // const authUser = await getAuthUser(req);
-
-    // // ユーザが存在しない場合は UserService.NotFoundError がスローされる
-    // const appUser = await userService.getById(authUser.id);
-
-    // // ユーザーが 教員 または 管理者 のロールを持たない場合は Error がスローされる
-    // if (appUser.role === Role.STUDENT) {
-    //   throw new NonTeacherOperationError(appUser.id, appUser.displayName);
-    // }
-
-    // // セッションが存在しない場合は Error がスローされる
-    // const session = await sessionService.getById(sessionId);
-
-    // // セッションが appUser の所有であるかを確認
-    // if (session.teacherId !== appUser.id) {
-    //   throw new DomainRuleViolationError(
-    //     `${appUser.displayName} は、SessionID: ${sessionId} の削除権限を持ちません。`,
-    //     { userId: appUser.id, userDisplayName: appUser.displayName, sessionId }
-    //   );
-    // }
-
     // リクエストボディの検証
     reqBody = await req.json();
     const updateSessionRequest: UpdateSessionRequest =
       updateSessionRequestSchema.parse(reqBody);
-    updateSessionRequest.title?.trim();
 
     // 更新処理の実行
     await sessionService.update(sessionId, updateSessionRequest);
@@ -196,7 +172,7 @@ const verifySessionOwnershipAndPermissions = async (
   // セッションが appUser の所有であるかを確認
   if (session.teacherId !== appUser.id) {
     throw new DomainRuleViolationError(
-      `${appUser.displayName} は、SessionID: ${sessionId} の削除権限を持ちません。`,
+      `${appUser.displayName} は、SessionID: ${sessionId} の操作権限を持ちません。`,
       { userId: appUser.id, userDisplayName: appUser.displayName, sessionId }
     );
   }

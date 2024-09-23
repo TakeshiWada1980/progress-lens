@@ -13,7 +13,6 @@ import {
   isAccessCode,
 } from "@/app/_types/SessionTypes";
 import AppErrorCode from "@/app/_types/AppErrorCode";
-import { orderColumns } from "@tanstack/react-table";
 
 ///////////////////////////////////////////////////////////////
 
@@ -23,9 +22,9 @@ export type SessionReturnType<
 > = {
   include?: T;
   select?: U;
-  // orderBy?:
-  //   | PRS.LearningSessionOrderByWithRelationInput
-  //   | PRS.LearningSessionOrderByWithRelationInput[];
+  orderBy?:
+    | PRS.LearningSessionOrderByWithRelationInput
+    | PRS.LearningSessionOrderByWithRelationInput[];
 };
 
 export const fullSessionSchema = {
@@ -86,6 +85,7 @@ export const forEditSessionSchema = {
     teacherId: true,
     questions: {
       select: forEditQuestionSchema.select,
+      orderBy: forEditQuestionSchema.orderBy,
     },
   },
 } as const;
@@ -176,13 +176,12 @@ class SessionService {
     sessionId: string,
     options?: SessionReturnType<T, U>
   ): Promise<PRS.LearningSessionGetPayload<{ include: T; select: U }>> {
-    // const { include, select } = options || {};
+    // findUnique などの単数検索のときに orderBy を指定するとエラーになるので除外する処理
+    const { include, select } = options || {};
     return (await this.prisma.learningSession.findUniqueOrThrow({
       where: { id: sessionId },
-      // ...(include ? { include } : {}),
-      // ...(select ? { select } : {}),
-
-      ...options,
+      ...(include ? { include } : {}),
+      ...(select ? { select } : {}),
     })) as PRS.LearningSessionGetPayload<{ include: T; select: U }>;
   }
 
@@ -195,12 +194,11 @@ class SessionService {
     accessCode: string,
     options?: SessionReturnType<T, U>
   ): Promise<PRS.LearningSessionGetPayload<{ include: T; select: U }>> {
-    // const { include, select } = options || {};
+    const { include, select } = options || {};
     const session = await this.prisma.learningSession.findUnique({
       where: { accessCode },
-      // ...(include ? { include } : {}),
-      // ...(select ? { select } : {}),
-      ...options,
+      ...(include ? { include } : {}),
+      ...(select ? { select } : {}),
     });
     if (!session) {
       const err = new BadRequestError(`Session (${accessCode}) not found.`, {
@@ -353,39 +351,38 @@ class SessionService {
   ): Promise<CreateSessionReturnType> {
     let session: LearningSession | null = null;
     const accessCode = await this.generateAccessCode();
-    // トランザクション内でセッションと初期設問を作成
-    await this.prisma.$transaction(
-      async (tx) => {
-        // 1. セッションの作成
-        try {
-          session = await tx.learningSession.create({
-            data: {
-              teacherId,
-              accessCode,
-              title,
-            },
-          });
-        } catch (error: any) {
-          if (error.code === "P2002") {
-            throw new DomainRuleViolationError(
-              `Unique constraint failed on the accessCode ${accessCode}`,
-              { teacherId, title, accessCode }
-            );
-          } else if (error.code === "P2003") {
-            throw new DomainRuleViolationError(
-              `FK constraint failed on the teacherId ${teacherId}`,
-              { teacherId, title, accessCode }
-            );
-          }
-          throw error;
-        }
 
-        // 2. 設問の作成
-        const questionService = new QuestionService(tx);
-        await questionService.create(session.id);
-      },
-      { timeout: 5000 }
-    );
+    // ※トランザクションを構成したほうがよいが
+    // SessionService と QuestionService にまたがる
+    // トランザクションは極めて複雑なため、ここではシンプルな実装としている
+
+    // 1. セッションの作成
+    try {
+      session = await this.prisma.learningSession.create({
+        data: {
+          teacherId,
+          accessCode,
+          title,
+        },
+      });
+    } catch (error: any) {
+      if (error.code === "P2002") {
+        throw new DomainRuleViolationError(
+          `Unique constraint failed on the accessCode ${accessCode}`,
+          { teacherId, title, accessCode }
+        );
+      } else if (error.code === "P2003") {
+        throw new DomainRuleViolationError(
+          `FK constraint failed on the teacherId ${teacherId}`,
+          { teacherId, title, accessCode }
+        );
+      }
+      throw error;
+    }
+
+    // 2. 設問の作成
+    const questionService = new QuestionService(this.prisma);
+    await questionService.create(session.id);
 
     // 3. 設問と選択肢を含めた完全なセッション情報の再取得
     return (await this.getById(

@@ -6,6 +6,8 @@ import { Prisma as PRS } from "@prisma/client";
 import {
   type UpdateQuestionRequest,
   type UpdateOptionRequest,
+  type UpdateQuestionsOrderRequest,
+  type UpdateOptionsOrderRequest,
 } from "@/app/_types/SessionTypes";
 
 ///////////////////////////////////////////////////////////////
@@ -16,9 +18,9 @@ export type QuestionReturnType<
 > = {
   include?: T;
   select?: U;
-  // orderBy?:
-  //   | PRS.QuestionOrderByWithRelationInput
-  //   | PRS.QuestionOrderByWithRelationInput[];
+  orderBy?:
+    | PRS.QuestionOrderByWithRelationInput
+    | PRS.QuestionOrderByWithRelationInput[];
 };
 
 export type OptionReturnType<
@@ -27,12 +29,28 @@ export type OptionReturnType<
 > = {
   include?: T;
   select?: U;
-  // orderBy?:
-  //   | PRS.OptionOrderByWithRelationInput
-  //   | PRS.OptionOrderByWithRelationInput[];
+  orderBy?:
+    | PRS.OptionOrderByWithRelationInput
+    | PRS.OptionOrderByWithRelationInput[];
 };
 
 ///////////////////////////////////////////////////////////////
+
+export const forEditOptionSchema = {
+  select: {
+    id: true,
+    order: true,
+    title: true,
+    questionId: true,
+    description: true,
+    rewardMessage: true,
+    rewardPoint: true,
+    effect: true,
+  },
+  orderBy: {
+    order: "asc" as const,
+  },
+} as const;
 
 export const forEditQuestionSchema = {
   select: {
@@ -42,19 +60,14 @@ export const forEditQuestionSchema = {
     description: true,
     defaultOptionId: true,
     options: {
-      select: {
-        id: true,
-        order: true,
-        title: true,
-        questionId: true,
-        description: true,
-        rewardMessage: true,
-        rewardPoint: true,
-        effect: true,
-      },
+      select: forEditOptionSchema.select,
+      orderBy: forEditOptionSchema.orderBy,
     },
   },
-};
+  orderBy: {
+    order: "asc" as const,
+  },
+} as const;
 
 ///////////////////////////////////////////////////////////////
 
@@ -93,30 +106,10 @@ export const forUpdateOptionSchema = {
 type TransactionCapablePrisma = PrismaClient | PRS.TransactionClient;
 
 class QuestionService {
-  private prisma: TransactionCapablePrisma;
+  private prisma: PrismaClient;
 
-  constructor(prisma: TransactionCapablePrisma) {
+  constructor(prisma: PrismaClient) {
     this.prisma = prisma;
-  }
-
-  private isPrismaClient(
-    client: TransactionCapablePrisma
-  ): client is PrismaClient {
-    return (
-      "$transaction" in client &&
-      typeof (client as any).$transaction === "function"
-    );
-  }
-
-  // DIされたものが PrismaClient か TransactionClient かで処理を分岐
-  private async withTransaction<T>(
-    operation: (client: TransactionCapablePrisma) => Promise<T>
-  ): Promise<T> {
-    if (this.isPrismaClient(this.prisma)) {
-      return await this.prisma.$transaction(operation);
-    } else {
-      return await operation(this.prisma);
-    }
   }
 
   /**
@@ -133,13 +126,14 @@ class QuestionService {
     id: string,
     options?: QuestionReturnType<T, U>
   ): Promise<PRS.QuestionGetPayload<{ include: T; select: U }>> {
-    return await this.withTransaction(async (client) => {
-      const question = (await client.question.findUniqueOrThrow({
-        where: { id: id },
-        ...options,
-      })) as PRS.QuestionGetPayload<{ include: T; select: U }>;
-      return question;
-    });
+    const { include, select } = options || {};
+    const question = (await this.prisma.question.findUniqueOrThrow({
+      where: { id: id },
+      ...(include ? { include } : {}),
+      ...(select ? { select } : {}),
+      // ...options,
+    })) as PRS.QuestionGetPayload<{ include: T; select: U }>;
+    return question;
   }
 
   /**
@@ -156,13 +150,14 @@ class QuestionService {
     id: string,
     options?: OptionReturnType<T, U>
   ): Promise<PRS.OptionGetPayload<{ include: T; select: U }>> {
-    return await this.withTransaction(async (client) => {
-      const question = (await client.option.findUniqueOrThrow({
-        where: { id: id },
-        ...options,
-      })) as PRS.OptionGetPayload<{ include: T; select: U }>;
-      return question;
-    });
+    const { include, select } = options || {};
+    const question = (await this.prisma.option.findUniqueOrThrow({
+      where: { id: id },
+      ...(include ? { include } : {}),
+      ...(select ? { select } : {}),
+      // ...options,
+    })) as PRS.OptionGetPayload<{ include: T; select: U }>;
+    return question;
   }
 
   /**
@@ -176,12 +171,10 @@ class QuestionService {
     questionId: string,
     data: UpdateQuestionRequest
   ): Promise<void> {
-    await this.withTransaction(async (client) => {
-      const { id, ...updateData } = data; // id を除外する
-      await client.question.update({
-        where: { id: questionId },
-        data: { ...updateData },
-      });
+    const { id, ...updateData } = data; // id を除外する
+    await this.prisma.question.update({
+      where: { id: questionId },
+      data: { ...updateData },
     });
   }
 
@@ -196,13 +189,53 @@ class QuestionService {
     optionId: string,
     data: UpdateOptionRequest
   ): Promise<void> {
-    await this.withTransaction(async (client) => {
-      const { id, ...updateData } = data; // id を除外する
-      await client.option.update({
-        where: { id: optionId },
-        data: { ...updateData },
-      });
+    const { id, ...updateData } = data; // id を除外する
+    await this.prisma.option.update({
+      where: { id: optionId },
+      data: { ...updateData },
     });
+  }
+
+  /**
+   * 設問の並び順（order）の更新
+   * @param questionOrderUpdates 呼び出し元で有効性を保証したデータ
+   */
+  @withErrorHandling()
+  public async updateOrder(
+    questionOrderUpdates: {
+      order: number;
+      questionId: string;
+    }[]
+  ): Promise<void> {
+    await this.prisma.$transaction(
+      questionOrderUpdates.map(({ questionId, order }) =>
+        this.prisma.option.update({
+          where: { id: questionId },
+          data: { order },
+        })
+      )
+    );
+  }
+
+  /**
+   * 回答選択肢の並び順（order）の更新
+   * @param optionOrderUpdates 呼び出し元で有効性を保証したデータ
+   */
+  @withErrorHandling()
+  public async updateOptionOrder(
+    optionOrderUpdates: {
+      optionId: string;
+      order: number;
+    }[]
+  ): Promise<void> {
+    await this.prisma.$transaction(
+      optionOrderUpdates.map(({ optionId, order }) =>
+        this.prisma.option.update({
+          where: { id: optionId },
+          data: { order },
+        })
+      )
+    );
   }
 
   /**
@@ -211,9 +244,7 @@ class QuestionService {
    */
   @withErrorHandling()
   public async delete(questionId: string): Promise<void> {
-    await this.withTransaction(async (client) => {
-      await client.question.delete({ where: { id: questionId } });
-    });
+    await this.prisma.question.delete({ where: { id: questionId } });
   }
 
   // 設問の新規作成・初期化
@@ -223,41 +254,36 @@ class QuestionService {
     order: number = 1,
     title: string = "設問01"
   ): Promise<Question> {
-    return await this.withTransaction(async (client) => {
-      // 1. 設問の作成
-      const question = await client.question.create({
-        data: {
-          sessionId,
-          order,
-          title,
-        },
-      });
+    // 1. 設問の作成
+    const question = await this.prisma.question.create({
+      data: {
+        sessionId,
+        order,
+        title,
+      },
+    });
 
-      // 2. 選択肢群の作成
-      const initialOptionSet = Array.from(
-        { length: optionSetSize },
-        (_, i) => ({
-          questionId: question.id,
-          order: i + 1,
-          title: `選択肢${i + 1}`,
-        })
-      );
+    // 2. 選択肢群の作成
+    const initialOptionSet = Array.from({ length: optionSetSize }, (_, i) => ({
+      questionId: question.id,
+      order: i + 1,
+      title: `選択肢${i + 1}`,
+    }));
 
-      await client.option.createMany({
-        data: initialOptionSet,
-      });
+    await this.prisma.option.createMany({
+      data: initialOptionSet,
+    });
 
-      // 3. 選択肢の取得 (createManyの戻値が使えないため)
-      const options = await client.option.findMany({
-        where: { questionId: question.id },
-        orderBy: { order: "asc" },
-      });
+    // 3. 選択肢の取得 (createManyの戻値が使えないため)
+    const options = await this.prisma.option.findMany({
+      where: { questionId: question.id },
+      orderBy: { order: "asc" },
+    });
 
-      // 4. 設問にデフォルト選択肢を設定
-      return await client.question.update({
-        where: { id: question.id },
-        data: { defaultOptionId: options[0].id },
-      });
+    // 4. 設問にデフォルト選択肢を設定
+    return await this.prisma.question.update({
+      where: { id: question.id },
+      data: { defaultOptionId: options[0].id },
     });
   }
 }

@@ -23,7 +23,11 @@ import { KeyedMutator } from "swr";
 import { ApiResponse } from "@/app/_types/ApiResponse";
 import { Subject } from "rxjs";
 import { debounceTime, throttleTime } from "rxjs/operators";
-import { UpdateQuestionRequest } from "@/app/_types/SessionTypes";
+import {
+  UpdateQuestionRequest,
+  updateOptionsOrderSchema,
+  UpdateOptionsOrderRequest,
+} from "@/app/_types/SessionTypes";
 import {
   createPutRequest,
   createDeleteRequest,
@@ -52,9 +56,9 @@ const QuestionView: React.FC<Props> = memo(
     const exitInputOnEnter = useExitInputOnEnter();
 
     // prettier-ignore
-    const putApiCaller = useMemo(() => createPutRequest<UpdateQuestionRequest, ApiResponse<null>>(),[]);
+    const putAttrApiCaller = useMemo(() => createPutRequest<UpdateQuestionRequest, ApiResponse<null>>(),[]);
     // prettier-ignore
-    const deleteApiCaller = useMemo(() => createDeleteRequest<ApiResponse<null>>(),[]);
+    const putOrderApiCaller = useMemo(() => createPutRequest<UpdateOptionsOrderRequest, ApiResponse<null>>(),[]);
 
     //【設問タイトルの変更】
     const updateTitle = async () => {
@@ -83,7 +87,7 @@ const QuestionView: React.FC<Props> = memo(
       const ep = `/api/v1/teacher/questions/${id}/title`;
       const reqBody: UpdateQuestionRequest = { id, title };
       dev.console.log("■ >>> " + JSON.stringify(reqBody, null, 2));
-      const res = await putApiCaller(ep, reqBody, apiRequestHeader);
+      const res = await putAttrApiCaller(ep, reqBody, apiRequestHeader);
       dev.console.log("■ <<< " + JSON.stringify(res, null, 2));
     };
 
@@ -103,13 +107,13 @@ const QuestionView: React.FC<Props> = memo(
           const ep = `/api/v1/teacher/questions/${id}/default-option-id`;
           const reqBody: UpdateQuestionRequest = { id, defaultOptionId };
           dev.console.log("■ >>> " + JSON.stringify(reqBody, null, 2));
-          const res = await putApiCaller(ep, reqBody, apiRequestHeader);
+          const res = await putAttrApiCaller(ep, reqBody, apiRequestHeader);
           dev.console.log("■ <<< " + JSON.stringify(res, null, 2));
         });
       return () => {
         subscription.unsubscribe();
       };
-    }, [apiRequestHeader, defaultOptionUpdateStream, putApiCaller]);
+    }, [apiRequestHeader, defaultOptionUpdateStream, putAttrApiCaller]);
 
     const publishUpdateDefaultOption = useCallback(
       (req: UpdateQuestionRequest) => {
@@ -118,31 +122,48 @@ const QuestionView: React.FC<Props> = memo(
       [defaultOptionUpdateStream]
     );
 
+    //【選択肢の並べ替え】
+    const reorderOptions = async () => {
+      // NOTE: 検証用の仮の処理
+      const question = getOptimisticLatestData()?.questions.find(
+        (q) => q.id === id
+      )!;
+      const newOrder = question.options.map((o) => ({
+        optionId: o.id,
+        order: o.order,
+        title: o.title,
+      }));
+
+      // newOrderの order を3回交換してシャッフル
+      for (let i = 0; i < 3; i++) {
+        const a = Math.floor(Math.random() * newOrder.length);
+        const b = Math.floor(Math.random() * newOrder.length);
+        [newOrder[a].order, newOrder[b].order] = [
+          newOrder[b].order,
+          newOrder[a].order,
+        ];
+      }
+
+      dev.console.log("■ >>> " + JSON.stringify(newOrder, null, 2));
+      const newOrder2 = newOrder.map(({ title, ...rest }) => rest);
+
+      // 楽観的更新はD&DのUIでおこなわれる
+
+      // [PUT] /api/v1/teacher/questions/[id]/options-order
+      const ep = `/api/v1/teacher/questions/${id}/options-order`;
+      const reqBody: UpdateOptionsOrderRequest = updateOptionsOrderSchema.parse(
+        {
+          data: newOrder2,
+        }
+      );
+      // dev.console.log("■ >>> " + JSON.stringify(reqBody, null, 2));
+      const res = await putOrderApiCaller(ep, reqBody, apiRequestHeader);
+      dev.console.log("■ <<< " + JSON.stringify(res, null, 2));
+    };
+
     //【設問の削除】
     const deleteQuestion = async () => {
       await confirmDeleteQuestion(id, title);
-
-      // dev.console.log(`設問（${question.id}）を削除しました`);
-
-      // const optimisticLatestData = produce(
-      //   getOptimisticLatestData(),
-      //   (draft: Draft<SessionEditableFields>) => {
-      //     const index = draft.questions.findIndex((q) => q.id === id);
-      //     if (index === -1) throw new Error(`Question (id=${id}) not found.`);
-      //     draft.questions.splice(index, 1);
-      //   }
-      // );
-      // mutate(
-      //   new SuccessResponseBuilder<SessionEditableFields>(optimisticLatestData!)
-      //     .setHttpStatus(StatusCodes.OK)
-      //     .build(),
-      //   false
-      // );
-      // // [DELETE] /api/v1/teacher/questions/[id]
-      // const ep = `/api/v1/teacher/questions/${id}`;
-      // dev.console.log("■ >>> ");
-      // const res = await deleteApiCaller(ep, apiRequestHeader);
-      // dev.console.log("■ <<< " + JSON.stringify(res, null, 2));
     };
 
     return (
@@ -163,6 +184,12 @@ const QuestionView: React.FC<Props> = memo(
             onBlur={updateTitle}
             onKeyDown={exitInputOnEnter}
           />
+          <button
+            className="rounded-md border px-3 py-1 text-sm"
+            onClick={reorderOptions}
+          >
+            並べ替え（仮）
+          </button>
           <button
             className="rounded-md border px-3 py-1 text-sm"
             onClick={deleteQuestion}
