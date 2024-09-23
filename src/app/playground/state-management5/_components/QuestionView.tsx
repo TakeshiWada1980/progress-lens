@@ -28,10 +28,7 @@ import {
   updateOptionsOrderSchema,
   UpdateOptionsOrderRequest,
 } from "@/app/_types/SessionTypes";
-import {
-  createPutRequest,
-  createDeleteRequest,
-} from "@/app/_utils/createApiRequest";
+import { createPutRequest } from "@/app/_utils/createApiRequest";
 import useAuth from "@/app/_hooks/useAuth";
 import { useExitInputOnEnter } from "@/app/_hooks/useExitInputOnEnter";
 
@@ -50,9 +47,9 @@ type Props = {
 const QuestionView: React.FC<Props> = memo(
   ({ question, getOptimisticLatestData, mutate, confirmDeleteQuestion }) => {
     const id = question.id;
+    const { apiRequestHeader } = useAuth();
     const [title, setTitle] = useState(question.title);
     const prevTitle = useRef(question.title);
-    const { apiRequestHeader } = useAuth();
     const exitInputOnEnter = useExitInputOnEnter();
 
     // prettier-ignore
@@ -61,7 +58,7 @@ const QuestionView: React.FC<Props> = memo(
     const putOrderApiCaller = useMemo(() => createPutRequest<UpdateOptionsOrderRequest, ApiResponse<null>>(),[]);
 
     //【設問タイトルの変更】
-    const updateTitle = async () => {
+    const updateTitle = useCallback(async () => {
       if (title === prevTitle.current) return;
       prevTitle.current = title;
       dev.console.log(
@@ -83,19 +80,27 @@ const QuestionView: React.FC<Props> = memo(
           .build(),
         false
       );
-      // [PUT] /api/v1/teacher/questions/[id]/title
+      // バックエンド同期: 設問タイトル変更APIリクエスト
       const ep = `/api/v1/teacher/questions/${id}/title`;
       const reqBody: UpdateQuestionRequest = { id, title };
       dev.console.log("■ >>> " + JSON.stringify(reqBody, null, 2));
       const res = await putAttrApiCaller(ep, reqBody, apiRequestHeader);
       dev.console.log("■ <<< " + JSON.stringify(res, null, 2));
-    };
+    }, [
+      apiRequestHeader,
+      getOptimisticLatestData,
+      id,
+      mutate,
+      putAttrApiCaller,
+      question.id,
+      title,
+    ]);
 
-    //【デフォルト選択肢の変更】
+    //【デフォルト選択肢変更の準備】
     // prettier-ignore
-    const defaultOptionUpdateStream = useMemo(
-      () => new Subject<UpdateQuestionRequest>(), []);
+    const defaultOptionUpdateStream = useMemo(() => new Subject<UpdateQuestionRequest>(), []);
 
+    //【デフォルト選択肢の変更（本体）】
     useEffect(() => {
       const subscription = defaultOptionUpdateStream
         .pipe(
@@ -103,7 +108,7 @@ const QuestionView: React.FC<Props> = memo(
           throttleTime(1500, undefined, { leading: false, trailing: true })
         )
         .subscribe(async ({ id, defaultOptionId }) => {
-          // [PUT] /api/v1/teacher/questions/[id]/default-option-id
+          // バックエンド同期: 設問のデフォルト選択回答変更APIリクエスト
           const ep = `/api/v1/teacher/questions/${id}/default-option-id`;
           const reqBody: UpdateQuestionRequest = { id, defaultOptionId };
           dev.console.log("■ >>> " + JSON.stringify(reqBody, null, 2));
@@ -115,15 +120,16 @@ const QuestionView: React.FC<Props> = memo(
       };
     }, [apiRequestHeader, defaultOptionUpdateStream, putAttrApiCaller]);
 
+    //【デフォルト選択肢の変更（トリガー）】
     const publishUpdateDefaultOption = useCallback(
       (req: UpdateQuestionRequest) => {
-        defaultOptionUpdateStream.next(req);
+        defaultOptionUpdateStream.next(req); // ストリームに値を流す
       },
       [defaultOptionUpdateStream]
     );
 
     //【選択肢の並べ替え】
-    const reorderOptions = async () => {
+    const reorderOptions = useCallback(async () => {
       // NOTE: 検証用の仮の処理
       const question = getOptimisticLatestData()?.questions.find(
         (q) => q.id === id
@@ -149,7 +155,7 @@ const QuestionView: React.FC<Props> = memo(
 
       // 楽観的更新はD&DのUIでおこなわれる
 
-      // [PUT] /api/v1/teacher/questions/[id]/options-order
+      // バックエンド同期: 回答選択肢の並び替えAPIリクエスト
       const ep = `/api/v1/teacher/questions/${id}/options-order`;
       const reqBody: UpdateOptionsOrderRequest = updateOptionsOrderSchema.parse(
         {
@@ -159,12 +165,10 @@ const QuestionView: React.FC<Props> = memo(
       // dev.console.log("■ >>> " + JSON.stringify(reqBody, null, 2));
       const res = await putOrderApiCaller(ep, reqBody, apiRequestHeader);
       dev.console.log("■ <<< " + JSON.stringify(res, null, 2));
-    };
+    }, [apiRequestHeader, getOptimisticLatestData, id, putOrderApiCaller]);
 
     //【設問の削除】
-    const deleteQuestion = async () => {
-      await confirmDeleteQuestion(id, title);
-    };
+    const deleteQuestion = async () => await confirmDeleteQuestion(id, title);
 
     return (
       <div className="m-1 border p-1">
@@ -185,18 +189,22 @@ const QuestionView: React.FC<Props> = memo(
             onKeyDown={exitInputOnEnter}
           />
           <button
+            tabIndex={-1}
             className="rounded-md border px-3 py-1 text-sm"
             onClick={reorderOptions}
           >
             並べ替え（仮）
           </button>
           <button
+            tabIndex={-1}
             className="rounded-md border px-3 py-1 text-sm"
             onClick={deleteQuestion}
           >
             設問削除
           </button>
         </div>
+
+        {/* 回答選択肢 */}
         <div>
           {question.options.map((option) => (
             <OptionView

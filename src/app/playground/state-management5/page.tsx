@@ -41,10 +41,8 @@ const Page: React.FC = () => {
   const deleteApiCaller = useMemo(() => createDeleteRequest<ApiResponse<null>>(),[]);
 
   //【再取得（再検証）】
-  const revalidate = () => {
-    dev.console.log("APIを叩いて再取得（再検証）");
-    mutate(undefined);
-  };
+  const revalidate = () => mutate(undefined);
+  const getOptimisticLatestData = () => dataRef.current;
 
   //【設問の追加】
   const addQuestion = useCallback(async () => {
@@ -118,9 +116,6 @@ const Page: React.FC = () => {
   if (!data) return <LoadingPage />;
 
   dataRef.current = sessionEditableFieldsSchema.parse(data.data);
-  const getOptimisticLatestData = () => {
-    return dataRef.current;
-  };
 
   return (
     <div>
@@ -140,6 +135,7 @@ const Page: React.FC = () => {
         </button>
       </div>
 
+      {/* 設問 */}
       <div>
         {dataRef.current.questions.map((question) => (
           <QuestionView

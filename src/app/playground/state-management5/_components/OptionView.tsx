@@ -1,10 +1,9 @@
 "use client";
 
-import React, { useState, useRef, memo, useMemo } from "react";
+import React, { useState, useRef, memo, useMemo, useCallback } from "react";
 import { RenderCount } from "@/app/_components/elements/RenderCount";
 import {
   SessionEditableFields,
-  QuestionEditableFields,
   OptionEditableFields,
 } from "@/app/_types/SessionTypes";
 import dev from "@/app/_utils/devConsole";
@@ -48,7 +47,7 @@ const OptionView: React.FC<Props> = memo(
     const putApiCaller = useMemo(() => createPutRequest<UpdateOptionRequest, ApiResponse<null>>(),[]);
 
     //【回答選択肢タイトルの変更】
-    const updateTitle = async () => {
+    const updateTitle = useCallback(async () => {
       // TODO: バリデーションが必要
       if (title === prevTitle.current) return;
       prevTitle.current = title;
@@ -71,47 +70,64 @@ const OptionView: React.FC<Props> = memo(
         false
       );
 
-      // [PUT] /api/v1/teacher/options/[id]/title
+      // バックエンド同期: 選択肢タイトル変更APIリクエスト
       const ep = `/api/v1/teacher/options/${id}/title`;
       const reqBody: UpdateOptionRequest = { id, title };
       dev.console.log("■ >>> " + JSON.stringify(reqBody, null, 2));
       const res = await putApiCaller(ep, { id, title }, apiRequestHeader);
       dev.console.log("■ <<< " + JSON.stringify(res, null, 2));
-    };
+    }, [
+      title,
+      getOptimisticLatestData,
+      mutate,
+      id,
+      putApiCaller,
+      apiRequestHeader,
+    ]);
 
     //【既定の回答選択肢の変更】
-    const changeDefaultOption = async (
-      event: React.ChangeEvent<HTMLInputElement>
-    ) => {
-      if (event.target.checked) {
-        const optimisticLatestData = produce(
-          getOptimisticLatestData(),
-          (draft: Draft<SessionEditableFields>) => {
-            const target = draft.questions.find(
-              (q) => q.id === option.questionId
-            );
-            if (!target)
-              throw new Error(`Question (id=${option.questionId}) not found.`);
-            target.defaultOptionId = id;
-            target.compareKey = uuid();
-          }
-        );
-        mutate(
-          new SuccessResponseBuilder<SessionEditableFields>(
-            optimisticLatestData!
-          )
-            .setHttpStatus(StatusCodes.OK)
-            .build(),
-          false
-        );
+    const changeDefaultOption = useCallback(
+      async (event: React.ChangeEvent<HTMLInputElement>) => {
+        if (event.target.checked) {
+          const optimisticLatestData = produce(
+            getOptimisticLatestData(),
+            (draft: Draft<SessionEditableFields>) => {
+              const target = draft.questions.find(
+                (q) => q.id === option.questionId
+              );
+              if (!target)
+                throw new Error(
+                  `Question (id=${option.questionId}) not found.`
+                );
+              target.defaultOptionId = id;
+              target.compareKey = uuid();
+            }
+          );
+          mutate(
+            new SuccessResponseBuilder<SessionEditableFields>(
+              optimisticLatestData!
+            )
+              .setHttpStatus(StatusCodes.OK)
+              .build(),
+            false
+          );
 
-        // [PUT] /api/v1/teacher/options/[id]/default-option
-        onUpdateDefaultOption({
-          id: option.questionId,
-          defaultOptionId: option.id,
-        });
-      }
-    };
+          // [PUT] /api/v1/teacher/options/[id]/default-option
+          onUpdateDefaultOption({
+            id: option.questionId,
+            defaultOptionId: option.id,
+          });
+        }
+      },
+      [
+        getOptimisticLatestData,
+        mutate,
+        onUpdateDefaultOption,
+        option.questionId,
+        option.id,
+        id,
+      ]
+    );
 
     return (
       <div className="m-1 border p-1">
@@ -133,8 +149,9 @@ const OptionView: React.FC<Props> = memo(
               onKeyDown={exitInputOnEnter}
             />
           </div>
-          <div className="flex items-center space-x-1">
+          <div className="flex items-center space-x-1 text-sm">
             <input
+              tabIndex={-1}
               type="radio"
               id={option.id}
               name={`${option.questionId}-default-option`}
@@ -143,7 +160,7 @@ const OptionView: React.FC<Props> = memo(
               className="ml-2"
               onChange={changeDefaultOption}
             />
-            <label htmlFor={option.id}>デフォルト回答に設定</label>
+            <label htmlFor={option.id}>既定</label>
           </div>
         </div>
       </div>
