@@ -62,6 +62,7 @@ export interface SessionSummary {
 
 export const optionEditableFieldsSchema = z.object({
   id: cuidSchema,
+  viewId: z.number().optional(),
   questionId: cuidSchema,
   order: orderSchema,
   title: optionTitleSchema,
@@ -76,6 +77,7 @@ export type OptionEditableFields = z.infer<typeof optionEditableFieldsSchema>;
 
 export const questionEditableFieldsSchema = z.object({
   id: cuidSchema,
+  viewId: z.number().optional(),
   order: orderSchema,
   title: questionTitleSchema,
   description: z.string(),

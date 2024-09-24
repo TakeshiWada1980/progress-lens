@@ -23,11 +23,13 @@ import { useExitInputOnEnter } from "@/app/_hooks/useExitInputOnEnter";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faGripVertical } from "@fortawesome/free-solid-svg-icons";
 
+import { useStateManagement } from "../_hooks/useStateManagement";
+
 type Props = {
   option: OptionEditableFields;
   isDefaultSelected: boolean;
   getOptimisticLatestData: () => SessionEditableFields | undefined;
-  mutate: KeyedMutator<ApiResponse<SessionEditableFields>>;
+  // mutate: KeyedMutator<ApiResponse<SessionEditableFields>>;
   onUpdateDefaultOption: (req: UpdateQuestionRequest) => void;
 };
 
@@ -36,7 +38,7 @@ const OptionView: React.FC<Props> = memo(
     option,
     isDefaultSelected,
     getOptimisticLatestData,
-    mutate,
+    // mutate,
     onUpdateDefaultOption,
   }) => {
     const id = option.id;
@@ -44,6 +46,7 @@ const OptionView: React.FC<Props> = memo(
     const prevTitle = useRef(option.title);
     const { apiRequestHeader } = useAuth();
     const exitInputOnEnter = useExitInputOnEnter();
+    const { mutate } = useStateManagement();
 
     // prettier-ignore
     const putApiCaller = useMemo(() => createPutRequest<UpdateOptionRequest, ApiResponse<null>>(),[]);

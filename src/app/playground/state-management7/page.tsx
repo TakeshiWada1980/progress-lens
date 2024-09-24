@@ -28,7 +28,7 @@ import { ConfirmDialog } from "@/app/_components/elements/ConfirmDialog";
 
 const Page: React.FC = () => {
   const id = "cm1dmmv0s0002dg0zwgbt5vna"; // TODO: デバッグ用
-  const ep = `/api/v1/teacher/sessions/${id}?cp=true`;
+  const ep = `/api/v1/teacher/sessions/${id}`;
   const { data, mutate } =
     useAuthenticatedGetRequest<SessionEditableFields>(ep);
   const { apiRequestHeader } = useAuth();
@@ -142,7 +142,7 @@ const Page: React.FC = () => {
             key={question.id}
             question={question}
             getOptimisticLatestData={getOptimisticLatestData}
-            mutate={mutate}
+            // mutate={mutate}
             confirmDeleteQuestion={confirmDeleteQuestion}
           />
         ))}

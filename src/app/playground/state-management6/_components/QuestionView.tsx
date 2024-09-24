@@ -32,6 +32,17 @@ import { createPutRequest } from "@/app/_utils/createApiRequest";
 import useAuth from "@/app/_hooks/useAuth";
 import { useExitInputOnEnter } from "@/app/_hooks/useExitInputOnEnter";
 
+// ドラッグアンドドロップ関連
+import { VmOption } from "../_types/types";
+import * as Dnd from "@dnd-kit/core";
+import * as DndSortable from "@dnd-kit/sortable";
+import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
+
+const customDropAnimation = {
+  ...Dnd.defaultDropAnimation,
+  duration: 0,
+};
+
 type Props = {
   question: QuestionEditableFields;
   getOptimisticLatestData: () => SessionEditableFields | undefined;
@@ -51,6 +62,75 @@ const QuestionView: React.FC<Props> = memo(
     const [title, setTitle] = useState(question.title);
     const prevTitle = useRef(question.title);
     const exitInputOnEnter = useExitInputOnEnter();
+
+    // ドラッグアンドドロップ関連
+    const [activeId, setActiveId] = useState<Dnd.UniqueIdentifier | null>(null);
+    const [vmOptions, setVmOptions] = useState<VmOption[]>();
+    useEffect(() => {
+      const vmOptions: VmOption[] = question.options.map<VmOption>(
+        (_, index) => {
+          return {
+            vId: index + 1, // 0開始はNG
+            isSelected: false,
+          };
+        }
+      );
+      dev.console.log("■■■■ vmOptions: " + JSON.stringify(vmOptions, null, 2));
+      setVmOptions(vmOptions);
+    }, [question]);
+
+    const dragStartAction = useCallback((e: Dnd.DragStartEvent) => {
+      setActiveId(e.active.id);
+    }, []);
+
+    const dndSensors = Dnd.useSensors(
+      Dnd.useSensor(Dnd.MouseSensor),
+      Dnd.useSensor(Dnd.TouchSensor)
+    );
+
+    const dragEndAction = useCallback(
+      (e: Dnd.DragEndEvent) => {
+        const { active, over } = e;
+        if (over && active.id !== over.id) {
+          if (!vmOptions) return [];
+          const moveFrom = vmOptions.findIndex((o) => o.vId === active.id);
+          const moveTo = vmOptions.findIndex((o) => o.vId === over.id);
+          const updatedOrderVmOptions = DndSortable.arrayMove(
+            vmOptions,
+            moveFrom,
+            moveTo
+          );
+          //TODO:ViewModel ではなく model の順番(order)を更新する処理
+          setVmOptions(updatedOrderVmOptions);
+
+          const optimisticLatestData = produce(
+            getOptimisticLatestData(),
+            (draft: Draft<SessionEditableFields>) => {
+              const target = draft.questions.find(
+                (question) => question.id === id
+              );
+              if (!target) throw new Error(`Question (id=${id}) not found.`);
+              target.options.forEach((option, index) => {
+                option.order = updatedOrderVmOptions[index].vId;
+                dev.console.log(option.order, updatedOrderVmOptions[index].vId);
+                option.compareKey = uuid();
+              });
+              target.compareKey = uuid();
+            }
+          );
+          mutate(
+            new SuccessResponseBuilder<SessionEditableFields>(
+              optimisticLatestData!
+            )
+              .setHttpStatus(StatusCodes.OK)
+              .build(),
+            false
+          );
+        }
+        setActiveId(null);
+      },
+      [getOptimisticLatestData, id, mutate, vmOptions]
+    );
 
     // prettier-ignore
     const putAttrApiCaller = useMemo(() => createPutRequest<UpdateQuestionRequest, ApiResponse<null>>(),[]);
@@ -170,6 +250,8 @@ const QuestionView: React.FC<Props> = memo(
     //【設問の削除】
     const deleteQuestion = async () => await confirmDeleteQuestion(id, title);
 
+    if (vmOptions === undefined) return null;
+
     return (
       <div className="m-1 border p-1">
         <div className="flex items-center space-x-2">
@@ -206,16 +288,34 @@ const QuestionView: React.FC<Props> = memo(
 
         {/* 回答選択肢 */}
         <div>
-          {question.options.map((option, index) => (
-            <OptionView
-              key={option.id}
-              option={option}
-              isDefaultSelected={option.id === question.defaultOptionId}
-              getOptimisticLatestData={getOptimisticLatestData}
-              mutate={mutate}
-              onUpdateDefaultOption={publishUpdateDefaultOption}
-            />
-          ))}
+          <Dnd.DndContext
+            sensors={dndSensors}
+            onDragStart={dragStartAction}
+            onDragEnd={dragEndAction}
+            collisionDetection={Dnd.closestCenter}
+            modifiers={[restrictToVerticalAxis]}
+          >
+            <DndSortable.SortableContext
+              items={vmOptions.map((o) => o.vId)}
+              strategy={DndSortable.verticalListSortingStrategy}
+            >
+              {question.options.map((option, index) => (
+                <OptionView
+                  key={option.id}
+                  option={option}
+                  isDefaultSelected={option.id === question.defaultOptionId}
+                  getOptimisticLatestData={getOptimisticLatestData}
+                  mutate={mutate}
+                  onUpdateDefaultOption={publishUpdateDefaultOption}
+                  vmOption={vmOptions[index]}
+                  isDragging={vmOptions[index].vId === activeId}
+                />
+              ))}
+            </DndSortable.SortableContext>
+            <Dnd.DragOverlay dropAnimation={customDropAnimation}>
+              {activeId ? <div className="h-16 cursor-move"></div> : null}
+            </Dnd.DragOverlay>
+          </Dnd.DndContext>
         </div>
       </div>
     );

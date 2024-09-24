@@ -31,11 +31,12 @@ import {
 import { createPutRequest } from "@/app/_utils/createApiRequest";
 import useAuth from "@/app/_hooks/useAuth";
 import { useExitInputOnEnter } from "@/app/_hooks/useExitInputOnEnter";
+import { useStateManagement } from "../_hooks/useStateManagement";
 
 type Props = {
   question: QuestionEditableFields;
   getOptimisticLatestData: () => SessionEditableFields | undefined;
-  mutate: KeyedMutator<ApiResponse<SessionEditableFields>>;
+  // mutate: KeyedMutator<ApiResponse<SessionEditableFields>>;
   confirmDeleteQuestion: (
     questionId: string,
     questionTitle: string
@@ -45,12 +46,19 @@ type Props = {
 // memoでラップすることで、親コンポーネントに連鎖する再レンダリングを抑制し
 // Props (compareKey属性) が変更されたときだけ 再レンダリング されるようにしている
 const QuestionView: React.FC<Props> = memo(
-  ({ question, getOptimisticLatestData, mutate, confirmDeleteQuestion }) => {
+  ({
+    question,
+    getOptimisticLatestData,
+    // mutate,
+    confirmDeleteQuestion,
+  }) => {
     const id = question.id;
     const { apiRequestHeader } = useAuth();
     const [title, setTitle] = useState(question.title);
     const prevTitle = useRef(question.title);
     const exitInputOnEnter = useExitInputOnEnter();
+
+    const { mutate } = useStateManagement();
 
     // prettier-ignore
     const putAttrApiCaller = useMemo(() => createPutRequest<UpdateQuestionRequest, ApiResponse<null>>(),[]);
@@ -74,18 +82,20 @@ const QuestionView: React.FC<Props> = memo(
           target.compareKey = uuid();
         }
       );
-      mutate(
-        new SuccessResponseBuilder<SessionEditableFields>(optimisticLatestData!)
-          .setHttpStatus(StatusCodes.OK)
-          .build(),
-        false
-      );
+      // mutate(
+      //   new SuccessResponseBuilder<SessionEditableFields>(optimisticLatestData!)
+      //     .setHttpStatus(StatusCodes.OK)
+      //     .build(),
+      //   false
+      // );
       // バックエンド同期: 設問タイトル変更APIリクエスト
       const ep = `/api/v1/teacher/questions/${id}/title`;
       const reqBody: UpdateQuestionRequest = { id, title };
       dev.console.log("■ >>> " + JSON.stringify(reqBody, null, 2));
       const res = await putAttrApiCaller(ep, reqBody, apiRequestHeader);
       dev.console.log("■ <<< " + JSON.stringify(res, null, 2));
+
+      mutate();
     }, [
       apiRequestHeader,
       getOptimisticLatestData,
@@ -212,7 +222,7 @@ const QuestionView: React.FC<Props> = memo(
               option={option}
               isDefaultSelected={option.id === question.defaultOptionId}
               getOptimisticLatestData={getOptimisticLatestData}
-              mutate={mutate}
+              // mutate={mutate}
               onUpdateDefaultOption={publishUpdateDefaultOption}
             />
           ))}

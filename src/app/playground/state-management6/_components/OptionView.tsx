@@ -23,12 +23,20 @@ import { useExitInputOnEnter } from "@/app/_hooks/useExitInputOnEnter";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faGripVertical } from "@fortawesome/free-solid-svg-icons";
 
+// ドラッグアンドドロップ関連
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { VmOption } from "../_types/types";
+import { twMerge } from "tailwind-merge";
+
 type Props = {
   option: OptionEditableFields;
   isDefaultSelected: boolean;
   getOptimisticLatestData: () => SessionEditableFields | undefined;
   mutate: KeyedMutator<ApiResponse<SessionEditableFields>>;
   onUpdateDefaultOption: (req: UpdateQuestionRequest) => void;
+  vmOption: VmOption;
+  isDragging: boolean;
 };
 
 const OptionView: React.FC<Props> = memo(
@@ -38,12 +46,19 @@ const OptionView: React.FC<Props> = memo(
     getOptimisticLatestData,
     mutate,
     onUpdateDefaultOption,
+    vmOption,
+    isDragging,
   }) => {
     const id = option.id;
     const [title, setTitle] = useState(option.title);
     const prevTitle = useRef(option.title);
     const { apiRequestHeader } = useAuth();
     const exitInputOnEnter = useExitInputOnEnter();
+
+    dev.console.log("■", JSON.stringify(vmOption, null, 2));
+
+    // ドラッグアンドドロップ関連
+    const sortable = useSortable({ id: vmOption.vId });
 
     // prettier-ignore
     const putApiCaller = useMemo(() => createPutRequest<UpdateOptionRequest, ApiResponse<null>>(),[]);
@@ -132,7 +147,14 @@ const OptionView: React.FC<Props> = memo(
     );
 
     return (
-      <div className="m-1 border p-1">
+      <div
+        className={twMerge("m-1 border p-1", isDragging && "bg-blue-50")}
+        ref={sortable.setNodeRef}
+        style={{
+          transform: CSS.Transform.toString(sortable.transform),
+          transition: sortable.transition,
+        }}
+      >
         <div className="flex items-center space-x-2">
           <RenderCount />
           <div className="text-xs text-blue-500">
@@ -140,7 +162,12 @@ const OptionView: React.FC<Props> = memo(
           </div>
         </div>
         <div className="flex space-x-2">
-          <div className="ml-1 flex-none cursor-move text-gray-300">
+          <div
+            className="ml-1 flex-none cursor-move text-gray-300"
+            ref={sortable.setActivatorNodeRef}
+            {...sortable.listeners}
+            {...sortable.attributes}
+          >
             <FontAwesomeIcon icon={faGripVertical} />
           </div>
           <div className="flex items-center space-x-2">
@@ -162,12 +189,10 @@ const OptionView: React.FC<Props> = memo(
               name={`${option.questionId}-default-option`}
               value={option.id}
               defaultChecked={isDefaultSelected}
-              className="ml-2 cursor-pointer"
+              className="ml-2"
               onChange={changeDefaultOption}
             />
-            <label className="cursor-pointer" htmlFor={option.id}>
-              既定
-            </label>
+            <label htmlFor={option.id}>既定</label>
           </div>
         </div>
       </div>
