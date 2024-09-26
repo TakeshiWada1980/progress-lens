@@ -301,7 +301,7 @@ const QuestionContent: React.FC<Props> = memo(
         </div>
 
         {/* 回答選択肢 */}
-        <div>
+        <div className="space-y-1">
           <Dnd.DndContext
             sensors={dndSensors}
             onDragStart={dragStartAction}

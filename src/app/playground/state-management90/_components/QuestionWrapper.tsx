@@ -19,6 +19,11 @@ import { twMerge } from "tailwind-merge";
 
 import dev from "@/app/_utils/devConsole";
 
+import {
+  Collapsible,
+  CollapsibleContent,
+} from "@/app/_components/shadcn/ui/collapsible";
+
 type Props = {
   question: QuestionEditableFields;
   getOptimisticLatestData: () => SessionEditableFields | undefined;
@@ -38,28 +43,7 @@ const QuestionWrapper: React.FC<Props> = memo(
     isDragging,
   }) => {
     const sortable = useSortable({ id: question.viewId! });
-
-    // 開閉関連
     const [isOpen, setIsOpen] = useState(true);
-    const contentRef = useRef<HTMLDivElement>(null);
-
-    const [contentHeight, setContentHeight] = useState<string | undefined>(
-      undefined
-    );
-
-    useLayoutEffect(() => {
-      if (contentRef.current) {
-        if (isOpen) {
-          setContentHeight(undefined);
-        } else {
-          setContentHeight("0px");
-        }
-      }
-    }, [isOpen]);
-
-    const toggleOpen = () => {
-      setIsOpen((prev) => !prev);
-    };
 
     return (
       <div
@@ -68,7 +52,7 @@ const QuestionWrapper: React.FC<Props> = memo(
           transform: CSS.Transform.toString(sortable.transform),
           transition: sortable.transition,
         }}
-        className={twMerge("border p-1", isDragging && "bg-blue-50")}
+        className={twMerge("mb-0 border p-1", isDragging && "bg-blue-50")}
       >
         {/* ドラッグアンドドロップのグリップ */}
         <div className="flex flex-col">
@@ -85,7 +69,10 @@ const QuestionWrapper: React.FC<Props> = memo(
               </div>
               <div>{!isOpen && question.title}</div>
             </div>
-            <button className="mr-1 text-slate-500" onClick={toggleOpen}>
+            <button
+              className="mr-1 text-slate-500"
+              onClick={() => setIsOpen((prev) => !prev)}
+            >
               <FontAwesomeIcon
                 icon={faCircleChevronUp}
                 className={twMerge(
@@ -97,18 +84,15 @@ const QuestionWrapper: React.FC<Props> = memo(
           </div>
 
           {/* 設問ビューの本体（分離して無駄な再レンダリングを抑制） */}
-          <div
-            className="overflow-hidden transition-all duration-500 ease-in-out"
-            style={{ height: contentHeight }}
-          >
-            <div ref={contentRef}>
+          <Collapsible open={isOpen} onOpenChange={setIsOpen} className="mb-0">
+            <CollapsibleContent>
               <QuestionContent
                 question={question}
                 getOptimisticLatestData={getOptimisticLatestData}
                 confirmDeleteQuestion={confirmDeleteQuestion}
               />
-            </div>
-          </div>
+            </CollapsibleContent>
+          </Collapsible>
         </div>
       </div>
     );

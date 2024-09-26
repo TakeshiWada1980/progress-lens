@@ -36,7 +36,7 @@ const OptionWrapper: React.FC<Props> = memo(
           transform: CSS.Transform.toString(sortable.transform),
           transition: sortable.transition,
         }}
-        className={twMerge("my-1 border p-1", isDragging && "bg-blue-50")}
+        className={twMerge("border p-1", isDragging && "bg-blue-50")}
       >
         {/* ドラッグアンドドロップのグリップ */}
         <div className="flex space-x-2">
