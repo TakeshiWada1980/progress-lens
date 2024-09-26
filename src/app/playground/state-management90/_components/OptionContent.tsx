@@ -25,7 +25,7 @@ type Props = {
   option: OptionEditableFields;
   getOptimisticLatestData: () => SessionEditableFields | undefined;
   onUpdateDefaultOption: (req: UpdateQuestionRequest) => void;
-  isDragging: boolean;
+  // isDragging: boolean;
 };
 
 const OptionContent: React.FC<Props> = memo(
@@ -146,10 +146,7 @@ const OptionContent: React.FC<Props> = memo(
   (prevProps, nextProps) => {
     const p = removeViewIdFromOptionEditableFields(prevProps.option);
     const n = removeViewIdFromOptionEditableFields(nextProps.option);
-    return (
-      JSON.stringify(p) === JSON.stringify(n) &&
-      prevProps.isDragging === nextProps.isDragging
-    );
+    return JSON.stringify(p) === JSON.stringify(n);
   }
 );
 

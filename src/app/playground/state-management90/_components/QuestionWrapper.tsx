@@ -1,50 +1,23 @@
 "use client";
 
-import React, {
-  useState,
-  useEffect,
-  useRef,
-  memo,
-  useMemo,
-  useCallback,
-} from "react";
-import { RenderCount } from "@/app/_components/elements/RenderCount";
-import OptionWrapper from "../_components/OptionWrapper";
+import React, { memo, useState, useRef, useLayoutEffect } from "react";
 import {
   SessionEditableFields,
   QuestionEditableFields,
-  OptionEditableFields,
 } from "@/app/_types/SessionTypes";
+import { removeViewIdFromQuestionEditableFields } from "../_helpers/propComparison";
+import QuestionContent from "./QuestionContent";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+  faGripVertical,
+  faCircleChevronUp,
+} from "@fortawesome/free-solid-svg-icons";
+
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { twMerge } from "tailwind-merge";
+
 import dev from "@/app/_utils/devConsole";
-import { produce, Draft } from "immer";
-import SuccessResponseBuilder from "@/app/api/_helpers/successResponseBuilder";
-import { StatusCodes } from "@/app/_utils/extendedStatusCodes";
-import { ApiResponse } from "@/app/_types/ApiResponse";
-import { Subject } from "rxjs";
-import { debounceTime, throttleTime } from "rxjs/operators";
-import {
-  UpdateQuestionRequest,
-  updateOptionsOrderSchema,
-  UpdateOptionsOrderRequest,
-} from "@/app/_types/SessionTypes";
-import { createPutRequest } from "@/app/_utils/createApiRequest";
-import useAuth from "@/app/_hooks/useAuth";
-import { useExitInputOnEnter } from "@/app/_hooks/useExitInputOnEnter";
-import { mutate } from "swr";
-import {
-  removeViewIdFromQuestionEditableFields,
-  findAndLogDifferences,
-} from "../_helpers/propComparison";
-
-// ドラッグアンドドロップ関連
-import * as Dnd from "@dnd-kit/core";
-import * as DndSortable from "@dnd-kit/sortable";
-import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
-
-const customDropAnimation = {
-  ...Dnd.defaultDropAnimation,
-  duration: 0,
-};
 
 type Props = {
   question: QuestionEditableFields;
@@ -53,277 +26,89 @@ type Props = {
     questionId: string,
     questionTitle: string
   ) => Promise<void>;
+  isDragging: boolean;
 };
 
+// 設問のドラッグアンドドロップの処理ためのラッパーコンポーネント
 const QuestionWrapper: React.FC<Props> = memo(
-  ({ question, getOptimisticLatestData, confirmDeleteQuestion }) => {
-    const id = question.id;
-    const { apiRequestHeader } = useAuth();
-    const [title, setTitle] = useState(question.title);
-    const prevTitle = useRef(question.title);
-    const exitInputOnEnter = useExitInputOnEnter();
-    const sessionEp = `/api/v1/teacher/sessions/${
-      getOptimisticLatestData()?.id
-    }`;
+  ({
+    question,
+    getOptimisticLatestData,
+    confirmDeleteQuestion,
+    isDragging,
+  }) => {
+    const sortable = useSortable({ id: question.viewId! });
 
-    const [xxxx, setXxxx] = useState<number[]>([]);
+    // 開閉関連
+    const [isOpen, setIsOpen] = useState(true);
+    const contentRef = useRef<HTMLDivElement>(null);
 
-    // prettier-ignore
-    const putAttrApiCaller = useMemo(() => createPutRequest<UpdateQuestionRequest, ApiResponse<null>>(),[]);
-    // prettier-ignore
-    const putOrderApiCaller = useMemo(() => createPutRequest<UpdateOptionsOrderRequest, ApiResponse<null>>(),[]);
-
-    // ドラッグアンドドロップ関連
-    const [activeId, setActiveId] = useState<Dnd.UniqueIdentifier | null>(null);
-    const [vmOptions, setVmOptions] = useState<OptionEditableFields[]>();
-    useEffect(() => {
-      const vmOptions: OptionEditableFields[] = question.options
-        .slice() // option の浅いコピーを作成
-        .sort((a, b) => a.order - b.order)
-        .map<OptionEditableFields>((option, index) => {
-          return {
-            ...option,
-            viewId: index + 1,
-          };
-        });
-      setVmOptions(vmOptions);
-      setXxxx(vmOptions.map((o) => o.viewId!));
-    }, [question]);
-
-    const dragStartAction = useCallback((e: Dnd.DragStartEvent) => {
-      setActiveId(e.active.id);
-    }, []);
-
-    const dndSensors = Dnd.useSensors(
-      Dnd.useSensor(Dnd.MouseSensor),
-      Dnd.useSensor(Dnd.TouchSensor)
+    const [contentHeight, setContentHeight] = useState<string | undefined>(
+      undefined
     );
 
-    const dragEndAction = useCallback(
-      async (e: Dnd.DragEndEvent) => {
-        const { active, over } = e;
-        if (over && active.id !== over.id) {
-          if (!vmOptions) return [];
-          const moveFrom = vmOptions.findIndex((o) => o.viewId === active.id);
-          const moveTo = vmOptions.findIndex((o) => o.viewId === over.id);
-          const updatedOrderVmOptions = DndSortable.arrayMove(
-            vmOptions,
-            moveFrom,
-            moveTo
-          );
-
-          setVmOptions(updatedOrderVmOptions);
-
-          // 楽観的更新
-          const reqBodyData: { optionId: string; order: number }[] = [];
-          const optimisticLatestData = produce(
-            getOptimisticLatestData(),
-            (draft: Draft<SessionEditableFields>) => {
-              const target = draft.questions.find(
-                (question) => question.id === id
-              );
-              if (!target) throw new Error(`Question (id=${id}) not found.`);
-
-              updatedOrderVmOptions.forEach((v, index) => {
-                const option = target.options.find((o) => o.id === v.id);
-                if (!option) throw new Error(`Option (id=${v.id}) not found.`);
-                option.order = index + 1;
-                reqBodyData.push({ optionId: option.id, order: index + 1 });
-              });
-            }
-          );
-
-          mutate(
-            sessionEp,
-            new SuccessResponseBuilder<SessionEditableFields>(
-              optimisticLatestData!
-            )
-              .setHttpStatus(StatusCodes.OK)
-              .build(),
-            false
-          );
-
-          // バックエンド同期: 回答選択肢の並び替えAPIリクエスト
-          const ep = `/api/v1/teacher/questions/${id}/options-order`;
-          const reqBody: UpdateOptionsOrderRequest =
-            updateOptionsOrderSchema.parse({
-              data: reqBodyData,
-            });
-          dev.console.log("■ >>> " + JSON.stringify(reqBody, null, 2));
-          const res = await putOrderApiCaller(ep, reqBody, apiRequestHeader);
-          dev.console.log("■ <<< " + JSON.stringify(res, null, 2));
-
-          // mutate(sessionEp);
+    useLayoutEffect(() => {
+      if (contentRef.current) {
+        if (isOpen) {
+          setContentHeight(undefined);
+        } else {
+          setContentHeight("0px");
         }
-        setActiveId(null);
-      },
-      [
-        apiRequestHeader,
-        getOptimisticLatestData,
-        id,
-        putOrderApiCaller,
-        sessionEp,
-        vmOptions,
-      ]
-    );
+      }
+    }, [isOpen]);
 
-    //【設問タイトルの変更】
-    const updateTitle = useCallback(async () => {
-      if (title === prevTitle.current) return;
-      prevTitle.current = title;
-      dev.console.log(
-        `設問（${question.id}）のタイトルを「${title}」に変更しました`
-      );
-
-      const optimisticLatestData = produce(
-        getOptimisticLatestData(),
-        (draft: Draft<SessionEditableFields>) => {
-          const target = draft.questions.find((question) => question.id === id);
-          if (!target) throw new Error(`Question (id=${id}) not found.`);
-          target.title = title;
-        }
-      );
-      mutate(
-        sessionEp,
-        new SuccessResponseBuilder<SessionEditableFields>(optimisticLatestData!)
-          .setHttpStatus(StatusCodes.OK)
-          .build(),
-        false
-      );
-      // バックエンド同期: 設問タイトル変更APIリクエスト
-      const ep = `/api/v1/teacher/questions/${id}/title`;
-      const reqBody: UpdateQuestionRequest = { id, title };
-      dev.console.log("■ >>> " + JSON.stringify(reqBody, null, 2));
-      const res = await putAttrApiCaller(ep, reqBody, apiRequestHeader);
-      dev.console.log("■ <<< " + JSON.stringify(res, null, 2));
-    }, [
-      apiRequestHeader,
-      getOptimisticLatestData,
-      id,
-      putAttrApiCaller,
-      question.id,
-      sessionEp,
-      title,
-    ]);
-
-    //【デフォルト選択肢変更の準備】
-    // prettier-ignore
-    const defaultOptionUpdateStream = useMemo(() => new Subject<UpdateQuestionRequest>(), []);
-
-    //【デフォルト選択肢の変更（本体）】
-    useEffect(() => {
-      const subscription = defaultOptionUpdateStream
-        .pipe(
-          debounceTime(1500),
-          throttleTime(1500, undefined, { leading: false, trailing: true })
-        )
-        .subscribe(async ({ id: questionId, defaultOptionId }) => {
-          const optimisticLatestData = produce(
-            getOptimisticLatestData(),
-            (draft: Draft<SessionEditableFields>) => {
-              const target = draft.questions.find((q) => q.id === questionId);
-              if (!target)
-                throw new Error(`Question (id=${questionId}) not found.`);
-              target.defaultOptionId = defaultOptionId!;
-            }
-          );
-          mutate(
-            sessionEp,
-            new SuccessResponseBuilder<SessionEditableFields>(
-              optimisticLatestData!
-            )
-              .setHttpStatus(StatusCodes.OK)
-              .build(),
-            false
-          );
-
-          // バックエンド同期: 設問のデフォルト選択回答変更APIリクエスト
-          const ep = `/api/v1/teacher/questions/${id}/default-option-id`;
-          const reqBody: UpdateQuestionRequest = { id, defaultOptionId };
-          dev.console.log("■ >>> " + JSON.stringify(reqBody, null, 2));
-          const res = await putAttrApiCaller(ep, reqBody, apiRequestHeader);
-          dev.console.log("■ <<< " + JSON.stringify(res, null, 2));
-        });
-      return () => {
-        subscription.unsubscribe();
-      };
-    }, [
-      apiRequestHeader,
-      defaultOptionUpdateStream,
-      getOptimisticLatestData,
-      id,
-      putAttrApiCaller,
-      sessionEp,
-    ]);
-
-    //【デフォルト選択肢の変更（トリガー）】
-    const publishUpdateDefaultOption = useCallback(
-      (req: UpdateQuestionRequest) => {
-        defaultOptionUpdateStream.next(req); // ストリームに値を流す
-      },
-      [defaultOptionUpdateStream]
-    );
-
-    //【設問の削除】
-    const deleteQuestion = async () => await confirmDeleteQuestion(id, title);
-
-    if (vmOptions === undefined) return null;
-    if (vmOptions[0].viewId === undefined) return null;
+    const toggleOpen = () => {
+      setIsOpen((prev) => !prev);
+    };
 
     return (
-      <div className="m-1 border p-1">
-        <div className="flex items-center space-x-2">
-          <RenderCount />
-          <div className="text-xs text-blue-500">
-            id=&quot;{question.id}&quot;
+      <div
+        ref={sortable.setNodeRef}
+        style={{
+          transform: CSS.Transform.toString(sortable.transform),
+          transition: sortable.transition,
+        }}
+        className={twMerge("border p-1", isDragging && "bg-blue-50")}
+      >
+        {/* ドラッグアンドドロップのグリップ */}
+        <div className="flex flex-col">
+          <div className="flex items-center justify-between">
+            <div className="flex justify-between">
+              <div
+                ref={sortable.setActivatorNodeRef}
+                {...sortable.listeners}
+                {...sortable.attributes}
+                className="ml-1 mr-2 flex-none cursor-move text-gray-300"
+                tabIndex={-1}
+              >
+                <FontAwesomeIcon icon={faGripVertical} />
+              </div>
+              <div>{!isOpen && question.title}</div>
+            </div>
+            <button className="mr-1 text-slate-500" onClick={toggleOpen}>
+              <FontAwesomeIcon
+                icon={faCircleChevronUp}
+                className={twMerge(
+                  "transition-transform duration-200",
+                  isOpen && "-rotate-180"
+                )}
+              />
+            </button>
           </div>
-        </div>
-        <div className="flex items-center space-x-2">
-          <input
-            id={"title" + id}
-            type="text"
-            value={title}
-            className="rounded-md border px-1"
-            onChange={(e) => setTitle(e.target.value)}
-            onBlur={updateTitle}
-            onKeyDown={exitInputOnEnter}
-          />
-          <button
-            tabIndex={-1}
-            className="rounded-md border px-3 py-1 text-sm"
-            onClick={deleteQuestion}
-          >
-            設問削除
-          </button>
-        </div>
 
-        {/* 回答選択肢 */}
-        <div>
-          <Dnd.DndContext
-            sensors={dndSensors}
-            onDragStart={dragStartAction}
-            onDragEnd={dragEndAction}
-            collisionDetection={Dnd.closestCenter}
-            modifiers={[restrictToVerticalAxis]}
+          {/* 設問ビューの本体（分離して無駄な再レンダリングを抑制） */}
+          <div
+            className="overflow-hidden transition-all duration-500 ease-in-out"
+            style={{ height: contentHeight }}
           >
-            <DndSortable.SortableContext
-              items={vmOptions.map((o) => o.viewId!)}
-              strategy={DndSortable.verticalListSortingStrategy}
-            >
-              {vmOptions.map((option, index) => (
-                <OptionWrapper
-                  key={option.id}
-                  option={option}
-                  getOptimisticLatestData={getOptimisticLatestData}
-                  onUpdateDefaultOption={publishUpdateDefaultOption}
-                  isDragging={vmOptions[index].viewId === activeId}
-                />
-              ))}
-            </DndSortable.SortableContext>
-            <Dnd.DragOverlay dropAnimation={customDropAnimation}>
-              {activeId ? <div className="h-16 cursor-move"></div> : null}
-            </Dnd.DragOverlay>
-          </Dnd.DndContext>
+            <div ref={contentRef}>
+              <QuestionContent
+                question={question}
+                getOptimisticLatestData={getOptimisticLatestData}
+                confirmDeleteQuestion={confirmDeleteQuestion}
+              />
+            </div>
+          </div>
         </div>
       </div>
     );

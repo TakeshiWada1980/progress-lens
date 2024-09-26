@@ -15,11 +15,9 @@ import prisma from "@/lib/prisma";
 import { getAuthUser } from "@/app/api/_helpers/getAuthUser";
 import UserService from "@/app/_services/userService";
 import SessionService, {
-  forEditSessionSchema,
+  fullSessionSchema,
 } from "@/app/_services/sessionService";
-import QuestionService, {
-  forUpdateQuestionSchema,
-} from "@/app/_services/questionService";
+import QuestionService from "@/app/_services/questionService";
 import { DomainRuleViolationError } from "@/app/_services/servicesExceptions";
 
 import { Prisma as PRS } from "@prisma/client";
@@ -56,7 +54,7 @@ export const PUT = async (req: NextRequest, { params: { id } }: Params) => {
     }
 
     // セッションが存在しない場合は Error がスローされる
-    const session = await sessionService.getById(sessionId);
+    const session = await sessionService.getById(sessionId, fullSessionSchema);
 
     // セッションが appUser の所有であるかを確認
     if (session.teacherId !== appUser.id) {

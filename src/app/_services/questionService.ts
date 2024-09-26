@@ -209,7 +209,7 @@ class QuestionService {
   ): Promise<void> {
     await this.prisma.$transaction(
       questionOrderUpdates.map(({ questionId, order }) =>
-        this.prisma.option.update({
+        this.prisma.question.update({
           where: { id: questionId },
           data: { order },
         })

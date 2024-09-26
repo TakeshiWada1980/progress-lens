@@ -41,7 +41,6 @@ export const GET = async (req: NextRequest, { params: { id } }: Params) => {
   const sessionId = id;
 
   const withCompareKey = req.nextUrl.searchParams.get("cp");
-  console.log("■", withCompareKey);
 
   try {
     // prettier-ignore
