@@ -17,10 +17,8 @@ import {
 } from "@/app/_types/SessionTypes";
 import dev from "@/app/_utils/devConsole";
 import { produce, Draft } from "immer";
-import { v4 as uuid } from "uuid";
 import SuccessResponseBuilder from "@/app/api/_helpers/successResponseBuilder";
 import { StatusCodes } from "@/app/_utils/extendedStatusCodes";
-import { KeyedMutator } from "swr";
 import { ApiResponse } from "@/app/_types/ApiResponse";
 import { Subject } from "rxjs";
 import { debounceTime, throttleTime } from "rxjs/operators";
@@ -32,6 +30,7 @@ import {
 import { createPutRequest } from "@/app/_utils/createApiRequest";
 import useAuth from "@/app/_hooks/useAuth";
 import { useExitInputOnEnter } from "@/app/_hooks/useExitInputOnEnter";
+import { mutate } from "swr";
 
 // ドラッグアンドドロップ関連
 import * as Dnd from "@dnd-kit/core";
@@ -46,7 +45,6 @@ const customDropAnimation = {
 type Props = {
   question: QuestionEditableFields;
   getOptimisticLatestData: () => SessionEditableFields | undefined;
-  mutate: KeyedMutator<ApiResponse<SessionEditableFields>>;
   confirmDeleteQuestion: (
     questionId: string,
     questionTitle: string
@@ -56,12 +54,15 @@ type Props = {
 // memoでラップすることで、親コンポーネントに連鎖する再レンダリングを抑制し
 // Props (compareKey属性) が変更されたときだけ 再レンダリング されるようにしている
 const QuestionView: React.FC<Props> = memo(
-  ({ question, getOptimisticLatestData, mutate, confirmDeleteQuestion }) => {
+  ({ question, getOptimisticLatestData, confirmDeleteQuestion }) => {
     const id = question.id;
     const { apiRequestHeader } = useAuth();
     const [title, setTitle] = useState(question.title);
     const prevTitle = useRef(question.title);
     const exitInputOnEnter = useExitInputOnEnter();
+    const sessionEp = `/api/v1/teacher/sessions/${
+      getOptimisticLatestData()?.id
+    }`;
 
     const [xxxx, setXxxx] = useState<number[]>([]);
 
@@ -84,7 +85,6 @@ const QuestionView: React.FC<Props> = memo(
           };
         });
       setVmOptions(vmOptions);
-
       setXxxx(vmOptions.map((o) => o.viewId!));
     }, [question]);
 
@@ -125,11 +125,11 @@ const QuestionView: React.FC<Props> = memo(
                 const option = target.options.find((o) => o.id === v.id);
                 if (!option) throw new Error(`Option (id=${v.id}) not found.`);
                 option.order = index + 1;
-                option.compareKey = uuid();
+                // option.compareKey = uuid();
                 reqBodyData.push({ optionId: option.id, order: index + 1 });
               });
 
-              target.compareKey = uuid();
+              // target.compareKey = uuid();
             }
           );
           mutate(
@@ -157,7 +157,6 @@ const QuestionView: React.FC<Props> = memo(
         apiRequestHeader,
         getOptimisticLatestData,
         id,
-        mutate,
         putOrderApiCaller,
         vmOptions,
       ]
@@ -177,10 +176,10 @@ const QuestionView: React.FC<Props> = memo(
           const target = draft.questions.find((question) => question.id === id);
           if (!target) throw new Error(`Question (id=${id}) not found.`);
           target.title = title;
-          target.compareKey = uuid();
         }
       );
       mutate(
+        sessionEp,
         new SuccessResponseBuilder<SessionEditableFields>(optimisticLatestData!)
           .setHttpStatus(StatusCodes.OK)
           .build(),
@@ -196,9 +195,9 @@ const QuestionView: React.FC<Props> = memo(
       apiRequestHeader,
       getOptimisticLatestData,
       id,
-      mutate,
       putAttrApiCaller,
       question.id,
+      sessionEp,
       title,
     ]);
 
@@ -213,7 +212,26 @@ const QuestionView: React.FC<Props> = memo(
           debounceTime(1500),
           throttleTime(1500, undefined, { leading: false, trailing: true })
         )
-        .subscribe(async ({ id, defaultOptionId }) => {
+        .subscribe(async ({ id: questionId, defaultOptionId }) => {
+          const optimisticLatestData = produce(
+            getOptimisticLatestData(),
+            (draft: Draft<SessionEditableFields>) => {
+              const target = draft.questions.find((q) => q.id === questionId);
+              if (!target)
+                throw new Error(`Question (id=${questionId}) not found.`);
+              target.defaultOptionId = defaultOptionId!;
+            }
+          );
+          mutate(
+            sessionEp,
+            new SuccessResponseBuilder<SessionEditableFields>(
+              optimisticLatestData!
+            )
+              .setHttpStatus(StatusCodes.OK)
+              .build(),
+            false
+          );
+
           // バックエンド同期: 設問のデフォルト選択回答変更APIリクエスト
           const ep = `/api/v1/teacher/questions/${id}/default-option-id`;
           const reqBody: UpdateQuestionRequest = { id, defaultOptionId };
@@ -224,7 +242,14 @@ const QuestionView: React.FC<Props> = memo(
       return () => {
         subscription.unsubscribe();
       };
-    }, [apiRequestHeader, defaultOptionUpdateStream, putAttrApiCaller]);
+    }, [
+      apiRequestHeader,
+      defaultOptionUpdateStream,
+      getOptimisticLatestData,
+      id,
+      putAttrApiCaller,
+      sessionEp,
+    ]);
 
     //【デフォルト選択肢の変更（トリガー）】
     const publishUpdateDefaultOption = useCallback(
@@ -276,14 +301,8 @@ const QuestionView: React.FC<Props> = memo(
     //【設問の削除】
     const deleteQuestion = async () => await confirmDeleteQuestion(id, title);
 
-    if (vmOptions === undefined) {
-      console.log("!!");
-      return null;
-    }
-    if (vmOptions[0].viewId === undefined) {
-      console.log("!!!!!");
-      return null;
-    }
+    if (vmOptions === undefined) return null;
+    if (vmOptions[0].viewId === undefined) return null;
 
     return (
       <div className="m-1 border p-1">
@@ -329,16 +348,26 @@ const QuestionView: React.FC<Props> = memo(
             modifiers={[restrictToVerticalAxis]}
           >
             <DndSortable.SortableContext
-              items={xxxx}
+              items={vmOptions.map((o) => o.viewId!)}
+              // items={xxxx}
               strategy={DndSortable.verticalListSortingStrategy}
             >
+              {/* {question.options.map((option, index) => (
+            <OptionView
+              key={option.id}
+              option={option}
+              getOptimisticLatestData={getOptimisticLatestData}
+              onUpdateDefaultOption={publishUpdateDefaultOption}
+            />
+          ))} */}
+
               {vmOptions.map((option, index) => (
                 <OptionView
                   key={option.id}
                   option={option}
-                  isDefaultSelected={option.id === question.defaultOptionId}
+                  // isDefaultSelected={option.id === question.defaultOptionId}
                   getOptimisticLatestData={getOptimisticLatestData}
-                  mutate={mutate}
+                  // mutate={mutate}
                   onUpdateDefaultOption={publishUpdateDefaultOption}
                   // vmOption={vmOptions[index]}
                   isDragging={vmOptions[index].viewId === activeId}
@@ -353,9 +382,89 @@ const QuestionView: React.FC<Props> = memo(
       </div>
     );
   },
-  (prevProps, nextProps) =>
-    prevProps.question.compareKey === nextProps.question.compareKey
+  (prevProps, nextProps) => {
+    const removeViewId = (obj: any): any => {
+      const newObj = { ...obj };
+      delete newObj.viewId;
+      if (newObj.options) {
+        newObj.options = newObj.options.map((option: any) => {
+          const newOption = { ...option };
+          delete newOption.viewId;
+          return newOption;
+        });
+      }
+      return newObj;
+    };
+
+    const prevQuestion = removeViewId(prevProps.question);
+    const nextQuestion = removeViewId(nextProps.question);
+
+    findAndLogDifferences(
+      JSON.stringify(prevQuestion, null, 2),
+      JSON.stringify(nextQuestion, null, 2)
+    );
+
+    return JSON.stringify(prevQuestion) === JSON.stringify(nextQuestion);
+  }
 );
+
+type JSONValue =
+  | string
+  | number
+  | boolean
+  | null
+  | JSONValue[]
+  | { [key: string]: JSONValue };
+
+function findAndLogDifferences(prevStr: string, nextStr: string): void {
+  const prev: JSONValue = JSON.parse(prevStr);
+  const next: JSONValue = JSON.parse(nextStr);
+
+  function compareObjects(
+    obj1: JSONValue,
+    obj2: JSONValue,
+    path: string = ""
+  ): void {
+    if (
+      typeof obj1 !== "object" ||
+      typeof obj2 !== "object" ||
+      obj1 === null ||
+      obj2 === null
+    ) {
+      if (obj1 !== obj2) {
+        console.log(`${path} が変更されました: ${obj1} -> ${obj2}`);
+      }
+      return;
+    }
+
+    const keys1 = Object.keys(obj1 as object);
+    const keys2 = Object.keys(obj2 as object);
+
+    for (const key of keys1) {
+      if (!(key in (obj2 as object))) {
+        console.log(`${path}${key} が削除されました`);
+      } else {
+        compareObjects(
+          (obj1 as { [key: string]: JSONValue })[key],
+          (obj2 as { [key: string]: JSONValue })[key],
+          `${path}${key}.`
+        );
+      }
+    }
+
+    for (const key of keys2) {
+      if (!(key in (obj1 as object))) {
+        console.log(
+          `${path}${key} が追加されました: ${
+            (obj2 as { [key: string]: JSONValue })[key]
+          }`
+        );
+      }
+    }
+  }
+
+  compareObjects(prev, next);
+}
 
 QuestionView.displayName = "QuestionView";
 

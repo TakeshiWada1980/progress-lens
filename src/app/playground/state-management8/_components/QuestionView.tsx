@@ -16,10 +16,8 @@ import {
 } from "@/app/_types/SessionTypes";
 import dev from "@/app/_utils/devConsole";
 import { produce, Draft } from "immer";
-import { v4 as uuid } from "uuid";
 import SuccessResponseBuilder from "@/app/api/_helpers/successResponseBuilder";
 import { StatusCodes } from "@/app/_utils/extendedStatusCodes";
-import { KeyedMutator } from "swr";
 import { ApiResponse } from "@/app/_types/ApiResponse";
 import { Subject } from "rxjs";
 import { debounceTime, throttleTime } from "rxjs/operators";
@@ -31,12 +29,11 @@ import {
 import { createPutRequest } from "@/app/_utils/createApiRequest";
 import useAuth from "@/app/_hooks/useAuth";
 import { useExitInputOnEnter } from "@/app/_hooks/useExitInputOnEnter";
-import { useStateManagement } from "../_hooks/useStateManagement";
+import { mutate } from "swr";
 
 type Props = {
   question: QuestionEditableFields;
   getOptimisticLatestData: () => SessionEditableFields | undefined;
-  // mutate: KeyedMutator<ApiResponse<SessionEditableFields>>;
   confirmDeleteQuestion: (
     questionId: string,
     questionTitle: string
@@ -46,19 +43,15 @@ type Props = {
 // memoでラップすることで、親コンポーネントに連鎖する再レンダリングを抑制し
 // Props (compareKey属性) が変更されたときだけ 再レンダリング されるようにしている
 const QuestionView: React.FC<Props> = memo(
-  ({
-    question,
-    getOptimisticLatestData,
-    // mutate,
-    confirmDeleteQuestion,
-  }) => {
+  ({ question, getOptimisticLatestData, confirmDeleteQuestion }) => {
     const id = question.id;
     const { apiRequestHeader } = useAuth();
     const [title, setTitle] = useState(question.title);
     const prevTitle = useRef(question.title);
     const exitInputOnEnter = useExitInputOnEnter();
-
-    const { mutate } = useStateManagement();
+    const sessionEp = `/api/v1/teacher/sessions/${
+      getOptimisticLatestData()?.id
+    }`;
 
     // prettier-ignore
     const putAttrApiCaller = useMemo(() => createPutRequest<UpdateQuestionRequest, ApiResponse<null>>(),[]);
@@ -79,10 +72,10 @@ const QuestionView: React.FC<Props> = memo(
           const target = draft.questions.find((question) => question.id === id);
           if (!target) throw new Error(`Question (id=${id}) not found.`);
           target.title = title;
-          // target.compareKey = uuid();
         }
       );
       mutate(
+        sessionEp,
         new SuccessResponseBuilder<SessionEditableFields>(optimisticLatestData!)
           .setHttpStatus(StatusCodes.OK)
           .build(),
@@ -94,15 +87,13 @@ const QuestionView: React.FC<Props> = memo(
       dev.console.log("■ >>> " + JSON.stringify(reqBody, null, 2));
       const res = await putAttrApiCaller(ep, reqBody, apiRequestHeader);
       dev.console.log("■ <<< " + JSON.stringify(res, null, 2));
-
-      mutate();
     }, [
       apiRequestHeader,
       getOptimisticLatestData,
       id,
-      mutate,
       putAttrApiCaller,
       question.id,
+      sessionEp,
       title,
     ]);
 
@@ -117,7 +108,26 @@ const QuestionView: React.FC<Props> = memo(
           debounceTime(1500),
           throttleTime(1500, undefined, { leading: false, trailing: true })
         )
-        .subscribe(async ({ id, defaultOptionId }) => {
+        .subscribe(async ({ id: questionId, defaultOptionId }) => {
+          const optimisticLatestData = produce(
+            getOptimisticLatestData(),
+            (draft: Draft<SessionEditableFields>) => {
+              const target = draft.questions.find((q) => q.id === questionId);
+              if (!target)
+                throw new Error(`Question (id=${questionId}) not found.`);
+              target.defaultOptionId = defaultOptionId!;
+            }
+          );
+          mutate(
+            sessionEp,
+            new SuccessResponseBuilder<SessionEditableFields>(
+              optimisticLatestData!
+            )
+              .setHttpStatus(StatusCodes.OK)
+              .build(),
+            false
+          );
+
           // バックエンド同期: 設問のデフォルト選択回答変更APIリクエスト
           const ep = `/api/v1/teacher/questions/${id}/default-option-id`;
           const reqBody: UpdateQuestionRequest = { id, defaultOptionId };
@@ -128,7 +138,14 @@ const QuestionView: React.FC<Props> = memo(
       return () => {
         subscription.unsubscribe();
       };
-    }, [apiRequestHeader, defaultOptionUpdateStream, putAttrApiCaller]);
+    }, [
+      apiRequestHeader,
+      defaultOptionUpdateStream,
+      getOptimisticLatestData,
+      id,
+      putAttrApiCaller,
+      sessionEp,
+    ]);
 
     //【デフォルト選択肢の変更（トリガー）】
     const publishUpdateDefaultOption = useCallback(
@@ -216,24 +233,20 @@ const QuestionView: React.FC<Props> = memo(
 
         {/* 回答選択肢 */}
         <div>
-          {question.options
-            .sort((o) => o.order)
-            .map((option, index) => (
-              <OptionView
-                key={option.id}
-                option={option}
-                isDefaultSelected={option.id === question.defaultOptionId}
-                getOptimisticLatestData={getOptimisticLatestData}
-                // mutate={mutate}
-                onUpdateDefaultOption={publishUpdateDefaultOption}
-              />
-            ))}
+          {question.options.map((option, index) => (
+            <OptionView
+              key={option.id}
+              option={option}
+              getOptimisticLatestData={getOptimisticLatestData}
+              onUpdateDefaultOption={publishUpdateDefaultOption}
+            />
+          ))}
         </div>
       </div>
     );
   },
   (prevProps, nextProps) =>
-    prevProps.question.compareKey === nextProps.question.compareKey
+    JSON.stringify(prevProps.question) === JSON.stringify(nextProps.question)
 );
 
 QuestionView.displayName = "QuestionView";

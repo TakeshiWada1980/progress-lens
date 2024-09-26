@@ -81,6 +81,8 @@ const OptionView: React.FC<Props> = memo(
       dev.console.log("■ >>> " + JSON.stringify(reqBody, null, 2));
       const res = await putApiCaller(ep, { id, title }, apiRequestHeader);
       dev.console.log("■ <<< " + JSON.stringify(res, null, 2));
+
+      mutate();
     }, [
       title,
       getOptimisticLatestData,

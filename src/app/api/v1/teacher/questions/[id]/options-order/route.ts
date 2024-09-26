@@ -14,9 +14,7 @@ import {
 import prisma from "@/lib/prisma";
 import { getAuthUser } from "@/app/api/_helpers/getAuthUser";
 import UserService from "@/app/_services/userService";
-import SessionService, {
-  forEditSessionSchema,
-} from "@/app/_services/sessionService";
+
 import QuestionService, {
   forUpdateQuestionSchema,
 } from "@/app/_services/questionService";
@@ -82,7 +80,8 @@ export const PUT = async (req: NextRequest, { params: { id } }: Params) => {
       !questionOptionsIds.every((id) => requestOptionIds.includes(id))
     ) {
       throw new BadRequestError(
-        "リクエストボディに含まれる questionId が不正です。"
+        "リクエストボディに含まれる optionId が不正です。",
+        { questionOptionsIds, requestOptionIds }
       );
     }
 

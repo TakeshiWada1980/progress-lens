@@ -8,10 +8,8 @@ import {
 } from "@/app/_types/SessionTypes";
 import dev from "@/app/_utils/devConsole";
 import { produce, Draft } from "immer";
-import { v4 as uuid } from "uuid";
 import SuccessResponseBuilder from "@/app/api/_helpers/successResponseBuilder";
 import { StatusCodes } from "@/app/_utils/extendedStatusCodes";
-import { KeyedMutator } from "swr";
 import { ApiResponse } from "@/app/_types/ApiResponse";
 import {
   UpdateQuestionRequest,
@@ -20,42 +18,32 @@ import {
 import { createPutRequest } from "@/app/_utils/createApiRequest";
 import useAuth from "@/app/_hooks/useAuth";
 import { useExitInputOnEnter } from "@/app/_hooks/useExitInputOnEnter";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faGripVertical } from "@fortawesome/free-solid-svg-icons";
-
-// ドラッグアンドドロップ関連
-import { useSortable } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
-import { twMerge } from "tailwind-merge";
+import { mutate } from "swr";
+import { removeViewIdFromOptionEditableFields } from "../_helpers/propComparison";
 
 type Props = {
   option: OptionEditableFields;
-  isDefaultSelected: boolean;
   getOptimisticLatestData: () => SessionEditableFields | undefined;
-  mutate: KeyedMutator<ApiResponse<SessionEditableFields>>;
   onUpdateDefaultOption: (req: UpdateQuestionRequest) => void;
   isDragging: boolean;
 };
 
-const OptionView: React.FC<Props> = memo(
-  ({
-    option,
-    isDefaultSelected,
-    getOptimisticLatestData,
-    mutate,
-    onUpdateDefaultOption,
-    isDragging,
-  }) => {
+const OptionContent: React.FC<Props> = memo(
+  ({ option, getOptimisticLatestData, onUpdateDefaultOption }) => {
     const id = option.id;
     const [title, setTitle] = useState(option.title);
     const prevTitle = useRef(option.title);
     const { apiRequestHeader } = useAuth();
     const exitInputOnEnter = useExitInputOnEnter();
+    const sessionEp = `/api/v1/teacher/sessions/${
+      getOptimisticLatestData()?.id
+    }`;
 
-    // dev.console.log("■", JSON.stringify(vmOption, null, 2));
-
-    // ドラッグアンドドロップ関連
-    const sortable = useSortable({ id: option.viewId! });
+    const isDefaultSelected =
+      option.id ===
+      getOptimisticLatestData()?.questions.find(
+        (q) => q.id === option.questionId
+      )?.defaultOptionId;
 
     // prettier-ignore
     const putApiCaller = useMemo(() => createPutRequest<UpdateOptionRequest, ApiResponse<null>>(),[]);
@@ -74,10 +62,10 @@ const OptionView: React.FC<Props> = memo(
             .find((o) => o.id === id);
           if (!target) throw new Error(`Option (id=${id}) not found.`);
           target.title = title;
-          target.compareKey = uuid();
         }
       );
       mutate(
+        sessionEp,
         new SuccessResponseBuilder<SessionEditableFields>(optimisticLatestData!)
           .setHttpStatus(StatusCodes.OK)
           .build(),
@@ -90,10 +78,12 @@ const OptionView: React.FC<Props> = memo(
       dev.console.log("■ >>> " + JSON.stringify(reqBody, null, 2));
       const res = await putApiCaller(ep, { id, title }, apiRequestHeader);
       dev.console.log("■ <<< " + JSON.stringify(res, null, 2));
+
+      // mutate(sessionEp);
     }, [
       title,
       getOptimisticLatestData,
-      mutate,
+      sessionEp,
       id,
       putApiCaller,
       apiRequestHeader,
@@ -103,55 +93,43 @@ const OptionView: React.FC<Props> = memo(
     const changeDefaultOption = useCallback(
       async (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.checked) {
-          const optimisticLatestData = produce(
-            getOptimisticLatestData(),
-            (draft: Draft<SessionEditableFields>) => {
-              const target = draft.questions.find(
-                (q) => q.id === option.questionId
-              );
-              if (!target)
-                throw new Error(
-                  `Question (id=${option.questionId}) not found.`
-                );
-              target.defaultOptionId = id;
-              target.compareKey = uuid();
-            }
-          );
-          mutate(
-            new SuccessResponseBuilder<SessionEditableFields>(
-              optimisticLatestData!
-            )
-              .setHttpStatus(StatusCodes.OK)
-              .build(),
-            false
-          );
-
-          // [PUT] /api/v1/teacher/options/[id]/default-option
           onUpdateDefaultOption({
             id: option.questionId,
             defaultOptionId: option.id,
           });
         }
       },
-      [
-        getOptimisticLatestData,
-        mutate,
-        onUpdateDefaultOption,
-        option.questionId,
-        option.id,
-        id,
-      ]
+      [onUpdateDefaultOption, option.questionId, option.id]
     );
 
     return (
-      <div
-        className={twMerge("m-1 border p-1", isDragging && "bg-blue-50")}
-        ref={sortable.setNodeRef}
-        style={{
-          transform: CSS.Transform.toString(sortable.transform),
-          transition: sortable.transition,
-        }}
-      >
+      <div>
+        <div className="flex items-center space-x-2">
+          <input
+            id={"option" + id}
+            type="text"
+            value={title}
+            className="rounded-md border px-1"
+            onChange={(e) => setTitle(e.target.value)}
+            onBlur={updateTitle}
+            onKeyDown={exitInputOnEnter}
+          />
+          <div className="flex items-center space-x-1 text-sm">
+            <input
+              tabIndex={-1}
+              type="radio"
+              id={option.id}
+              name={`${option.questionId}-default-option`}
+              value={option.id}
+              defaultChecked={isDefaultSelected}
+              className="ml-2 cursor-pointer"
+              onChange={changeDefaultOption}
+            />
+            <label className="cursor-pointer" htmlFor={option.id}>
+              既定
+            </label>
+          </div>
+        </div>
         <div className="flex items-center space-x-2">
           <RenderCount />
           <div className="text-xs text-blue-500">
@@ -161,55 +139,20 @@ const OptionView: React.FC<Props> = memo(
             order=&quot;{option.order}&quot;
           </div>
         </div>
-        <div className="flex space-x-2">
-          <div
-            className="ml-1 flex-none cursor-move text-gray-300"
-            ref={sortable.setActivatorNodeRef}
-            {...sortable.listeners}
-            {...sortable.attributes}
-          >
-            <FontAwesomeIcon icon={faGripVertical} />
-          </div>
-          <div className="flex items-center space-x-2">
-            <input
-              id={"option" + id}
-              type="text"
-              value={title}
-              className="rounded-md border px-1"
-              onChange={(e) => setTitle(e.target.value)}
-              onBlur={updateTitle}
-              onKeyDown={exitInputOnEnter}
-            />
-          </div>
-          <div className="flex items-center space-x-1 text-sm">
-            <input
-              tabIndex={-1}
-              type="radio"
-              id={option.id}
-              name={`${option.questionId}-default-option`}
-              value={option.id}
-              defaultChecked={isDefaultSelected}
-              className="ml-2"
-              onChange={changeDefaultOption}
-            />
-            <label htmlFor={option.id}>既定</label>
-          </div>
-        </div>
       </div>
     );
   },
+  // カスタム比較関数
   (prevProps, nextProps) => {
-    // dev.console.log(
-    //   prevProps.option.compareKey === nextProps.option.compareKey &&
-    //     prevProps.isDragging === nextProps.isDragging
-    // );
+    const p = removeViewIdFromOptionEditableFields(prevProps.option);
+    const n = removeViewIdFromOptionEditableFields(nextProps.option);
     return (
-      prevProps.option.compareKey === nextProps.option.compareKey &&
+      JSON.stringify(p) === JSON.stringify(n) &&
       prevProps.isDragging === nextProps.isDragging
     );
   }
 );
 
-OptionView.displayName = "OptionView";
+OptionContent.displayName = "OptionContent";
 
-export default OptionView;
+export default OptionContent;
