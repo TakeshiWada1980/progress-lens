@@ -111,7 +111,7 @@ const Page: React.FC = () => {
     async (questionId: string, questionTitle: string): Promise<void> => {
       confirmDeleteDialog.openDialog(
         "削除確認",
-        `設問 "${questionTitle}" を削除しますか？実行後は元に戻せません。`,
+        `"${questionTitle}" を削除しますか？実行後は元に戻せません。`,
         () => deleteQuestion(questionId)
       );
     },

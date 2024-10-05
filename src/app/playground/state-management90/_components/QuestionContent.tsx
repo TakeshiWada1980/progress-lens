@@ -66,8 +66,6 @@ const QuestionContent: React.FC<Props> = memo(
       getOptimisticLatestData()?.id
     }`;
 
-    // const [xxxx, setXxxx] = useState<number[]>([]);
-
     // prettier-ignore
     const putAttrApiCaller = useMemo(() => createPutRequest<UpdateQuestionRequest, ApiResponse<null>>(),[]);
     // prettier-ignore

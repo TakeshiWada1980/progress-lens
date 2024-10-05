@@ -32,6 +32,7 @@ const Attr = {
   title: "title",
   rewardMessage: "reward-message",
   rewardPoint: "reward-point",
+  effect: "effect",
 } as const;
 type Attr = (typeof Attr)[keyof typeof Attr];
 
@@ -39,6 +40,7 @@ const requiredFields: Record<Attr, keyof UpdateOptionRequest> = {
   [Attr.title]: Attr.title,
   [Attr.rewardMessage]: "rewardMessage",
   [Attr.rewardPoint]: "rewardPoint",
+  [Attr.effect]: Attr.effect,
 };
 
 type Params = { params: { id: string; attr: Attr } };
@@ -90,10 +92,10 @@ export const PUT = async (req: NextRequest, { params }: Params) => {
 
     // パスに応じた必須属性の検証
     // 例えば /teacher/options/[id]/title なら title 属性が必須
-    if (!updateOptionRequest[requiredFields[attr]]) {
+    if (updateOptionRequest[requiredFields[attr]] === undefined) {
       throw new BadRequestError(
         `エンドポイント ${req.nextUrl.pathname} に対するリクエストボディに ${attr} は必須です。`,
-        reqBody
+        { reqBody }
       );
     }
 
@@ -105,6 +107,26 @@ export const PUT = async (req: NextRequest, { params }: Params) => {
           title: updateOptionRequest.title,
         });
         break;
+      case Attr.rewardMessage:
+        await questionService.updateOption(optionId, {
+          id: optionId,
+          rewardMessage: updateOptionRequest.rewardMessage,
+        });
+        break;
+      case Attr.rewardPoint:
+        await questionService.updateOption(optionId, {
+          id: optionId,
+          rewardPoint: updateOptionRequest.rewardPoint,
+        });
+        break;
+      case Attr.effect:
+        await questionService.updateOption(optionId, {
+          id: optionId,
+          effect: updateOptionRequest.effect,
+        });
+        break;
+      default:
+        throw new BadRequestError(`不正な属性名です。`, { attr });
     }
 
     return NextResponse.json(
