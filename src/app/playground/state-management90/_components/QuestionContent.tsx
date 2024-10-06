@@ -53,10 +53,17 @@ type Props = {
     questionId: string,
     questionTitle: string
   ) => Promise<void>;
+  copyQuestion: (questionId: string, questionTitle: string) => Promise<void>;
 };
 
 const QuestionContent: React.FC<Props> = memo(
-  ({ question, getOptimisticLatestData, confirmDeleteQuestion }) => {
+  (props) => {
+    const {
+      question,
+      getOptimisticLatestData,
+      confirmDeleteQuestion,
+      copyQuestion,
+    } = props;
     const id = question.id;
     const { apiRequestHeader } = useAuth();
     const [title, setTitle] = useState(question.title);
@@ -96,6 +103,7 @@ const QuestionContent: React.FC<Props> = memo(
       Dnd.useSensor(Dnd.TouchSensor)
     );
 
+    //【設問の並び順の変更】
     const dragEndAction = useCallback(
       async (e: Dnd.DragEndEvent) => {
         const { active, over } = e;
@@ -263,13 +271,17 @@ const QuestionContent: React.FC<Props> = memo(
     );
 
     //【設問の削除】
-    const deleteQuestion = async () => await confirmDeleteQuestion(id, title);
+    const deleteQuestionAction = async () =>
+      await confirmDeleteQuestion(id, title);
+
+    //【設問の複製】
+    const copyQuestionAction = async () => await copyQuestion(id, title);
 
     if (vmOptions === undefined) return null;
 
     return (
       <div className="flex flex-col">
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center justify-between">
           <input
             id={"title" + id}
             type="text"
@@ -279,13 +291,23 @@ const QuestionContent: React.FC<Props> = memo(
             onBlur={updateTitle}
             onKeyDown={exitInputOnEnter}
           />
-          <button
-            tabIndex={-1}
-            className="rounded-md border px-3 py-1 text-sm"
-            onClick={deleteQuestion}
-          >
-            設問削除
-          </button>
+
+          <div className="mt-1 flex space-x-1">
+            <button
+              tabIndex={-1}
+              className="rounded-md border px-3 py-1 text-sm"
+              onClick={copyQuestionAction}
+            >
+              複製
+            </button>
+            <button
+              tabIndex={-1}
+              className="rounded-md border px-3 py-1 text-sm"
+              onClick={deleteQuestionAction}
+            >
+              削除
+            </button>
+          </div>
         </div>
 
         <div className="flex items-center space-x-2">

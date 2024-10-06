@@ -31,17 +31,20 @@ type Props = {
     questionId: string,
     questionTitle: string
   ) => Promise<void>;
+  copyQuestion: (questionId: string, questionTitle: string) => Promise<void>;
   isDragging: boolean;
 };
 
 // 設問のドラッグアンドドロップの処理ためのラッパーコンポーネント
 const QuestionWrapper: React.FC<Props> = memo(
-  ({
-    question,
-    getOptimisticLatestData,
-    confirmDeleteQuestion,
-    isDragging,
-  }) => {
+  (props) => {
+    const {
+      question,
+      getOptimisticLatestData,
+      confirmDeleteQuestion,
+      copyQuestion,
+      isDragging,
+    } = props;
     const sortable = useSortable({ id: question.viewId! });
     const [isOpen, setIsOpen] = useState(true);
 
@@ -70,7 +73,7 @@ const QuestionWrapper: React.FC<Props> = memo(
               <div>{!isOpen && question.title}</div>
             </div>
             <button
-              className="mr-1 text-slate-500"
+              className="mr-1 text-slate-400"
               onClick={() => setIsOpen((prev) => !prev)}
             >
               <FontAwesomeIcon
@@ -90,6 +93,7 @@ const QuestionWrapper: React.FC<Props> = memo(
                 question={question}
                 getOptimisticLatestData={getOptimisticLatestData}
                 confirmDeleteQuestion={confirmDeleteQuestion}
+                copyQuestion={copyQuestion}
               />
             </CollapsibleContent>
           </Collapsible>

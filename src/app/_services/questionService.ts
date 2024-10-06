@@ -6,9 +6,8 @@ import { Prisma as PRS } from "@prisma/client";
 import {
   type UpdateQuestionRequest,
   type UpdateOptionRequest,
-  type UpdateQuestionsOrderRequest,
-  type UpdateOptionsOrderRequest,
 } from "@/app/_types/SessionTypes";
+import { DomainRuleViolationError } from "@/app/_services/servicesExceptions";
 
 ///////////////////////////////////////////////////////////////
 
@@ -59,6 +58,26 @@ export const forEditQuestionSchema = {
     title: true,
     description: true,
     defaultOptionId: true,
+    options: {
+      select: forEditOptionSchema.select,
+      orderBy: forEditOptionSchema.orderBy,
+    },
+  },
+  orderBy: {
+    order: "asc" as const,
+  },
+} as const;
+
+///////////////////////////////////////////////////////////////
+
+export const forDuplicateQuestionSchema = {
+  select: {
+    id: true,
+    order: true,
+    title: true,
+    description: true,
+    defaultOptionId: true,
+    sessionId: true,
     options: {
       select: forEditOptionSchema.select,
       orderBy: forEditOptionSchema.orderBy,
@@ -207,14 +226,25 @@ class QuestionService {
       questionId: string;
     }[]
   ): Promise<void> {
-    await this.prisma.$transaction(
-      questionOrderUpdates.map(({ questionId, order }) =>
-        this.prisma.question.update({
-          where: { id: questionId },
-          data: { order },
-        })
-      )
-    );
+    await this.prisma.$transaction(async (tx) => {
+      await Promise.all(
+        questionOrderUpdates.map(({ questionId, order }) =>
+          tx.option.update({
+            where: { id: questionId },
+            data: { order },
+          })
+        )
+      );
+    });
+
+    // await this.prisma.$transaction(
+    //   questionOrderUpdates.map(({ questionId, order }) =>
+    //     this.prisma.question.update({
+    //       where: { id: questionId },
+    //       data: { order },
+    //     })
+    //   )
+    // );
   }
 
   /**
@@ -228,14 +258,25 @@ class QuestionService {
       order: number;
     }[]
   ): Promise<void> {
-    await this.prisma.$transaction(
-      optionOrderUpdates.map(({ optionId, order }) =>
-        this.prisma.option.update({
-          where: { id: optionId },
-          data: { order },
-        })
-      )
-    );
+    await this.prisma.$transaction(async (tx) => {
+      await Promise.all(
+        optionOrderUpdates.map(({ optionId, order }) =>
+          tx.option.update({
+            where: { id: optionId },
+            data: { order },
+          })
+        )
+      );
+    });
+
+    // await this.prisma.$transaction(
+    //   optionOrderUpdates.map(({ optionId, order }) =>
+    //     this.prisma.option.update({
+    //       where: { id: optionId },
+    //       data: { order },
+    //     })
+    //   )
+    // );
   }
 
   /**
@@ -245,6 +286,102 @@ class QuestionService {
   @withErrorHandling()
   public async delete(questionId: string): Promise<void> {
     await this.prisma.question.delete({ where: { id: questionId } });
+  }
+
+  // 設問の複製
+  @withErrorHandling()
+  public async duplicate(questionId: string): Promise<void> {
+    // 1. コピー元の設問の取得 と デフォルト選択肢の取得
+    const question = (await this.getById(
+      questionId,
+      forDuplicateQuestionSchema
+    )) as PRS.QuestionGetPayload<typeof forDuplicateQuestionSchema>;
+
+    // 1-1. コピー先に適用するデフォルト選択肢の取得
+    const defaultOptionTitle = question.options.find(
+      (option) => option.id === question.defaultOptionId
+    )?.title;
+    if (!defaultOptionTitle) {
+      throw new DomainRuleViolationError(
+        "コピー元の設問にデフォルト選択肢が設定されていません",
+        question
+      );
+    }
+
+    // 1-2. 設問の並び順の更新用のデータの準備
+    const questionOrderUpdates = (
+      await this.prisma.learningSession.findUnique({
+        where: { id: question.sessionId },
+        select: {
+          questions: {
+            select: { id: true, order: true },
+            where: { order: { gt: question.order } },
+          },
+        },
+      })
+    )?.questions.map((q) => ({
+      questionId: q.id,
+      order: q.order + 1,
+    }));
+
+    this.prisma.$transaction(async (tx) => {
+      //
+      // 2. 設問の複製
+      const newQuestion = await tx.question.create({
+        data: {
+          sessionId: question.sessionId,
+          title: `${question.title} (Copy)`,
+          description: question.description,
+          order: question.order + 1,
+          defaultOptionId: null, // 仮値
+        },
+      });
+
+      // 3. 選択肢の複製
+      const optionSeeds = question.options.map((option) => ({
+        questionId: newQuestion.id,
+        order: option.order,
+        title: option.title,
+        description: option.description,
+        rewardMessage: option.rewardMessage,
+        rewardPoint: option.rewardPoint,
+        effect: option.effect,
+      }));
+      await tx.option.createMany({
+        data: optionSeeds,
+      });
+
+      // 4. defaultOptionIdの設定
+      const options = await tx.option.findMany({
+        where: { questionId: newQuestion.id },
+        orderBy: { order: "asc" },
+      });
+      const newDefaultOptionId = options.find(
+        (option) => option.title === defaultOptionTitle
+      );
+      if (!newDefaultOptionId) {
+        throw new DomainRuleViolationError(
+          "コピー先の回答選択肢にデフォルト選択肢の候補が見つかりません",
+          options
+        );
+      }
+      await tx.question.update({
+        where: { id: newQuestion.id },
+        data: { defaultOptionId: newDefaultOptionId.id },
+      });
+
+      // 5. 並び順の更新  length > 0 の場合のみ実行
+      if (questionOrderUpdates?.length) {
+        await Promise.all(
+          questionOrderUpdates.map(({ questionId, order }) =>
+            tx.question.update({
+              where: { id: questionId },
+              data: { order },
+            })
+          )
+        );
+      }
+    });
   }
 
   // 設問の新規作成・初期化

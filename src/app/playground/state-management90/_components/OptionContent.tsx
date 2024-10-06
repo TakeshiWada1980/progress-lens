@@ -246,10 +246,7 @@ const OptionContent: React.FC<Props> = memo(
                   }
                 }}
               >
-                <FontAwesomeIcon
-                  icon={faWandMagicSparkles}
-                  // className="text-orange-400"
-                />
+                <FontAwesomeIcon icon={faWandMagicSparkles} />
               </div>
             </label>
           </div>

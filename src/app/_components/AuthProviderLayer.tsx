@@ -3,6 +3,7 @@
 import React, { ReactNode } from "react";
 import AuthProvider from "@/app/_contexts/AuthContext";
 import Header from "@/app/_components/Header";
+import { Toaster } from "@/app/_components/shadcn/ui/toaster";
 
 interface Props {
   children: ReactNode;
@@ -18,6 +19,7 @@ const AuthProviderLayer: React.FC<Props> = (props) => {
             <div>{props.children}</div>
           </div>
         </main>
+        <Toaster />
       </AuthProvider>
     </>
   );
