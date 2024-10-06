@@ -29,6 +29,9 @@ import { ConfirmDialog } from "@/app/_components/elements/ConfirmDialog";
 import ActionButton from "@/app/_components/elements/ActionButton";
 import CustomModal from "@/app/_components/CustomModal";
 
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faSpinner } from "@fortawesome/free-solid-svg-icons";
+
 const Page: React.FC = () => {
   const id = "cm1dmmv0s0002dg0zwgbt5vna"; // TODO: デバッグ用
   const ep = `/api/v1/teacher/sessions/${id}`;
@@ -86,6 +89,7 @@ const Page: React.FC = () => {
     setIsAddingQuestion(false);
     toast({
       description: "設問を追加しました。",
+      variant: "success",
     });
   }, [
     apiRequestHeader,
@@ -96,9 +100,9 @@ const Page: React.FC = () => {
   ]);
 
   //【設問の複製】
-  const copyQuestion = useCallback(
+  const duplicateQuestion = useCallback(
     async (questionId: string, questionTitle: string) => {
-      dev.console.log(`設問（${questionId}）を複製しました`);
+      dev.console.log(`設問（${questionId}）の複製を作成しました。`);
       setIsCopyingQuestion(true);
 
       // コピーを作成
@@ -114,8 +118,12 @@ const Page: React.FC = () => {
       // mutate処理
       mutate(res, false);
       setIsCopyingQuestion(false);
+      toast({
+        description: `設問 "${questionTitle}" の複製を作成しました。`,
+        variant: "success",
+      });
     },
-    [apiRequestHeader, mutate, postDuplicateQuestionApiCaller]
+    [apiRequestHeader, mutate, postDuplicateQuestionApiCaller, toast]
   );
 
   //【設問の削除（本体）】
@@ -141,6 +149,7 @@ const Page: React.FC = () => {
 
       toast({
         description: "設問を削除しました。",
+        variant: "success",
       });
 
       // バックエンド同期: 設問削除APIリクエスト
@@ -157,7 +166,7 @@ const Page: React.FC = () => {
     async (questionId: string, questionTitle: string): Promise<void> => {
       confirmDeleteDialog.openDialog(
         "削除確認",
-        `"${questionTitle}" を削除しますか？実行後は元に戻せません。`,
+        `設問 "${questionTitle}" を削除しますか？実行後は元に戻せません。`,
         () => deleteQuestion(questionId)
       );
     },
@@ -185,7 +194,7 @@ const Page: React.FC = () => {
           session={dataRef.current}
           getOptimisticLatestData={getOptimisticLatestData}
           confirmDeleteQuestion={confirmDeleteQuestion}
-          copyQuestion={copyQuestion}
+          duplicateQuestion={duplicateQuestion}
         />
       </div>
 
@@ -202,7 +211,13 @@ const Page: React.FC = () => {
 
       <ConfirmDialog {...confirmDeleteDialog} />
       <CustomModal isOpen={isCopyingQuestion} onClose={() => {}} className="">
-        <div className="">処理中です</div>
+        <div className="">
+          <FontAwesomeIcon
+            icon={faSpinner}
+            className="mr-2 animate-spin animate-duration-[2000ms]"
+          />
+          設問の複製処理中です...
+        </div>
       </CustomModal>
 
       {/* <pre className="mt-10 text-xs">

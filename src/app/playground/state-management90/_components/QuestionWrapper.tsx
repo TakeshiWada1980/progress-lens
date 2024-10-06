@@ -10,7 +10,7 @@ import QuestionContent from "./QuestionContent";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faGripVertical,
-  faCircleChevronUp,
+  faCircleChevronRight,
 } from "@fortawesome/free-solid-svg-icons";
 
 import { useSortable } from "@dnd-kit/sortable";
@@ -31,7 +31,10 @@ type Props = {
     questionId: string,
     questionTitle: string
   ) => Promise<void>;
-  copyQuestion: (questionId: string, questionTitle: string) => Promise<void>;
+  duplicateQuestion: (
+    questionId: string,
+    questionTitle: string
+  ) => Promise<void>;
   isDragging: boolean;
 };
 
@@ -42,11 +45,19 @@ const QuestionWrapper: React.FC<Props> = memo(
       question,
       getOptimisticLatestData,
       confirmDeleteQuestion,
-      copyQuestion,
+      duplicateQuestion,
       isDragging,
     } = props;
     const sortable = useSortable({ id: question.viewId! });
     const [isOpen, setIsOpen] = useState(true);
+
+    //【設問の削除】
+    const deleteQuestionAction = async () =>
+      await confirmDeleteQuestion(question.id, question.title);
+
+    //【設問の複製】
+    const copyQuestionAction = async () =>
+      await duplicateQuestion(question.id, question.title);
 
     return (
       <div
@@ -65,25 +76,42 @@ const QuestionWrapper: React.FC<Props> = memo(
                 ref={sortable.setActivatorNodeRef}
                 {...sortable.listeners}
                 {...sortable.attributes}
-                className="ml-1 mr-2 flex-none cursor-move text-gray-300"
+                className="ml-1 mr-2 flex-none cursor-move text-gray-300 hover:text-gray-400"
                 tabIndex={-1}
               >
                 <FontAwesomeIcon icon={faGripVertical} />
               </div>
               <div>{!isOpen && question.title}</div>
             </div>
-            <button
-              className="mr-1 text-slate-400"
-              onClick={() => setIsOpen((prev) => !prev)}
-            >
-              <FontAwesomeIcon
-                icon={faCircleChevronUp}
-                className={twMerge(
-                  "transition-transform duration-200",
-                  isOpen && "-rotate-180"
-                )}
-              />
-            </button>
+
+            <div className="flex items-center">
+              <button
+                tabIndex={-1}
+                className="mr-1 rounded-md border border-gray-200 px-2 py-0 text-sm text-gray-400 hover:bg-slate-100 hover:text-slate-700"
+                onClick={copyQuestionAction}
+              >
+                複製
+              </button>
+              <button
+                tabIndex={-1}
+                className="mr-3 rounded-md border border-gray-200 px-2 py-0 text-sm text-gray-400 hover:bg-slate-100 hover:text-slate-700"
+                onClick={deleteQuestionAction}
+              >
+                削除
+              </button>
+              <button
+                className="px-1 text-slate-300 hover:text-gray-400"
+                onClick={() => setIsOpen((prev) => !prev)}
+              >
+                <FontAwesomeIcon
+                  icon={faCircleChevronRight}
+                  className={twMerge(
+                    "transition-transform duration-200",
+                    isOpen && "rotate-90"
+                  )}
+                />
+              </button>
+            </div>
           </div>
 
           {/* 設問ビューの本体（分離して無駄な再レンダリングを抑制） */}
@@ -92,8 +120,6 @@ const QuestionWrapper: React.FC<Props> = memo(
               <QuestionContent
                 question={question}
                 getOptimisticLatestData={getOptimisticLatestData}
-                confirmDeleteQuestion={confirmDeleteQuestion}
-                copyQuestion={copyQuestion}
               />
             </CollapsibleContent>
           </Collapsible>

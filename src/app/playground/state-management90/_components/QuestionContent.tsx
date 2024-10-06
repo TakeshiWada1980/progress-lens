@@ -31,10 +31,10 @@ import { createPutRequest } from "@/app/_utils/createApiRequest";
 import useAuth from "@/app/_hooks/useAuth";
 import { useExitInputOnEnter } from "@/app/_hooks/useExitInputOnEnter";
 import { mutate } from "swr";
-import {
-  removeViewIdFromQuestionEditableFields,
-  findAndLogDifferences,
-} from "../_helpers/propComparison";
+import { removeViewIdFromQuestionEditableFields } from "../_helpers/propComparison";
+import FormFieldErrorMsg from "@/app/_components/elements/FormFieldErrorMsg";
+import { questionTitleSchema } from "@/app/_types/SessionTypes";
+import TextInputField from "@/app/_components/elements/TextInputField";
 
 // ドラッグアンドドロップ関連
 import * as Dnd from "@dnd-kit/core";
@@ -49,25 +49,17 @@ const customDropAnimation = {
 type Props = {
   question: QuestionEditableFields;
   getOptimisticLatestData: () => SessionEditableFields | undefined;
-  confirmDeleteQuestion: (
-    questionId: string,
-    questionTitle: string
-  ) => Promise<void>;
-  copyQuestion: (questionId: string, questionTitle: string) => Promise<void>;
 };
 
 const QuestionContent: React.FC<Props> = memo(
-  (props) => {
-    const {
-      question,
-      getOptimisticLatestData,
-      confirmDeleteQuestion,
-      copyQuestion,
-    } = props;
+  ({ question, getOptimisticLatestData }) => {
     const id = question.id;
     const { apiRequestHeader } = useAuth();
+
     const [title, setTitle] = useState(question.title);
     const prevTitle = useRef(question.title);
+    const [titleError, setTitleError] = useState<string | null>(null);
+
     const exitInputOnEnter = useExitInputOnEnter();
     const sessionEp = `/api/v1/teacher/sessions/${
       getOptimisticLatestData()?.id
@@ -175,11 +167,21 @@ const QuestionContent: React.FC<Props> = memo(
 
     //【設問タイトルの変更】
     const updateTitle = useCallback(async () => {
+      // バリデーション
       if (title === prevTitle.current) return;
-      prevTitle.current = title;
-      dev.console.log(
-        `設問（${question.id}）のタイトルを「${title}」に変更しました`
-      );
+      const zodResult = questionTitleSchema.safeParse(title);
+      if (!zodResult.success) {
+        setTitleError(zodResult.error.errors[0].message);
+        setTitle(prevTitle.current);
+        return;
+      }
+      setTitleError(null);
+      setTitle(zodResult.data);
+      prevTitle.current = zodResult.data;
+
+      // dev.console.log(
+      //   `設問（${question.id}）のタイトルを「${title}」に変更しました`
+      // );
 
       const optimisticLatestData = produce(
         getOptimisticLatestData(),
@@ -207,7 +209,6 @@ const QuestionContent: React.FC<Props> = memo(
       getOptimisticLatestData,
       id,
       putAttrApiCaller,
-      question.id,
       sessionEp,
       title,
     ]);
@@ -270,44 +271,56 @@ const QuestionContent: React.FC<Props> = memo(
       [defaultOptionUpdateStream]
     );
 
-    //【設問の削除】
-    const deleteQuestionAction = async () =>
-      await confirmDeleteQuestion(id, title);
+    // //【設問の削除】
+    // const deleteQuestionAction = async () =>
+    //   await confirmDeleteQuestion(id, title);
 
-    //【設問の複製】
-    const copyQuestionAction = async () => await copyQuestion(id, title);
+    // //【設問の複製】
+    // const copyQuestionAction = async () => await copyQuestion(id, title);
 
     if (vmOptions === undefined) return null;
 
     return (
       <div className="flex flex-col">
-        <div className="flex items-center justify-between">
-          <input
-            id={"title" + id}
-            type="text"
-            value={title}
-            className="rounded-md border px-1"
-            onChange={(e) => setTitle(e.target.value)}
-            onBlur={updateTitle}
-            onKeyDown={exitInputOnEnter}
-          />
+        <div className="mt-1">
+          <div className="flex items-center justify-between">
+            <TextInputField
+              id={"title" + id}
+              type="text"
+              value={title}
+              className="px-2 py-0.5 text-lg"
+              error={!!titleError}
+              onChange={(e) => {
+                setTitle(e.target.value);
+                const zodResult = questionTitleSchema.safeParse(e.target.value);
+                if (zodResult.success) {
+                  setTitleError(null);
+                } else {
+                  setTitleError(zodResult.error.errors[0].message);
+                }
+              }}
+              onBlur={updateTitle}
+              onKeyDown={exitInputOnEnter}
+            />
 
-          <div className="mt-1 flex space-x-1">
-            <button
-              tabIndex={-1}
-              className="rounded-md border px-3 py-1 text-sm"
-              onClick={copyQuestionAction}
-            >
-              複製
-            </button>
-            <button
-              tabIndex={-1}
-              className="rounded-md border px-3 py-1 text-sm"
-              onClick={deleteQuestionAction}
-            >
-              削除
-            </button>
+            {/* <div className="flex space-x-1">
+              <button
+                tabIndex={-1}
+                className="rounded-md border px-3 py-1 text-sm"
+                onClick={copyQuestionAction}
+              >
+                複製
+              </button>
+              <button
+                tabIndex={-1}
+                className="rounded-md border px-3 py-1 text-sm"
+                onClick={deleteQuestionAction}
+              >
+                削除
+              </button>
+            </div> */}
           </div>
+          <FormFieldErrorMsg msg={titleError} />
         </div>
 
         <div className="flex items-center space-x-2">

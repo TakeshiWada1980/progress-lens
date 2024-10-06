@@ -40,8 +40,6 @@ export const GET = async (req: NextRequest, { params: { id } }: Params) => {
   const sessionService = new SessionService(prisma);
   const sessionId = id;
 
-  const withCompareKey = req.nextUrl.searchParams.get("cp");
-
   try {
     // prettier-ignore
     // セッションの所有権と操作権限を確認
@@ -58,7 +56,6 @@ export const GET = async (req: NextRequest, { params: { id } }: Params) => {
       accessCode: session.accessCode,
       isActive: session.isActive,
       teacherId: session.teacherId,
-      compareKey: withCompareKey ? uuid() : undefined,
       questions: session.questions.map((q): QuestionEditableFields => {
         return {
           id: q.id,
@@ -66,11 +63,9 @@ export const GET = async (req: NextRequest, { params: { id } }: Params) => {
           title: q.title,
           description: q.description,
           defaultOptionId: q.defaultOptionId!,
-          compareKey: withCompareKey ? uuid() : undefined,
           options: q.options.map((option): OptionEditableFields => {
             return {
               ...option,
-              compareKey: withCompareKey ? uuid() : undefined,
             };
           }),
         };

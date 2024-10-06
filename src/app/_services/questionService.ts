@@ -229,7 +229,7 @@ class QuestionService {
     await this.prisma.$transaction(async (tx) => {
       await Promise.all(
         questionOrderUpdates.map(({ questionId, order }) =>
-          tx.option.update({
+          tx.question.update({
             where: { id: questionId },
             data: { order },
           })

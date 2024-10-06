@@ -26,7 +26,7 @@ const sessionTitleSchema = z
   .min(2, "2文字以上16文字以内で入力してください。")
   .max(16, "2文字以上16文字以内で入力してください。");
 
-const questionTitleSchema = z
+export const questionTitleSchema = z
   .string()
   .trim()
   .min(2, "2文字以上32文字以内で入力してください。")
@@ -70,7 +70,6 @@ export const optionEditableFieldsSchema = z.object({
   rewardMessage: z.string(),
   rewardPoint: rewardPointSchema,
   effect: z.boolean(),
-  compareKey: z.string().optional(),
 });
 
 export type OptionEditableFields = z.infer<typeof optionEditableFieldsSchema>;
@@ -82,7 +81,6 @@ export const questionEditableFieldsSchema = z.object({
   title: questionTitleSchema,
   description: z.string(),
   defaultOptionId: cuidSchema,
-  compareKey: z.string().optional(),
   options: z.array(optionEditableFieldsSchema),
 });
 
@@ -96,7 +94,6 @@ export const sessionEditableFieldsSchema = z.object({
   accessCode: accessCodeSchema,
   isActive: z.boolean(),
   teacherId: uuidSchema,
-  compareKey: z.string().optional(),
   questions: z.array(questionEditableFieldsSchema),
 });
 

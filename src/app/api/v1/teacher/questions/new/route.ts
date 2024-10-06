@@ -91,11 +91,9 @@ export const POST = async (req: NextRequest) => {
       title: question.title,
       description: question.description,
       defaultOptionId: question.defaultOptionId!,
-      compareKey: uuid(),
       options: question.options.map((option): OptionEditableFields => {
         return {
           ...option,
-          compareKey: uuid(),
         };
       }),
     };

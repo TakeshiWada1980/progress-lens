@@ -37,7 +37,10 @@ type Props = {
     questionId: string,
     questionTitle: string
   ) => Promise<void>;
-  copyQuestion: (questionId: string, questionTitle: string) => Promise<void>;
+  duplicateQuestion: (
+    questionId: string,
+    questionTitle: string
+  ) => Promise<void>;
 };
 
 const PageContent: React.FC<Props> = memo((props) => {
@@ -45,7 +48,7 @@ const PageContent: React.FC<Props> = memo((props) => {
     session,
     getOptimisticLatestData,
     confirmDeleteQuestion,
-    copyQuestion,
+    duplicateQuestion,
   } = props;
   const sessionEp = `/api/v1/teacher/sessions/${session.id}`;
   const { apiRequestHeader } = useAuth();
@@ -165,7 +168,7 @@ const PageContent: React.FC<Props> = memo((props) => {
                 question={question}
                 getOptimisticLatestData={getOptimisticLatestData}
                 confirmDeleteQuestion={confirmDeleteQuestion}
-                copyQuestion={copyQuestion}
+                duplicateQuestion={duplicateQuestion}
                 isDragging={false}
               />
             ))}
