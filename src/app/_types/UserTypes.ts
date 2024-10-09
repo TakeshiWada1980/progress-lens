@@ -14,43 +14,45 @@ export type Role = (typeof Role)[keyof typeof Role];
 
 ///////////////////////////////////////////////////////////////
 
-const requiredMsg = "必須入力の項目です。";
-const uuidRegex =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+// prettier-ignore
+export const isImageKey = (value: string) => /^private\/[a-f0-9]{32}$/.test(value);
+export const imageKeySchema = z.string().refine(isImageKey, {
+  message: "Invalid imageKey format.",
+});
+
+// prettier-ignore
+export const isUUID = (value: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+export const uuidSchema = z.string().refine(isUUID, {
+  message: "Invalid UUID format.",
+});
+
+const userRoleSchema = z.enum([Role.ADMIN, Role.TEACHER, Role.STUDENT]);
 
 ///////////////////////////////////////////////////////////////
-
-export interface UserId {
-  id: string;
-}
 
 export const userIdSchema = z.object({
-  id: z.string().regex(uuidRegex, "不正な形式です。Invalid UUID format."),
+  id: uuidSchema,
 });
 
-///////////////////////////////////////////////////////////////
+export type UserId = z.infer<typeof userIdSchema>;
 
-export interface UserNewRole {
-  id: string;
-  newRole: Role;
-}
+///////////////////////////////////////////////////////////////
 
 export const userNewRoleSchema = z.object({
-  id: z.string().regex(uuidRegex, "不正な形式です。Invalid UUID format."),
-  newRole: z.enum([Role.ADMIN, Role.TEACHER, Role.STUDENT]),
+  id: uuidSchema,
+  newRole: userRoleSchema,
 });
 
-///////////////////////////////////////////////////////////////
+export type UserNewRole = z.infer<typeof userNewRoleSchema>;
 
-export interface UserAuth {
-  email: string;
-  password: string;
-}
+///////////////////////////////////////////////////////////////
 
 export const userAuthSchema = z.object({
   email: z.string().email("メールアドレスの形式で入力してください。"),
   password: z.string().min(6, "パスワードには6文字以上が必要です。"),
 });
+
+export type UserAuth = z.infer<typeof userAuthSchema>;
 
 ///////////////////////////////////////////////////////////////
 
@@ -63,21 +65,14 @@ export interface UserProfile {
 }
 
 export const userProfileSchema = z.object({
-  id: z.string().regex(uuidRegex, "Invalid UUID format.").optional(),
-  role: z.enum([Role.ADMIN, Role.TEACHER, Role.STUDENT]).optional(),
+  id: uuidSchema.optional(),
+  role: userRoleSchema.optional(),
   displayName: z
     .string()
-    .min(1, requiredMsg)
-    .max(30, "30文字以内で入力してください。")
-    .transform((v) => v.trim())
-    .refine((val) => val.length >= 1, {
-      message:
-        "必須入力項目です。前後の空白文字を除いて 1文字以上 を入力してください。",
-    })
+    .trim()
+    .min(1, "1文字以上16文字以内で入力してください。")
+    .max(16, "1文字以上16文字以内で入力してください。")
     .optional(),
-  avatarImgKey: z
-    .string()
-    .regex(/^private\/[a-f0-9]{32}$/, "Invalid avatarImgKey format")
-    .optional(),
+  avatarImgKey: imageKeySchema.optional(),
   avatarImgUrl: z.string().optional(),
 });

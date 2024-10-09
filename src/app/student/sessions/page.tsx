@@ -38,7 +38,7 @@ import {
   SessionSummary,
   SessionEnrollmentResponse,
   AccessCode,
-  accessCodeSchema,
+  accessCodeObjSchema,
 } from "@/app/_types/SessionTypes";
 import ActionButton from "@/app/_components/elements/ActionButton";
 import AppErrorCode from "@/app/_types/AppErrorCode";
@@ -64,7 +64,7 @@ const Page: React.FC = () => {
   // アクセスコードの入力に使用するフォーム
   const accessCodeFormMethods = useForm<AccessCode>({
     mode: "onChange",
-    resolver: zodResolver(accessCodeSchema),
+    resolver: zodResolver(accessCodeObjSchema),
   });
 
   // セッションに参加する処理

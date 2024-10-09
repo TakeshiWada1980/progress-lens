@@ -70,7 +70,7 @@ const useTeacherSessionTableColumns = ({
         cell: ({ row }) => {
           const id = row.original.id;
           const session = row.original;
-          const href = `/teacher/sessions/${session.accessCode}`;
+          const href = `/teacher/sessions/${session.id}`;
           return (
             <div
               className={twMerge(

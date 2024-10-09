@@ -34,7 +34,6 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faChildReaching } from "@fortawesome/free-solid-svg-icons";
 import { EditTitleDialog } from "./_components/TitleEditorDialog";
 import { ConfirmDialog } from "@/app/_components/elements/ConfirmDialog";
-import { RenderCount } from "@/app/_components/elements/RenderCount";
 
 // 型・定数・ユーティリティ
 import { produce, Draft } from "immer";
@@ -100,7 +99,7 @@ const Page: React.FC = () => {
         case Mode.Creation:
           res = await postApiCaller(postEp, payload, apiRequestHeader);
           if (!res.success) new Error(res.error.technicalInfo);
-          router.push(`/teacher/sessions/${res.data.accessCode!}`);
+          router.push(`/teacher/sessions/${res.data.id}`);
           break;
 
         // [セッションのタイトルの更新]

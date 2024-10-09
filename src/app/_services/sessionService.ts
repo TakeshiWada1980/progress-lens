@@ -5,7 +5,9 @@ import {
   withErrorHandling,
 } from "@/app/_services/servicesExceptions";
 import { BadRequestError } from "@/app/api/_helpers/apiExceptions";
-import QuestionService from "@/app/_services/questionService";
+import QuestionService, {
+  forEditQuestionSchema,
+} from "@/app/_services/questionService";
 import {
   type UpdateSessionRequest,
   isAccessCode,
@@ -20,6 +22,9 @@ export type SessionReturnType<
 > = {
   include?: T;
   select?: U;
+  orderBy?:
+    | PRS.LearningSessionOrderByWithRelationInput
+    | PRS.LearningSessionOrderByWithRelationInput[];
 };
 
 export const fullSessionSchema = {
@@ -67,6 +72,20 @@ export const forGetAllByStudentIdSchema = {
         enrollments: true,
         questions: true,
       },
+    },
+  },
+} as const;
+
+export const forEditSessionSchema = {
+  select: {
+    id: true,
+    title: true,
+    accessCode: true,
+    isActive: true,
+    teacherId: true,
+    questions: {
+      select: forEditQuestionSchema.select,
+      orderBy: forEditQuestionSchema.orderBy,
     },
   },
 } as const;
@@ -157,9 +176,12 @@ class SessionService {
     sessionId: string,
     options?: SessionReturnType<T, U>
   ): Promise<PRS.LearningSessionGetPayload<{ include: T; select: U }>> {
+    // findUnique などの単数検索のときに orderBy を指定するとエラーになるので除外する処理
+    const { include, select } = options || {};
     return (await this.prisma.learningSession.findUniqueOrThrow({
       where: { id: sessionId },
-      ...options,
+      ...(include ? { include } : {}),
+      ...(select ? { select } : {}),
     })) as PRS.LearningSessionGetPayload<{ include: T; select: U }>;
   }
 
@@ -172,9 +194,11 @@ class SessionService {
     accessCode: string,
     options?: SessionReturnType<T, U>
   ): Promise<PRS.LearningSessionGetPayload<{ include: T; select: U }>> {
+    const { include, select } = options || {};
     const session = await this.prisma.learningSession.findUnique({
       where: { accessCode },
-      ...options,
+      ...(include ? { include } : {}),
+      ...(select ? { select } : {}),
     });
     if (!session) {
       const err = new BadRequestError(`Session (${accessCode}) not found.`, {
@@ -278,15 +302,21 @@ class SessionService {
     })) as PRS.LearningSessionGetPayload<{ include: T; select: U }>[];
   }
 
-  // 基本情報（title,isActive）の更新 セッションの存在は確認済みであること
+  /**
+   * ラーニングセッションの基本情報（title,isActive）の更新
+   * @param sessionId 呼び出し元で有効性を保証すべきセッションID
+   * @param data バリデーション済みの更新データ
+   * @note dataに id が含まれていても内部処理で無視するので問題ない
+   */
   @withErrorHandling()
   public async update(
     sessionId: string,
     data: UpdateSessionRequest
   ): Promise<void> {
+    const { id, ...updateData } = data; // id は更新させない
     await this.prisma.learningSession.update({
       where: { id: sessionId },
-      data: { ...data },
+      data: { ...updateData },
     });
   }
 
@@ -321,39 +351,38 @@ class SessionService {
   ): Promise<CreateSessionReturnType> {
     let session: LearningSession | null = null;
     const accessCode = await this.generateAccessCode();
-    // トランザクション内でセッションと初期設問を作成
-    await this.prisma.$transaction(
-      async (tx) => {
-        // 1. セッションの作成
-        try {
-          session = await tx.learningSession.create({
-            data: {
-              teacherId,
-              accessCode,
-              title,
-            },
-          });
-        } catch (error: any) {
-          if (error.code === "P2002") {
-            throw new DomainRuleViolationError(
-              `Unique constraint failed on the accessCode ${accessCode}`,
-              { teacherId, title, accessCode }
-            );
-          } else if (error.code === "P2003") {
-            throw new DomainRuleViolationError(
-              `FK constraint failed on the teacherId ${teacherId}`,
-              { teacherId, title, accessCode }
-            );
-          }
-          throw error;
-        }
 
-        // 2. 設問の作成
-        const questionService = new QuestionService(tx);
-        await questionService.createQuestion(session.id);
-      },
-      { timeout: 5000 }
-    );
+    // ※トランザクションを構成したほうがよいが
+    // SessionService と QuestionService にまたがる
+    // トランザクションは極めて複雑なため、ここではシンプルな実装としている
+
+    // 1. セッションの作成
+    try {
+      session = await this.prisma.learningSession.create({
+        data: {
+          teacherId,
+          accessCode,
+          title,
+        },
+      });
+    } catch (error: any) {
+      if (error.code === "P2002") {
+        throw new DomainRuleViolationError(
+          `Unique constraint failed on the accessCode ${accessCode}`,
+          { teacherId, title, accessCode }
+        );
+      } else if (error.code === "P2003") {
+        throw new DomainRuleViolationError(
+          `FK constraint failed on the teacherId ${teacherId}`,
+          { teacherId, title, accessCode }
+        );
+      }
+      throw error;
+    }
+
+    // 2. 設問の作成
+    const questionService = new QuestionService(this.prisma);
+    await questionService.create(session.id);
 
     // 3. 設問と選択肢を含めた完全なセッション情報の再取得
     return (await this.getById(

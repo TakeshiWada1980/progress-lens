@@ -98,7 +98,7 @@ const UserProfilePage: React.FC = () => {
     <div>
       <PageTitle title={`アカウント設定 ${roleValue}`} />
 
-      {!data?.data && (
+      {!data && (
         <LoadingSpinner message="バックグラウンドでデータを読み込み中(時間がかかる場合があります)..." />
       )}
 
@@ -106,7 +106,7 @@ const UserProfilePage: React.FC = () => {
         <form noValidate onSubmit={methods.handleSubmit(onSubmit)}>
           <FormProvider {...methods}>
             <ProfileUpdateForm
-              disabled={isSubmitting || !data?.data}
+              disabled={isSubmitting || !data}
               email={session?.user.email}
             />
           </FormProvider>
@@ -114,7 +114,7 @@ const UserProfilePage: React.FC = () => {
             type="submit"
             width="stretch"
             isBusy={isSubmitting}
-            disabled={!methods.formState.isValid || isSubmitting || !data?.data}
+            disabled={!methods.formState.isValid || isSubmitting || !data}
           >
             更新
           </ActionButton>
