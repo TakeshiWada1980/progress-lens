@@ -25,15 +25,15 @@ import LoadingSpinner from "@/app/_components/elements/LoadingSpinner";
 import { DataTable } from "@/app/_components/elements/DataTable";
 import BeginnersGuide from "./_components/BeginnersGuide";
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/app/_components/shadcn/ui/accordion";
+  Collapsible,
+  CollapsibleTrigger,
+  CollapsibleContent,
+} from "@/app/_components/shadcn/ui/collapsible";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faChildReaching } from "@fortawesome/free-solid-svg-icons";
+import { faChildReaching, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { EditTitleDialog } from "./_components/TitleEditorDialog";
 import { ConfirmDialog } from "@/app/_components/elements/ConfirmDialog";
+import CustomModal from "@/app/_components/CustomModal";
 
 // 型・定数・ユーティリティ
 import { produce, Draft } from "immer";
@@ -47,6 +47,8 @@ import {
   EditTitlePayload,
 } from "./_components/TitleEditorDialog";
 import ActionButton from "@/app/_components/elements/ActionButton";
+import dev from "@/app/_utils/devConsole";
+import { set } from "zod";
 
 enum Mode {
   Creation = "creation",
@@ -69,12 +71,16 @@ const Page: React.FC = () => {
   const [dialogTitle, setDialogTitle] = useState("");
   const [dialogSubmitButtonLabel, setDialogSubmitButtonLabel] = useState("");
 
+  const [isDuplicatingSession, setIsDuplicatingSession] = React.useState(false);
+
   const router = useRouter();
   // const confirmDeleteDialog = useConfirmDialog<{ id: string }>();
-  const confirmDeleteDialog = useConfirmDialog();
+  const confirmDialog = useConfirmDialog();
 
   // prettier-ignore
-  const postApiCaller = useMemo(() => createPostRequest<CreateSessionRequest, ApiResponse<SessionSummary>>(),[]);
+  const createSessionApiCaller = useMemo(() => createPostRequest<CreateSessionRequest, ApiResponse<SessionSummary>>(),[]);
+  // prettier-ignore
+  const duplicateSessionApiCaller = useMemo(() => createPostRequest<null, ApiResponse<SessionSummary[]>>(),[]);
   // prettier-ignore
   const putApiCaller = useMemo(() => createPutRequest<UpdateSessionRequest, ApiResponse<null>>(),[]);
   // prettier-ignore
@@ -97,7 +103,7 @@ const Page: React.FC = () => {
       switch (titleEditMode) {
         // [セッションの新規作成]
         case Mode.Creation:
-          res = await postApiCaller(postEp, payload, apiRequestHeader);
+          res = await createSessionApiCaller(postEp, payload, apiRequestHeader);
           if (!res.success) new Error(res.error.technicalInfo);
           router.push(`/teacher/sessions/${res.data.id}`);
           break;
@@ -203,7 +209,37 @@ const Page: React.FC = () => {
     [apiRequestHeader, data?.data, mutate, putApiCaller, titleEditFormMethods]
   );
 
-  //
+  // 既存セッションの複製処理(確認ダイアログ)
+  const duplicateSession = useCallback(
+    async (id: string): Promise<void> => {
+      dev.console.log("duplicateSession", id);
+      setIsDuplicatingSession(true);
+
+      // 複製リクエスト
+      const ep = `/api/v1/teacher/sessions/${id}/duplicate`;
+      dev.console.log("■ >>> " + ep);
+      const res = await duplicateSessionApiCaller(ep, null, apiRequestHeader);
+      dev.console.log("■ >>> " + JSON.stringify(res, null, 2));
+      mutate(res);
+
+      setIsDuplicatingSession(false);
+    },
+    [apiRequestHeader, duplicateSessionApiCaller, mutate]
+  );
+
+  // 既存セッションの削除処理(確認ダイアログ)
+  const confirmDuplicateSession = useCallback(
+    async (id: string, name: string): Promise<void> => {
+      confirmDialog.openDialog(
+        "確認",
+        `セッション "${name}" を複製しますか？`,
+        () => duplicateSession(id)
+      );
+    },
+    [confirmDialog, duplicateSession]
+  );
+
+  // 既存セッションの削除処理
   const deleteSession = useCallback(
     async (id: string): Promise<void> => {
       // 楽観的UI更新処理
@@ -226,22 +262,24 @@ const Page: React.FC = () => {
     [apiRequestHeader, data?.data, deleteApiCaller, mutate]
   );
 
-  // 既存セッションの削除処理
+  // 既存セッションの削除処理(確認ダイアログ)
   const confirmDeleteSession = useCallback(
     async (id: string, name: string): Promise<void> => {
-      confirmDeleteDialog.openDialog(
+      confirmDialog.openDialog(
         "削除確認",
         `セッション "${name}" を削除しますか？実行後は元に戻せません。`,
         () => deleteSession(id)
       );
     },
-    [confirmDeleteDialog, deleteSession]
+    [confirmDialog, deleteSession]
   );
 
   const columns = useTeacherSessionTableColumns({
     updateSessionSummary,
-    confirmDeleteSession: confirmDeleteSession,
+    confirmDuplicateSession,
+    confirmDeleteSession,
   });
+
   const filterableColumn = {
     accessorKey: c_Title,
     msg: "Filter learning session names...",
@@ -255,7 +293,9 @@ const Page: React.FC = () => {
         </div>
 
         <div className="flex flex-row justify-end">
-          <ActionButton onClick={createSessionAction}>新規作成</ActionButton>
+          <ActionButton onClick={createSessionAction} className="py-1">
+            新規作成
+          </ActionButton>
         </div>
       </div>
 
@@ -267,7 +307,10 @@ const Page: React.FC = () => {
             filterableColumn={filterableColumn}
           />
         ) : (
-          <LoadingSpinner message="バックグラウンドでデータを読み込んでいます..." />
+          <LoadingSpinner
+            message="バックグラウンドでデータを読み込んでいます..."
+            className="mt-4"
+          />
         )}
       </div>
 
@@ -282,22 +325,40 @@ const Page: React.FC = () => {
         />
       </FormProvider>
 
-      {/* <Accordion type="single" collapsible defaultValue={accordionValue}>
-        <AccordionItem value="item-1" className="border-0">
-          <AccordionTrigger className="text-slate-500 hover:cursor-pointer">
-            <div>
-              <FontAwesomeIcon icon={faChildReaching} className="mr-1.5" />
-              Beginner&rsquo;s Guide
-              <FontAwesomeIcon icon={faChildReaching} className="ml-1.5" />
-            </div>
-          </AccordionTrigger>
-          <AccordionContent>
-            <BeginnersGuide />
-          </AccordionContent>
-        </AccordionItem>
-      </Accordion> */}
+      <Collapsible defaultValue={accordionValue}>
+        <CollapsibleTrigger className="ml-2 text-blue-500 hover:cursor-pointer">
+          <div className="mb-2 font-bold">
+            <FontAwesomeIcon
+              icon={faChildReaching}
+              className="mr-1.5 animate-rotate-y animate-twice"
+            />
+            Beginner&rsquo;s Guide
+            <FontAwesomeIcon
+              icon={faChildReaching}
+              className="ml-1.5 animate-rotate-y animate-twice"
+            />
+          </div>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <BeginnersGuide />
+        </CollapsibleContent>
+      </Collapsible>
 
-      <ConfirmDialog {...confirmDeleteDialog} />
+      <ConfirmDialog {...confirmDialog} />
+
+      <CustomModal
+        isOpen={isDuplicatingSession}
+        onClose={() => {}}
+        className=""
+      >
+        <div className="">
+          <FontAwesomeIcon
+            icon={faSpinner}
+            className="mr-2 animate-spin animate-duration-[2000ms]"
+          />
+          設問の複製処理中です...
+        </div>
+      </CustomModal>
     </div>
   );
 };

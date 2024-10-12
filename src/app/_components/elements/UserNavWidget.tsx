@@ -5,15 +5,17 @@ import { useRouter } from "next/navigation";
 
 // カスタムフック・APIリクエスト系
 import useAuth from "@/app/_hooks/useAuth";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import LoadingSpinner from "./LoadingSpinner";
 
 // UIコンポーネント
 import Link, { link } from "@/app/_components/elements/Link";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import LoadingSpinner from "./LoadingSpinner";
 import {
   faAddressCard,
   faPersonDigging,
   faRightFromBracket,
+  faPersonChalkboard,
+  faChalkboardUser,
 } from "@fortawesome/free-solid-svg-icons";
 import {
   Avatar,
@@ -24,16 +26,15 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/app/_components/shadcn/ui/dropdown-menu";
 
 // 型・定数・ユーティリティ
-import { twMerge } from "tailwind-merge";
 import { roleEnum2str } from "@/app/_utils/roleEnum2str";
 import { IconDefinition } from "@fortawesome/free-solid-svg-icons";
 import { type VariantProps } from "tailwind-variants";
+import { Role } from "@prisma/client";
 
 type LinkVariants = VariantProps<typeof link>;
 
@@ -52,7 +53,7 @@ export const UserNavWidget: React.FC = () => {
   let role = roleEnum2str(userProfile?.role);
 
   // TODO: ロールに応じてメニュー項目を変更
-  const menuItems: MenuItem[] = [
+  const studentMenuItems: MenuItem[] = [
     {
       label: "アカウント設定",
       href: "/user/profile",
@@ -78,6 +79,29 @@ export const UserNavWidget: React.FC = () => {
       icon: faPersonDigging,
     },
   ];
+
+  const teacherMenuItems: MenuItem[] = [
+    {
+      label: "アカウント設定",
+      href: "/user/profile",
+      state: "enabled",
+      icon: faAddressCard,
+    },
+    {
+      label: "セッション一覧",
+      href: "/teacher/sessions",
+      state: "enabled",
+      icon: faChalkboardUser,
+    },
+    {
+      label: "項目1 (仮)",
+      href: "#",
+      state: "notImplemented",
+      icon: faPersonDigging,
+    },
+  ];
+
+  const menuItems = role === Role.STUDENT ? studentMenuItems : teacherMenuItems;
 
   const logoutAction = async () => {
     if (await logout()) {

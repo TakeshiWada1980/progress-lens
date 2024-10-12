@@ -5,8 +5,13 @@ import { ReactNode, ComponentPropsWithRef, forwardRef } from "react";
 import { tv, type VariantProps } from "tailwind-variants";
 
 const input = tv({
-  base: "w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-slate-700",
+  base: "w-full rounded-md border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-slate-700",
   variants: {
+    border: {
+      normal: "border-gray-300 ",
+      hoverOnly:
+        "border-transparent bg-transparent hover:border-gray-300 focus:ring-inset",
+    },
     disabled: {
       true: "cursor-not-allowed opacity-50",
     },
@@ -18,7 +23,7 @@ const input = tv({
     },
   },
   defaultVariants: {
-    width: "auto",
+    border: "normal",
     disabled: false,
     isBusy: false,
     readOnly: false,
@@ -34,17 +39,20 @@ interface Props
   isBusy?: boolean;
   readOnly?: boolean;
   error?: boolean;
+  border?: "normal" | "hoverOnly";
 }
 
 const TextInputField = forwardRef<HTMLInputElement, Props>((props, ref) => {
-  const { disabled, className, readOnly, error, isBusy, ...rest } = props;
+  const { disabled, className, readOnly, error, isBusy, border, ...rest } =
+    props;
 
   return (
     <input
       ref={ref}
-      className={input({ disabled, readOnly, error, class: className })}
+      className={input({ border, disabled, readOnly, error, class: className })}
       disabled={disabled || isBusy}
       readOnly={readOnly}
+      type="text"
       {...rest}
     />
   );

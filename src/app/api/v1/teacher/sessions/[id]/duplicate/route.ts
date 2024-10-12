@@ -4,45 +4,46 @@ import { ApiErrorResponse } from "@/app/_types/ApiResponse";
 import SuccessResponseBuilder from "@/app/api/_helpers/successResponseBuilder";
 import ErrorResponseBuilder from "@/app/api/_helpers/errorResponseBuilder";
 import { StatusCodes } from "@/app/_utils/extendedStatusCodes";
-import {
-  ApiError,
-  NonTeacherOperationError,
-} from "@/app/api/_helpers/apiExceptions";
+import { ApiError } from "@/app/api/_helpers/apiExceptions";
 
 // ユーザ認証・サービスクラス関係
 import prisma from "@/lib/prisma";
-import { getAuthUser } from "@/app/api/_helpers/getAuthUser";
 import UserService from "@/app/_services/userService";
+import QuestionService from "@/app/_services/questionService";
 import SessionService, {
   forGetAllByTeacherIdSchema,
 } from "@/app/_services/sessionService";
+import { Prisma as PRS } from "@prisma/client";
+import { verifySessionOwnershipAndPermissions } from "../_helpers/verifySessionAuth";
 
 // 型定義・データ検証関連
-import { Role } from "@/app/_types/UserTypes";
 import { SessionSummary } from "@/app/_types/SessionTypes";
-import { Prisma as PRS } from "@prisma/client";
 
 export const revalidate = 0; // キャッシュを無効化
 
-// [GET] /api/v1/teacher/sessions/
-// ユーザーが [教員] として作成したセッションの一覧を取得
-export const GET = async (req: NextRequest) => {
+type Params = { params: { id: string } };
+
+// [POST] /api/v1/teacher/session/[id]/duplicate
+export const POST = async (req: NextRequest, { params: { id } }: Params) => {
+  const sessionId = id;
   const userService = new UserService(prisma);
   const sessionService = new SessionService(prisma);
+  const questionService = new QuestionService(prisma);
 
   try {
-    // トークンが不正なときは InvalidTokenError がスローされる
-    const authUser = await getAuthUser(req);
+    // セッションの所有権と操作権限を確認
+    const { appUser } = await verifySessionOwnershipAndPermissions(
+      req,
+      sessionId,
+      userService,
+      sessionService
+    );
 
-    // ユーザが存在しない場合は UserService.NotFoundError がスローされる
-    const appUser = await userService.getById(authUser.id);
-
-    // ユーザーが 教員 または 管理者 のロールを持たない場合は Error がスローされる
-    if (appUser.role === Role.STUDENT) {
-      throw new NonTeacherOperationError(appUser.id, appUser.displayName);
-    }
+    // 設問を複製する
+    await sessionService.duplicate(sessionId);
 
     // レスポンスデータの作成
+    // [GET] /api/v1/teacher/sessions/ と同じもの
     const sessions = (await sessionService.getAllByTeacherId(
       appUser.id,
       forGetAllByTeacherIdSchema,
