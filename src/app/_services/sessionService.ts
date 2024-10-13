@@ -7,6 +7,7 @@ import {
 import { BadRequestError } from "@/app/api/_helpers/apiExceptions";
 import QuestionService, {
   forEditQuestionSchema,
+  forAnswerQuestionSchema,
 } from "@/app/_services/questionService";
 import {
   type UpdateSessionRequest,
@@ -86,6 +87,22 @@ export const forEditSessionSchema = {
     questions: {
       select: forEditQuestionSchema.select,
       orderBy: forEditQuestionSchema.orderBy,
+    },
+  },
+} as const;
+
+///////////////////////////////////////////////////////////////
+
+export const forAnswerSessionSchema = {
+  select: {
+    id: true,
+    title: true,
+    accessCode: true,
+    isActive: true,
+    teacherId: true,
+    questions: {
+      select: forAnswerQuestionSchema.select,
+      orderBy: forAnswerQuestionSchema.orderBy,
     },
   },
 } as const;

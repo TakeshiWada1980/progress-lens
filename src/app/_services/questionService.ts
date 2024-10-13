@@ -122,6 +122,47 @@ export const forUpdateOptionSchema = {
 
 ///////////////////////////////////////////////////////////////
 
+export const forAnswerOptionSchema = {
+  select: {
+    id: true,
+    order: true,
+    title: true,
+    // questionId: true,
+    // description: true,
+    rewardMessage: true,
+    rewardPoint: true,
+    effect: true,
+    _count: {
+      select: {
+        responses: true,
+      },
+    },
+  },
+  orderBy: {
+    order: "asc" as const,
+  },
+} as const;
+
+export const forAnswerQuestionSchema = {
+  select: {
+    id: true,
+    order: true,
+    title: true,
+    description: true,
+    defaultOptionId: true,
+    // sessionId: true,
+    options: {
+      select: forAnswerOptionSchema.select,
+      orderBy: forAnswerOptionSchema.orderBy,
+    },
+  },
+  orderBy: {
+    order: "asc" as const,
+  },
+} as const;
+
+///////////////////////////////////////////////////////////////
+
 type TransactionCapablePrisma = PrismaClient | PRS.TransactionClient;
 
 class QuestionService {
