@@ -83,7 +83,7 @@ export const DataTable: <TData>(props: Props<TData>) => React.ReactElement = ({
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow
                 key={headerGroup.id}
-                className="bg-sky-50 hover:bg-sky-50"
+                className="bg-indigo-50 hover:bg-indigo-50"
               >
                 {headerGroup.headers.map((header) => {
                   const style = twMerge(

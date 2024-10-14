@@ -20,7 +20,7 @@ const accessCodeSchema = z.string().refine(isAccessCode, {
     "Invalid AccessCode format. NNN-NNNN の形式が必要です（Nは半角数字）",
 });
 
-const sessionTitleSchema = z
+export const sessionTitleSchema = z
   .string()
   .trim()
   .min(2, "2文字以上16文字以内で入力してください。")
@@ -32,7 +32,7 @@ export const questionTitleSchema = z
   .min(2, "2文字以上32文字以内で入力してください。")
   .max(32, "2文字以上32文字以内で入力してください。");
 
-const optionTitleSchema = z
+export const optionTitleSchema = z
   .string()
   .trim()
   .min(0, "0文字以上16文字以内で入力してください。")

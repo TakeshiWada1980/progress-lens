@@ -1,5 +1,6 @@
 // 開発環境かどうか
 export const isDevelopmentEnv = process.env.NODE_ENV === "development";
+export const isDebugMode = true;
 
 // API取得時の遅延時間（ミリ秒）
 export const apiDelay = 0;
