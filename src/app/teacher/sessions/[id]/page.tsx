@@ -227,8 +227,9 @@ const Page: React.FC = () => {
       );
       dev.console.log("■ <<< " + JSON.stringify(res, null, 2));
 
-      // mutate処理
-      mutate(res, false);
+      // 再取得（あえてawaitしたほうがUXが心地よい)
+      await mutate();
+
       setIsDuplicatingQuestion(false);
       toast({
         description: `設問 "${questionTitle}" の複製を作成しました。`,

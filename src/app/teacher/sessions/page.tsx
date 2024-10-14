@@ -220,7 +220,9 @@ const Page: React.FC = () => {
       dev.console.log("■ >>> " + ep);
       const res = await duplicateSessionApiCaller(ep, null, apiRequestHeader);
       dev.console.log("■ >>> " + JSON.stringify(res, null, 2));
-      mutate(res);
+
+      // 再取得（あえてawaitしたほうがUXが心地よい)
+      await mutate();
 
       setIsDuplicatingSession(false);
     },

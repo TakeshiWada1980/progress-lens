@@ -42,25 +42,12 @@ export const POST = async (req: NextRequest, { params: { id } }: Params) => {
     // 設問を複製する
     await sessionService.duplicate(sessionId);
 
-    // レスポンスデータの作成
-    // [GET] /api/v1/teacher/sessions/ と同じもの
-    const sessions = (await sessionService.getAllByTeacherId(
-      appUser.id,
-      forGetAllByTeacherIdSchema,
-      "createdAt"
-    )) as PRS.LearningSessionGetPayload<typeof forGetAllByTeacherIdSchema>[];
-    const res: SessionSummary[] = sessions.map((session) => ({
-      ...session,
-      _count: undefined,
-      teacherName: appUser.displayName,
-      enrollmentCount: session._count.enrollments,
-      questionsCount: session._count.questions,
-    }));
+    // NOTE: もし、ネットワークオーバーヘッドが問題になるときは、
+    // ここで [GET] /api/v1/teacher/sessions/ と同じものを返すことも再検討
+    // 現状では、RESTful原則・責務分離のため、このEPは成功レスポンスのみを返す
 
     return NextResponse.json(
-      new SuccessResponseBuilder<SessionSummary[]>(res)
-        .setHttpStatus(StatusCodes.OK)
-        .build()
+      new SuccessResponseBuilder(null).setHttpStatus(StatusCodes.OK).build()
     );
   } catch (error: any) {
     const payload = createErrorResponse(error);

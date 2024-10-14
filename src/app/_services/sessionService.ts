@@ -417,46 +417,48 @@ class SessionService {
       });
 
       // 2. 質問を複製
-      for (const question of session.questions) {
-        // デフォルトオプションのインデックスを取得
-        const defaultOptionIndex = question.options.findIndex(
-          (o) => o.id === question.defaultOptionId
-        );
+      await Promise.all(
+        session.questions.map(async (question) => {
+          // デフォルトオプションのインデックスを取得
+          const defaultOptionIndex = question.options.findIndex(
+            (o) => o.id === question.defaultOptionId
+          );
 
-        // 新しい質問を作成
-        const newQuestion = await tx.question.create({
-          data: {
-            sessionId: newSession.id,
-            order: question.order,
-            title: question.title,
-            description: question.description,
-          },
-        });
+          // 新しい質問を作成
+          const newQuestion = await tx.question.create({
+            data: {
+              sessionId: newSession.id,
+              order: question.order,
+              title: question.title,
+              description: question.description,
+            },
+          });
 
-        // 新しい質問のオプションを作成
-        await tx.option.createMany({
-          data: question.options.map((option) => ({
-            questionId: newQuestion.id,
-            order: option.order,
-            title: option.title,
-            description: option.description,
-            rewardMessage: option.rewardMessage,
-            rewardPoint: option.rewardPoint,
-            effect: option.effect,
-          })),
-        });
+          // 新しい質問のオプションを作成
+          await tx.option.createMany({
+            data: question.options.map((option) => ({
+              questionId: newQuestion.id,
+              order: option.order,
+              title: option.title,
+              description: option.description,
+              rewardMessage: option.rewardMessage,
+              rewardPoint: option.rewardPoint,
+              effect: option.effect,
+            })),
+          });
 
-        // デフォルトオプションを設定
-        const newOptions = await tx.option.findMany({
-          where: { questionId: newQuestion.id },
-          select: { id: true },
-        });
-        const defaultOptionId = newOptions[defaultOptionIndex].id;
-        await tx.question.update({
-          where: { id: newQuestion.id },
-          data: { defaultOptionId },
-        });
-      }
+          // デフォルトオプションを設定
+          const newOptions = await tx.option.findMany({
+            where: { questionId: newQuestion.id },
+            select: { id: true },
+          });
+          const defaultOptionId = newOptions[defaultOptionIndex].id;
+          await tx.question.update({
+            where: { id: newQuestion.id },
+            data: { defaultOptionId },
+          });
+        })
+      );
     });
   }
 
