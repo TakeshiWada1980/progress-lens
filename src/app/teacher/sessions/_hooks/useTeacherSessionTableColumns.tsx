@@ -233,7 +233,12 @@ const useTeacherSessionTableColumns = ({
         },
       },
     ],
-    [confirmDeleteSession, renameTitle, switchActiveState]
+    [
+      confirmDeleteSession,
+      confirmDuplicateSession,
+      renameTitle,
+      switchActiveState,
+    ]
   );
 };
 

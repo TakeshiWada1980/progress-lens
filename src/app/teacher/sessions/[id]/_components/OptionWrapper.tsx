@@ -48,7 +48,7 @@ const OptionWrapper: React.FC<Props> = memo(
             ref={sortable.setActivatorNodeRef}
             {...sortable.listeners}
             {...sortable.attributes}
-            className="ml-1 flex-none cursor-move text-gray-300"
+            className="ml-1 flex-none cursor-move text-gray-300 hover:text-gray-400"
             tabIndex={-1}
           >
             <FontAwesomeIcon icon={faGripVertical} />

@@ -44,6 +44,7 @@ import { isDebugMode } from "@/config/app-config";
 import * as Dnd from "@dnd-kit/core";
 import * as DndSortable from "@dnd-kit/sortable";
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
+import useDnd from "../_hooks/useDnd";
 
 const customDropAnimation = {
   ...Dnd.defaultDropAnimation,
@@ -75,29 +76,12 @@ const QuestionContent: React.FC<Props> = memo(
     const putOrderApiCaller = useMemo(() => createPutRequest<UpdateOptionsOrderRequest, ApiResponse<null>>(),[]);
 
     // ドラッグアンドドロップ関連
-    const [activeId, setActiveId] = useState<Dnd.UniqueIdentifier | null>(null);
-    const [vmOptions, setVmOptions] = useState<OptionEditableFields[]>();
-    useEffect(() => {
-      const vmOptions: OptionEditableFields[] = question.options
-        .slice() // option の浅いコピーを作成
-        .sort((a, b) => a.order - b.order)
-        .map<OptionEditableFields>((option, index) => {
-          return {
-            ...option,
-            viewId: index + 1,
-          };
-        });
-      setVmOptions(vmOptions);
-    }, [question]);
-
-    const dragStartAction = useCallback((e: Dnd.DragStartEvent) => {
-      setActiveId(e.active.id);
-    }, []);
-
-    const dndSensors = Dnd.useSensors(
-      Dnd.useSensor(Dnd.MouseSensor),
-      Dnd.useSensor(Dnd.TouchSensor)
+    const dnd = useDnd<QuestionEditableFields, OptionEditableFields>(
+      question,
+      question.options
     );
+    const vmOptions = dnd.vmElements;
+    const setVmOptions = dnd.setVmElements;
 
     //【設問の並び順の変更】
     const dragEndAction = useCallback(
@@ -114,7 +98,7 @@ const QuestionContent: React.FC<Props> = memo(
           );
 
           setVmOptions(updatedOrderVmOptions);
-          setActiveId(null);
+          dnd.setActiveId(null);
 
           // 楽観的更新
           const reqBodyData: { optionId: string; order: number }[] = [];
@@ -157,14 +141,16 @@ const QuestionContent: React.FC<Props> = memo(
 
           // mutate(sessionEp);
         }
-        setActiveId(null);
+        dnd.setActiveId(null);
       },
       [
         apiRequestHeader,
+        dnd,
         getOptimisticLatestData,
         id,
         putOrderApiCaller,
         sessionEp,
+        setVmOptions,
         vmOptions,
       ]
     );
@@ -330,8 +316,8 @@ const QuestionContent: React.FC<Props> = memo(
         {/* 回答選択肢 */}
         <div className="space-y-1">
           <Dnd.DndContext
-            sensors={dndSensors}
-            onDragStart={dragStartAction}
+            sensors={dnd.sensors}
+            onDragStart={dnd.dragStartAction}
             onDragEnd={dragEndAction}
             collisionDetection={Dnd.closestCenter}
             modifiers={[restrictToVerticalAxis]}
@@ -346,12 +332,12 @@ const QuestionContent: React.FC<Props> = memo(
                   option={option}
                   getOptimisticLatestData={getOptimisticLatestData}
                   onUpdateDefaultOption={publishUpdateDefaultOption}
-                  isDragging={vmOptions[index].viewId === activeId}
+                  isDragging={vmOptions[index].viewId === dnd.activeId}
                 />
               ))}
             </DndSortable.SortableContext>
             <Dnd.DragOverlay dropAnimation={customDropAnimation}>
-              {activeId ? <div className="h-16 cursor-move"></div> : null}
+              {dnd.activeId ? <div className="h-16 cursor-move"></div> : null}
             </Dnd.DragOverlay>
           </Dnd.DndContext>
         </div>

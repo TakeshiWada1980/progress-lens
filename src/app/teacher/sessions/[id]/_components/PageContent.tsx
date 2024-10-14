@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useCallback, useMemo, memo } from "react";
+import React, { useCallback, useMemo, memo } from "react";
 import QuestionWrapper from "./QuestionWrapper";
 import { produce, Draft } from "immer";
 import SuccessResponseBuilder from "@/app/api/_helpers/successResponseBuilder";
@@ -24,6 +24,7 @@ import useAuth from "@/app/_hooks/useAuth";
 import * as Dnd from "@dnd-kit/core";
 import * as DndSortable from "@dnd-kit/sortable";
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
+import useDnd from "../_hooks/useDnd";
 
 const customDropAnimation = {
   ...Dnd.defaultDropAnimation,
@@ -57,30 +58,12 @@ const PageContent: React.FC<Props> = memo((props) => {
   const putOrderApiCaller = useMemo(() => createPutRequest<UpdateQuestionsOrderRequest, ApiResponse<null>>(),[]);
 
   // ドラッグアンドドロップ関連
-  const [activeId, setActiveId] = useState<Dnd.UniqueIdentifier | null>(null);
-  const [vmQuestions, setVmQuestions] = useState<QuestionEditableFields[]>();
-  useEffect(() => {
-    const vmQuestions: QuestionEditableFields[] = session.questions
-      .slice() // option の浅いコピーを作成
-      .sort((a, b) => a.order - b.order)
-      .map<QuestionEditableFields>((option, index) => {
-        return {
-          ...option,
-          viewId: index + 1,
-        };
-      });
-    setVmQuestions(vmQuestions);
-  }, [session]);
-
-  const dragStartAction = useCallback((e: Dnd.DragStartEvent) => {
-    console.log("dragStartAction", e.active.id);
-    setActiveId(e.active.id);
-  }, []);
-
-  const dndSensors = Dnd.useSensors(
-    Dnd.useSensor(Dnd.MouseSensor),
-    Dnd.useSensor(Dnd.TouchSensor)
+  const dnd = useDnd<SessionEditableFields, QuestionEditableFields>(
+    session,
+    session.questions
   );
+  const vmQuestions = dnd.vmElements;
+  const setVmQuestions = dnd.setVmElements;
 
   const dragEndAction = useCallback(
     async (e: Dnd.DragEndEvent) => {
@@ -96,7 +79,7 @@ const PageContent: React.FC<Props> = memo((props) => {
         );
 
         setVmQuestions(updatedOrderVmQuestions);
-        setActiveId(null);
+        dnd.setActiveId(null);
 
         // 楽観的更新
         const reqBodyData: { questionId: string; order: number }[] = [];
@@ -135,25 +118,27 @@ const PageContent: React.FC<Props> = memo((props) => {
 
         // mutate(sessionEp);
       }
-      setActiveId(null);
+      dnd.setActiveId(null);
     },
     [
       apiRequestHeader,
+      dnd,
       getOptimisticLatestData,
       putOrderApiCaller,
       session.id,
       sessionEp,
+      setVmQuestions,
       vmQuestions,
     ]
   );
-  //
+
   if (vmQuestions === undefined) return null;
 
   return (
     <div>
       <Dnd.DndContext
-        sensors={dndSensors}
-        onDragStart={dragStartAction}
+        sensors={dnd.sensors}
+        onDragStart={dnd.dragStartAction}
         onDragEnd={dragEndAction}
         collisionDetection={Dnd.closestCenter}
         modifiers={[restrictToVerticalAxis]}
@@ -175,14 +160,14 @@ const PageContent: React.FC<Props> = memo((props) => {
                   getOptimisticLatestData={getOptimisticLatestData}
                   confirmDeleteQuestion={confirmDeleteQuestion}
                   duplicateQuestion={duplicateQuestion}
-                  isDragging={vmQuestions[index].viewId === activeId}
+                  isDragging={vmQuestions[index].viewId === dnd.activeId}
                 />
               ))
             )}
           </div>
         </DndSortable.SortableContext>
         <Dnd.DragOverlay dropAnimation={customDropAnimation}>
-          {activeId ? <div className="h-16 cursor-move"></div> : null}
+          {dnd.activeId ? <div className="h-16 cursor-move"></div> : null}
         </Dnd.DragOverlay>
       </Dnd.DndContext>
     </div>

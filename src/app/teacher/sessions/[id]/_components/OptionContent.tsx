@@ -220,118 +220,119 @@ const OptionContent: React.FC<Props> = memo(
     );
 
     return (
-      <div className="items-start sm:flex">
-        <div className="sm:grow">
-          <TextInputField
-            id={"option" + id}
-            value={title}
-            border="hoverOnly"
-            className="px-1 py-0 placeholder:text-sm"
-            placeholder="※※ この選択肢は非表示となります ※※"
-            error={!!titleError}
-            onChange={handleOptionTitleChange}
-            onBlur={updateTitle}
-            onKeyDown={exitInputOnEnter}
-          />
-          <FormFieldErrorMsg msg={titleError} />
-        </div>
+      <div>
+        <div className="items-start sm:flex">
+          <div className="sm:grow">
+            <TextInputField
+              id={"option" + id}
+              value={title}
+              border="hoverOnly"
+              className="px-1 py-0 placeholder:text-sm"
+              placeholder="※※ この選択肢は非表示となります ※※"
+              error={!!titleError}
+              onChange={handleOptionTitleChange}
+              onBlur={updateTitle}
+              onKeyDown={exitInputOnEnter}
+            />
+            <FormFieldErrorMsg msg={titleError} />
+          </div>
 
-        <div className="ml-1 flex items-center space-x-2">
-          <div className="text-sm">Reward</div>
-          <div className="flex space-x-0.5">
-            {rewardPoints.map((point) => (
-              <div key={point} className="flex items-center">
-                <label
-                  htmlFor={`reward-${point}-${id}`}
-                  className="cursor-pointer"
-                >
-                  <input
-                    tabIndex={-1}
-                    type="radio"
-                    id={`reward-${point}-${id}`}
-                    name={`reward-${id}`}
-                    value={point}
-                    defaultChecked={option.rewardPoint === point}
-                    className="peer sr-only"
-                    onChange={changeRewardPoint}
-                  />
-                  <div
-                    className={twMerge(
-                      "cursor-pointer rounded px-1 py-0 text-center text-xs",
-                      "transition-colors duration-200 ease-in-out",
-                      "bg-gray-300 text-white",
-                      title.length === 0
-                        ? "hover:bg-gray-400 peer-checked:bg-gray-400"
-                        : "hover:bg-blue-400 peer-checked:bg-blue-500"
-                    )}
+          <div className="ml-1 flex items-center space-x-2">
+            <div className="text-sm">Reward</div>
+            <div className="flex space-x-0.5">
+              {rewardPoints.map((point) => (
+                <div key={point} className="flex items-center">
+                  <label
+                    htmlFor={`reward-${point}-${id}`}
+                    className="cursor-pointer"
                   >
-                    {point}
-                  </div>
-                </label>
-              </div>
-            ))}
-          </div>
+                    <input
+                      tabIndex={-1}
+                      type="radio"
+                      id={`reward-${point}-${id}`}
+                      name={`reward-${id}`}
+                      value={point}
+                      defaultChecked={option.rewardPoint === point}
+                      className="peer sr-only"
+                      onChange={changeRewardPoint}
+                    />
+                    <div
+                      className={twMerge(
+                        "cursor-pointer rounded px-1 py-0 text-center text-xs",
+                        "transition-colors duration-200 ease-in-out",
+                        "bg-gray-300 text-white",
+                        title.length === 0
+                          ? "hover:bg-gray-400 peer-checked:bg-gray-400"
+                          : "hover:bg-blue-400 peer-checked:bg-blue-500"
+                      )}
+                    >
+                      {point}
+                    </div>
+                  </label>
+                </div>
+              ))}
+            </div>
 
-          <div>
-            <label htmlFor={`effect-${id}`}>
-              <input
-                tabIndex={-1}
-                type="checkbox"
-                id={`effect-${id}`}
-                className="peer sr-only"
-                defaultChecked={option.effect}
-                onChange={() => toggleEffect(option.effect)}
-              />
-              <div
-                className={twMerge(
-                  "cursor-pointer text-sm",
-                  "transition-colors duration-200 ease-in-out",
-                  "text-gray-300",
-                  title.length === 0
-                    ? "hover:text-gray-400 peer-checked:text-gray-400"
-                    : "hover:text-pink-300 peer-checked:text-pink-400"
-                )}
-                onMouseDown={() => {
-                  if (!option.effect) {
-                    party.confetti(document.getElementById(`effect-${id}`)!);
-                  }
-                }}
-              >
-                <FontAwesomeIcon icon={faWandMagicSparkles} />
-              </div>
-            </label>
-          </div>
+            <div>
+              <label htmlFor={`effect-${id}`}>
+                <input
+                  tabIndex={-1}
+                  type="checkbox"
+                  id={`effect-${id}`}
+                  className="peer sr-only"
+                  defaultChecked={option.effect}
+                  onChange={() => toggleEffect(option.effect)}
+                />
+                <div
+                  className={twMerge(
+                    "cursor-pointer text-sm",
+                    "transition-colors duration-200 ease-in-out",
+                    "text-gray-300",
+                    title.length === 0
+                      ? "hover:text-gray-400 peer-checked:text-gray-400"
+                      : "hover:text-pink-300 peer-checked:text-pink-400"
+                  )}
+                  onMouseDown={() => {
+                    if (!option.effect) {
+                      party.confetti(document.getElementById(`effect-${id}`)!);
+                    }
+                  }}
+                >
+                  <FontAwesomeIcon icon={faWandMagicSparkles} />
+                </div>
+              </label>
+            </div>
 
-          <div>/</div>
+            <div>/</div>
 
-          <div className="flex items-center space-x-1 text-sm">
-            <label className="cursor-pointer" htmlFor={option.id}>
-              <input
-                tabIndex={-1}
-                type="radio"
-                id={option.id}
-                name={`${option.questionId}-default-option`}
-                value={option.id}
-                defaultChecked={isDefaultSelected}
-                className="peer sr-only"
-                onChange={changeDefaultOption}
-              />
-              <div
-                className={twMerge(
-                  "cursor-pointer rounded px-1 py-0 text-center text-xs",
-                  "transition-colors duration-200 ease-in-out",
-                  "bg-gray-300 text-white",
-                  title.length === 0
-                    ? "hover:bg-gray-400 peer-checked:bg-gray-400"
-                    : "hover:bg-blue-400 peer-checked:bg-blue-500"
-                )}
-              >
-                Default
-              </div>
-            </label>
+            <div className="flex items-center space-x-1 text-sm">
+              <label className="cursor-pointer" htmlFor={option.id}>
+                <input
+                  tabIndex={-1}
+                  type="radio"
+                  id={option.id}
+                  name={`${option.questionId}-default-option`}
+                  value={option.id}
+                  defaultChecked={isDefaultSelected}
+                  className="peer sr-only"
+                  onChange={changeDefaultOption}
+                />
+                <div
+                  className={twMerge(
+                    "cursor-pointer rounded px-1 py-0 text-center text-xs",
+                    "transition-colors duration-200 ease-in-out",
+                    "bg-gray-300 text-white",
+                    title.length === 0
+                      ? "hover:bg-gray-400 peer-checked:bg-gray-400"
+                      : "hover:bg-blue-400 peer-checked:bg-blue-500"
+                  )}
+                >
+                  Default
+                </div>
+              </label>
+            </div>
           </div>
         </div>
-
         {isDebugMode && (
           <div className="flex items-center space-x-2">
             <RenderCount />
