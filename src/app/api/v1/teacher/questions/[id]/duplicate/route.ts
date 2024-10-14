@@ -74,38 +74,12 @@ export const POST = async (req: NextRequest, { params: { id } }: Params) => {
     // 設問を複製する
     await questionService.duplicate(questionId);
 
-    // 更新されたセッション情報を取得
-    const session = (await sessionService.getById(
-      question.sessionId,
-      forEditSessionSchema
-    )) as PRS.LearningSessionGetPayload<typeof forEditSessionSchema>;
-
-    const res: SessionEditableFields = {
-      id: session.id,
-      title: session.title,
-      accessCode: session.accessCode,
-      isActive: session.isActive,
-      teacherId: session.teacherId,
-      questions: session.questions.map((q): QuestionEditableFields => {
-        return {
-          id: q.id,
-          order: q.order,
-          title: q.title,
-          description: q.description,
-          defaultOptionId: q.defaultOptionId!,
-          options: q.options.map((option): OptionEditableFields => {
-            return {
-              ...option,
-            };
-          }),
-        };
-      }),
-    };
+    // NOTE: もし、ネットワークオーバーヘッドが問題になるときは、
+    // ここで [GET] /api/v1/teacher/sessions/[id] と同じものを返すことも再検討
+    // 現状では、RESTful原則・責務分離のため、このEPは成功レスポンスのみを返す
 
     return NextResponse.json(
-      new SuccessResponseBuilder<SessionEditableFields>(res)
-        .setHttpStatus(StatusCodes.OK)
-        .build()
+      new SuccessResponseBuilder(null).setHttpStatus(StatusCodes.OK).build()
     );
   } catch (error: any) {
     const payload = createErrorResponse(error);

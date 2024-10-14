@@ -10,7 +10,7 @@ const button = tv({
     variant: {
       submit: "bg-blue-500 hover:bg-blue-600 focus:ring-blue-200",
       cancel: "bg-slate-500 hover:bg-slate-600 focus:ring-slate-200",
-      add: "bg-blue-500 hover:bg-blue-600 focus:ring-blue-200",
+      add: "bg-indigo-500 hover:bg-indigo-600 focus:ring-indigo-200",
       delete: "bg-red-500 hover:bg-red-600 focus:ring-red-200",
     },
     width: {

@@ -85,8 +85,6 @@ export const PUT = async (req: NextRequest, { params: { id } }: Params) => {
       );
     }
 
-    console.log(JSON.stringify(optionsOrderRequest, null, 2));
-
     // セッションの設問の順番を更新
     await questionService.updateOptionOrder(optionsOrderRequest.data);
 

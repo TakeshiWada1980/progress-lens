@@ -6,7 +6,6 @@ import ErrorResponseBuilder from "@/app/api/_helpers/errorResponseBuilder";
 import { StatusCodes } from "@/app/_utils/extendedStatusCodes";
 import {
   ApiError,
-  ZodValidationError,
   NonTeacherOperationError,
 } from "@/app/api/_helpers/apiExceptions";
 
@@ -19,9 +18,9 @@ import SessionService, {
 } from "@/app/_services/sessionService";
 
 // 型定義・データ検証関連
-import { UserProfile, Role } from "@/app/_types/UserTypes";
-import { getAvatarImgUrl } from "@/app/api/_helpers/getAvatarImgUrl";
+import { Role } from "@/app/_types/UserTypes";
 import { SessionSummary } from "@/app/_types/SessionTypes";
+import { Prisma as PRS } from "@prisma/client";
 
 export const revalidate = 0; // キャッシュを無効化
 
@@ -44,18 +43,16 @@ export const GET = async (req: NextRequest) => {
     }
 
     // レスポンスデータの作成
-    const sessions = await sessionService.getAllByTeacherId(
+    const sessions = (await sessionService.getAllByTeacherId(
       appUser.id,
       forGetAllByTeacherIdSchema,
       "createdAt"
-    );
+    )) as PRS.LearningSessionGetPayload<typeof forGetAllByTeacherIdSchema>[];
     const res: SessionSummary[] = sessions.map((session) => ({
       ...session,
       _count: undefined,
       teacherName: appUser.displayName,
-      // @ts-ignore 型推論に失敗するが.enrollmentsは存在
       enrollmentCount: session._count.enrollments,
-      // @ts-ignore 型推論に失敗するが.enrollmentsは存在
       questionsCount: session._count.questions,
     }));
 

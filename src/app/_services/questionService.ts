@@ -339,12 +339,21 @@ class QuestionService {
     )) as PRS.QuestionGetPayload<typeof forDuplicateQuestionSchema>;
 
     // 1-1. コピー先に適用するデフォルト選択肢の取得
-    const defaultOptionTitle = question.options.find(
-      (option) => option.id === question.defaultOptionId
-    )?.title;
-    if (!defaultOptionTitle) {
+    // const defaultOptionTitle = question.options.find(
+    //   (option) => option.id === question.defaultOptionId
+    // )?.title;
+    // if (!defaultOptionTitle) {
+    //   throw new DomainRuleViolationError(
+    //     "コピー元の設問にデフォルト選択肢が設定されていません",
+    //     question
+    //   );
+    // }
+    const defaultOptionIndex = question.options.findIndex(
+      (o) => o.id === question.defaultOptionId
+    );
+    if (defaultOptionIndex === -1) {
       throw new DomainRuleViolationError(
-        "コピー元の設問にデフォルト選択肢が設定されていません",
+        "コピー元の設問に適切なデフォルト選択肢が設定されていません",
         question
       );
     }
@@ -371,7 +380,7 @@ class QuestionService {
       const newQuestion = await tx.question.create({
         data: {
           sessionId: question.sessionId,
-          title: `${question.title} (Copy)`,
+          title: `Copy ${question.title}`.substring(0, 32),
           description: question.description,
           order: question.order + 1,
           defaultOptionId: null, // 仮値
@@ -397,15 +406,7 @@ class QuestionService {
         where: { questionId: newQuestion.id },
         orderBy: { order: "asc" },
       });
-      const newDefaultOptionId = options.find(
-        (option) => option.title === defaultOptionTitle
-      );
-      if (!newDefaultOptionId) {
-        throw new DomainRuleViolationError(
-          "コピー先の回答選択肢にデフォルト選択肢の候補が見つかりません",
-          options
-        );
-      }
+      const newDefaultOptionId = options[defaultOptionIndex];
       await tx.question.update({
         where: { id: newQuestion.id },
         data: { defaultOptionId: newDefaultOptionId.id },
