@@ -12,6 +12,7 @@ import { UserNavWidget } from "@/app/_components/elements/UserNavWidget";
 import Link from "@/app/_components/elements/Link";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faFan, faRightToBracket } from "@fortawesome/free-solid-svg-icons";
+import { SearchCheck } from "lucide-react";
 
 // 型・定数・ユーティリティ
 import { twMerge } from "tailwind-merge";
@@ -29,8 +30,15 @@ const Header: React.FC = () => {
       )}
     >
       <nav className="mx-auto flex max-w-2xl items-center justify-between space-x-2 px-5 py-1.5 md:px-0">
-        <Link href="/" style="unstyled" className="text-lg font-bold">
-          {appName}
+        <Link
+          href="/"
+          style="unstyled"
+          className="text-xl text-blue-800 font-bold"
+        >
+          <div className="flex items-center">
+            <SearchCheck className="mr-1" />
+            {appName}
+          </div>
         </Link>
 
         <div className="flex">

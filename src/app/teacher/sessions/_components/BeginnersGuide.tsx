@@ -10,13 +10,10 @@ const BeginnersGuide: React.FC = () => {
     <div className="space-y-6">
       <div className="space-y-2 break-words text-justify">
         <p className="indent-paragraph text-slate-500">
-          Microsoft Forms や Google Forms では、
-          設問群を管理する単位を「フォーム」と呼びますが、
-          プログレスレンズでは、これを「<strong>ラーニングセッション</strong>
+          Microsoft Forms や Google Forms における「フォーム」を ここでは「
+          <strong>ラーニングセッション</strong>
           」と呼びます。
-        </p>
-        <p className="indent-paragraph text-slate-500">
-          通常、授業1回ごとに個別のラーニングセッションを作成して活用します。
+          通常、授業ごとに1個のラーニングセッションを作成して使用します。
         </p>
       </div>
 

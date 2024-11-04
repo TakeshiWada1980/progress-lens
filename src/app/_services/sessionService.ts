@@ -7,7 +7,7 @@ import {
 import { BadRequestError } from "@/app/api/_helpers/apiExceptions";
 import QuestionService, {
   forEditQuestionSchema,
-  forAnswerQuestionSchema,
+  forSnapshotQuestionSchema,
 } from "@/app/_services/questionService";
 import {
   type UpdateSessionRequest,
@@ -93,16 +93,25 @@ export const forEditSessionSchema = {
 
 ///////////////////////////////////////////////////////////////
 
-export const forAnswerSessionSchema = {
+export const forSnapshotSessionSchema = {
   select: {
     id: true,
     title: true,
     accessCode: true,
     isActive: true,
     teacherId: true,
+    teacher: {
+      select: {
+        user: {
+          select: {
+            displayName: true,
+          },
+        },
+      },
+    },
     questions: {
-      select: forAnswerQuestionSchema.select,
-      orderBy: forAnswerQuestionSchema.orderBy,
+      select: forSnapshotQuestionSchema.select,
+      orderBy: forSnapshotQuestionSchema.orderBy,
     },
   },
 } as const;
@@ -505,6 +514,63 @@ class SessionService {
         deletedAt: null,
       },
     });
+
+    // レスポンスが未登録の場合はデフォルト選択肢を登録
+    const session = (await this.getById(
+      sessionId,
+      fullSessionSchema
+    )) as PRS.LearningSessionGetPayload<typeof fullSessionSchema>;
+    const questions = session.questions;
+    const questionService = new QuestionService(this.prisma);
+
+    // 全ての質問に対する既存のレスポンスを一括で取得
+    const existingResponses = await this.prisma.response.findMany({
+      where: {
+        studentId,
+        questionId: {
+          in: questions.map((q) => q.id),
+        },
+      },
+      select: {
+        questionId: true,
+      },
+    });
+
+    // 既存のレスポンスをSetに変換
+    const existingResponseIds = new Set(
+      existingResponses.map((r) => r.questionId)
+    );
+
+    // 未登録のレスポンスを並列で作成
+    await Promise.all(
+      questions
+        .filter((question) => !existingResponseIds.has(question.id))
+        .map((question) =>
+          questionService.upsertResponse(
+            studentId,
+            sessionId,
+            question.id,
+            question.defaultOptionId!
+          )
+        )
+    );
+
+    // for (const question of questions) {
+    //   const hasResponse = await this.prisma.response.findFirst({
+    //     where: {
+    //       studentId,
+    //       questionId: question.id,
+    //     },
+    //   });
+    //   if (!hasResponse) {
+    //     await questionService.upsertResponse(
+    //       studentId,
+    //       sessionId,
+    //       question.id,
+    //       question.defaultOptionId!
+    //     );
+    //   }
+    // }
   }
 
   /**

@@ -205,7 +205,7 @@ describe("教員のLS作成と取得、学生のLS参加と取得のテスト", 
     it("成功する", async () => {
       const teacher = teachers[1];
       const sessions = await sessionService.getAllByTeacherId(teacher.id!);
-      console.log(sessions);
+      // console.log(sessions);
       expect(sessions.length).toBe(teacher.sessions.length);
       expect(sessions).toEqual([...sessions].sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime()));      
     });
@@ -235,7 +235,7 @@ describe("教員のLS作成と取得、学生のLS参加と取得のテスト", 
 
         // StudentId をキーにセッションを取得
         const sessions = await sessionService.getAllByStudentId(student.id!);
-        console.log(JSON.stringify(sessions, null, 2));
+        // console.log(JSON.stringify(sessions, null, 2));
         const actualIdSet1 = new Set<string>(
           sessions.map((session) => session.id!)
         );

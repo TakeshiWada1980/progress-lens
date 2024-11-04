@@ -61,6 +61,12 @@ export const UserNavWidget: React.FC = () => {
       icon: faAddressCard,
     },
     {
+      label: "セッション一覧",
+      href: "/student/sessions",
+      state: "enabled",
+      icon: faChalkboardUser,
+    },
+    {
       label: "項目1 (仮)",
       href: "#",
       state: "notImplemented",
@@ -101,7 +107,7 @@ export const UserNavWidget: React.FC = () => {
     },
   ];
 
-  const menuItems = role === Role.STUDENT ? studentMenuItems : teacherMenuItems;
+  const menuItems = role === "学生" ? studentMenuItems : teacherMenuItems;
 
   const logoutAction = async () => {
     if (await logout()) {

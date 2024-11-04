@@ -122,13 +122,33 @@ export const forUpdateOptionSchema = {
 
 ///////////////////////////////////////////////////////////////
 
-export const forAnswerOptionSchema = {
+export const forPostResponseSchema = {
+  select: {
+    id: true,
+    sessionId: true,
+    session: {
+      select: {
+        isActive: true,
+      },
+    },
+    options: {
+      select: {
+        id: true,
+        questionId: true,
+      },
+    },
+  },
+} as const;
+
+///////////////////////////////////////////////////////////////
+
+export const forSnapshotOptionSchema = {
   select: {
     id: true,
     order: true,
     title: true,
-    // questionId: true,
-    // description: true,
+    questionId: true,
+    description: true,
     rewardMessage: true,
     rewardPoint: true,
     effect: true,
@@ -143,7 +163,7 @@ export const forAnswerOptionSchema = {
   },
 } as const;
 
-export const forAnswerQuestionSchema = {
+export const forSnapshotQuestionSchema = {
   select: {
     id: true,
     order: true,
@@ -152,8 +172,8 @@ export const forAnswerQuestionSchema = {
     defaultOptionId: true,
     // sessionId: true,
     options: {
-      select: forAnswerOptionSchema.select,
-      orderBy: forAnswerOptionSchema.orderBy,
+      select: forSnapshotOptionSchema.select,
+      orderBy: forSnapshotOptionSchema.orderBy,
     },
   },
   orderBy: {
@@ -277,15 +297,6 @@ class QuestionService {
         )
       );
     });
-
-    // await this.prisma.$transaction(
-    //   questionOrderUpdates.map(({ questionId, order }) =>
-    //     this.prisma.question.update({
-    //       where: { id: questionId },
-    //       data: { order },
-    //     })
-    //   )
-    // );
   }
 
   /**
@@ -309,15 +320,6 @@ class QuestionService {
         )
       );
     });
-
-    // await this.prisma.$transaction(
-    //   optionOrderUpdates.map(({ optionId, order }) =>
-    //     this.prisma.option.update({
-    //       where: { id: optionId },
-    //       data: { order },
-    //     })
-    //   )
-    // );
   }
 
   /**
@@ -339,15 +341,6 @@ class QuestionService {
     )) as PRS.QuestionGetPayload<typeof forDuplicateQuestionSchema>;
 
     // 1-1. コピー先に適用するデフォルト選択肢の取得
-    // const defaultOptionTitle = question.options.find(
-    //   (option) => option.id === question.defaultOptionId
-    // )?.title;
-    // if (!defaultOptionTitle) {
-    //   throw new DomainRuleViolationError(
-    //     "コピー元の設問にデフォルト選択肢が設定されていません",
-    //     question
-    //   );
-    // }
     const defaultOptionIndex = question.options.findIndex(
       (o) => o.id === question.defaultOptionId
     );
@@ -374,7 +367,10 @@ class QuestionService {
       order: q.order + 1,
     }));
 
-    this.prisma.$transaction(async (tx) => {
+    let newQuestionId = "";
+    let newDefaultOptionId = "";
+
+    await this.prisma.$transaction(async (tx) => {
       //
       // 2. 設問の複製
       const newQuestion = await tx.question.create({
@@ -406,10 +402,10 @@ class QuestionService {
         where: { questionId: newQuestion.id },
         orderBy: { order: "asc" },
       });
-      const newDefaultOptionId = options[defaultOptionIndex];
+      const newDefaultOption = options[defaultOptionIndex];
       await tx.question.update({
         where: { id: newQuestion.id },
-        data: { defaultOptionId: newDefaultOptionId.id },
+        data: { defaultOptionId: newDefaultOption.id },
       });
 
       // 5. 並び順の更新  length > 0 の場合のみ実行
@@ -423,7 +419,16 @@ class QuestionService {
           )
         );
       }
+      newQuestionId = newQuestion.id;
+      newDefaultOptionId = newDefaultOption.id;
     });
+
+    // 6. セッションに登録済みの学生がいれば、その学生のレスポンスにデフォルト選択肢を登録
+    await this.registerDefaultResponsesForEnrolledStudents(
+      question.sessionId,
+      newQuestionId,
+      newDefaultOptionId
+    );
   }
 
   // 設問の新規作成・初期化
@@ -460,11 +465,131 @@ class QuestionService {
     });
 
     // 4. 設問にデフォルト選択肢を設定
-    return await this.prisma.question.update({
+    const res = await this.prisma.question.update({
       where: { id: question.id },
       data: { defaultOptionId: options[0].id },
     });
+
+    // 5. セッションに登録済みの学生がいれば、その学生のレスポンスにデフォルト選択肢を登録
+    await this.registerDefaultResponsesForEnrolledStudents(
+      sessionId,
+      question.id,
+      options[0].id
+    );
+    // const studentIds = (
+    //   await this.prisma.sessionEnrollment.findMany({
+    //     where: {
+    //       sessionId,
+    //       deletedAt: null,
+    //     },
+    //   })
+    // ).map((e) => e.studentId);
+    // if (studentIds.length == 0) return res;
+
+    // // 5.1 レスポンスの登録
+    // await Promise.all(
+    //   studentIds.map((studentId) =>
+    //     this.prisma.response.create({
+    //       data: {
+    //         sessionId,
+    //         studentId,
+    //         questionId: question.id,
+    //         optionId: options[0].id, // デフォルト選択肢
+    //       },
+    //     })
+    //   )
+    // );
+
+    return res;
   }
+
+  /**
+   * 設問が新規作成されたときに、その設問が所属するセッションに登録済みの学生がいれば
+   * その学生のレスポンスにデフォルト選択肢を登録する
+   * @param sessionId 呼び出し元で有効性を保証すべきセッションID
+   * @param questionId 呼び出し元で有効性を保証すべき設問ID
+   * @param defaultOptionId 呼び出し元で有効性を保証すべきデフォルト選択肢ID
+   */
+  private async registerDefaultResponsesForEnrolledStudents(
+    sessionId: string,
+    questionId: string,
+    defaultOptionId: string
+  ): Promise<void> {
+    // セッションに登録済みの学生を取得
+    const studentIds = (
+      await this.prisma.sessionEnrollment.findMany({
+        where: {
+          sessionId,
+          deletedAt: null,
+        },
+      })
+    ).map((e) => e.studentId);
+    if (studentIds.length == 0) return;
+
+    // デフォルト選択肢をレスポンスとして登録
+    await Promise.all(
+      studentIds.map((studentId) =>
+        this.prisma.response.create({
+          data: {
+            sessionId,
+            studentId,
+            questionId,
+            optionId: defaultOptionId, // デフォルト選択肢
+          },
+        })
+      )
+    );
+
+    return;
+  }
+
+  /**
+   * レスポンスの登録 (upsert)
+   * @param userId 呼び出し元で有効性を保証すべきユーザID (studentId)
+   * @param sessionId 呼び出し元で有効性を保証すべきセッションID
+   * @param questionId 呼び出し元で有効性を保証すべき設問ID
+   * @param optionId 呼び出し元で有効性を保証すべき設問ID
+   */
+  @withErrorHandling()
+  public async upsertResponse(
+    userId: string,
+    sessionId: string,
+    questionId: string,
+    optionId: string
+  ): Promise<void> {
+    await this.prisma.response.upsert({
+      where: {
+        // 複合ユニークインデックスを指定
+        unique_response_composite: {
+          sessionId,
+          studentId: userId,
+          questionId,
+        },
+      },
+      // レコードが存在しない場合の作成データ
+      create: {
+        sessionId,
+        studentId: userId,
+        questionId,
+        optionId,
+      },
+      // レコードが存在する場合の更新データ（optionIdのみ）
+      update: {
+        optionId,
+      },
+    });
+  }
+
+  /**
+   * 回答状況の取得
+   * @param sessionId 呼び出し元で有効性を保証すべきセッションID
+   * @param userId 呼び出し元で有効性を保証すべきユーザID
+   */
+  @withErrorHandling()
+  public async getResponseStatus(
+    sessionId: string,
+    userId: string
+  ): Promise<void> {}
 }
 
 export default QuestionService;
