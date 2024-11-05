@@ -158,7 +158,7 @@ const Page: React.FC = () => {
               disabled={
                 !accessCodeFormMethods.formState.isValid || isSubmitting
               }
-              className="bg-pink-500 tracking-widest"
+              className="bg-pink-500 tracking-widest hover:bg-pink-600"
             >
               参加
             </ActionButton>

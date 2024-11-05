@@ -476,36 +476,12 @@ class QuestionService {
       question.id,
       options[0].id
     );
-    // const studentIds = (
-    //   await this.prisma.sessionEnrollment.findMany({
-    //     where: {
-    //       sessionId,
-    //       deletedAt: null,
-    //     },
-    //   })
-    // ).map((e) => e.studentId);
-    // if (studentIds.length == 0) return res;
-
-    // // 5.1 レスポンスの登録
-    // await Promise.all(
-    //   studentIds.map((studentId) =>
-    //     this.prisma.response.create({
-    //       data: {
-    //         sessionId,
-    //         studentId,
-    //         questionId: question.id,
-    //         optionId: options[0].id, // デフォルト選択肢
-    //       },
-    //     })
-    //   )
-    // );
-
     return res;
   }
 
   /**
-   * 設問が新規作成されたときに、その設問が所属するセッションに登録済みの学生がいれば
-   * その学生のレスポンスにデフォルト選択肢を登録する
+   * 設問が新規作成・複製されたときに、その設問が所属するセッションに登録済みの学生が
+   * いれば、その学生のレスポンスにデフォルト選択肢を登録する
    * @param sessionId 呼び出し元で有効性を保証すべきセッションID
    * @param questionId 呼び出し元で有効性を保証すべき設問ID
    * @param defaultOptionId 呼び出し元で有効性を保証すべきデフォルト選択肢ID

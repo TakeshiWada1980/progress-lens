@@ -85,7 +85,7 @@ const Page: React.FC = () => {
 
       {dataRef.current.previewMode && (
         <div className="flex">
-          <div className="font-bold text-red-400 mr-2">
+          <div className="mr-2 font-bold text-red-400">
             <FontAwesomeIcon icon={faGhost} className="mr-1" />
             プレビューモード (回答は保存されません)
           </div>

@@ -186,7 +186,7 @@ const QuestionContent: React.FC<Props> = memo(
 
                         <div
                           className={twMerge(
-                            "mr-1 text-sm",
+                            "mr-1.5 ",
                             "transition-colors duration-200 ease-in-out",
                             "text-gray-300",
                             option.isUserResponse &&
@@ -201,14 +201,14 @@ const QuestionContent: React.FC<Props> = memo(
 
                         <div
                           className={twMerge(
-                            option.isUserResponse && "font-bold"
+                            option.isUserResponse && "font-bold text-pink-900"
                           )}
                         >
                           {option.title}
                         </div>
 
                         {option.isUserResponse && option.rewardPoint > 0 && (
-                          <div className="text-xs ml-1.5">
+                          <div className="ml-1.5 text-xs">
                             (+{option.rewardPoint}pt)
                           </div>
                         )}
@@ -240,14 +240,15 @@ const QuestionContent: React.FC<Props> = memo(
                       {option.responseCount}
                     </div>
                   </div>
-
-                  <AnimatedProgressBar
-                    value={option.responseCount}
-                    max={totalResponseCount}
-                    animationTrigger={animationTrigger}
-                    color1={isActiveSession ? "bg-pink-400" : "bg-gray-500"}
-                    color2={isActiveSession ? "bg-pink-50" : "bg-gray-500"}
-                  />
+                  <div className="ml-4">
+                    <AnimatedProgressBar
+                      value={option.responseCount}
+                      max={totalResponseCount}
+                      animationTrigger={animationTrigger}
+                      color1={isActiveSession ? "bg-pink-300" : "bg-gray-500"}
+                      color2={isActiveSession ? "bg-pink-50" : "bg-gray-500"}
+                    />
+                  </div>
                 </div>
               )
           )}

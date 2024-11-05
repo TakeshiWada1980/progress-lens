@@ -33,7 +33,7 @@ const Header: React.FC = () => {
         <Link
           href="/"
           style="unstyled"
-          className="text-xl text-blue-800 font-bold"
+          className="text-xl font-bold text-blue-800"
         >
           <div className="flex items-center">
             <SearchCheck className="mr-1" />

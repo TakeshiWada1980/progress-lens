@@ -342,7 +342,7 @@ const Page: React.FC = () => {
           <FontAwesomeIcon
             icon={faTurnUp}
             rotation={90}
-            className="text-blue-500 mr-1"
+            className="mr-1 text-blue-500"
           />
           <Link href="/teacher/sessions">セッション一覧</Link>
         </span>
