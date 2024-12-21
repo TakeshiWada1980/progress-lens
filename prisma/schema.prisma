@@ -1,6 +1,7 @@
 // 更新後は
 // npx prisma db push
 // npx prisma generate
+// ( >Developer: Reload Window ) 
 // npx prisma db seed
 // https://supabase.com/dashboard/project/bodqloucedxxzyncfrab
 
@@ -97,6 +98,7 @@ model LearningSession {
   teacher     Teacher  @relation(fields: [teacherId], references: [userId], onDelete: Cascade)
   enrollments SessionEnrollment[]
   questions   Question[]
+  responses   Response[]
 
   @@index([teacherId])
   @@index([accessCode]) 
@@ -143,8 +145,8 @@ model Option {
   order          Int
   title          String
   description    String   @default("")
-  rewardMessage  String?  @map("reward_message")
-  rewardPoints   Int      @default(0) @map("reward_points")
+  rewardMessage  String   @default("") @map("reward_message")
+  rewardPoint    Int      @default(0) @map("reward_point")
   effect         Boolean  @default(false)
   updatedAt      DateTime @updatedAt @map("updated_at")
 
@@ -159,16 +161,21 @@ model Option {
 // 回答
 model Response {
   id           Int      @id @default(autoincrement())
+  sessionId    String   @map("session_id")
   studentId    String   @map("student_id")
   questionId   String   @map("question_id")
   optionId     String   @map("option_id")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
   student      Student  @relation(fields: [studentId], references: [userId], onDelete: Cascade)
-  question     Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
   option       Option   @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  question     Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  session      LearningSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
+  @@unique([sessionId, studentId, questionId], name: "unique_response_composite")
   @@index([questionId, optionId])
+  @@index([questionId, studentId])
+  @@index([studentId, sessionId])
   @@index([studentId])
   @@map("responses")
 }

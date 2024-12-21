@@ -5,7 +5,10 @@ import {
   withErrorHandling,
 } from "@/app/_services/servicesExceptions";
 import { BadRequestError } from "@/app/api/_helpers/apiExceptions";
-import QuestionService from "@/app/_services/questionService";
+import QuestionService, {
+  forEditQuestionSchema,
+  forSnapshotQuestionSchema,
+} from "@/app/_services/questionService";
 import {
   type UpdateSessionRequest,
   isAccessCode,
@@ -20,6 +23,9 @@ export type SessionReturnType<
 > = {
   include?: T;
   select?: U;
+  orderBy?:
+    | PRS.LearningSessionOrderByWithRelationInput
+    | PRS.LearningSessionOrderByWithRelationInput[];
 };
 
 export const fullSessionSchema = {
@@ -67,6 +73,45 @@ export const forGetAllByStudentIdSchema = {
         enrollments: true,
         questions: true,
       },
+    },
+  },
+} as const;
+
+export const forEditSessionSchema = {
+  select: {
+    id: true,
+    title: true,
+    accessCode: true,
+    isActive: true,
+    teacherId: true,
+    questions: {
+      select: forEditQuestionSchema.select,
+      orderBy: forEditQuestionSchema.orderBy,
+    },
+  },
+} as const;
+
+///////////////////////////////////////////////////////////////
+
+export const forSnapshotSessionSchema = {
+  select: {
+    id: true,
+    title: true,
+    accessCode: true,
+    isActive: true,
+    teacherId: true,
+    teacher: {
+      select: {
+        user: {
+          select: {
+            displayName: true,
+          },
+        },
+      },
+    },
+    questions: {
+      select: forSnapshotQuestionSchema.select,
+      orderBy: forSnapshotQuestionSchema.orderBy,
     },
   },
 } as const;
@@ -157,9 +202,12 @@ class SessionService {
     sessionId: string,
     options?: SessionReturnType<T, U>
   ): Promise<PRS.LearningSessionGetPayload<{ include: T; select: U }>> {
+    // findUnique などの単数検索のときに orderBy を指定するとエラーになるので除外する処理
+    const { include, select } = options || {};
     return (await this.prisma.learningSession.findUniqueOrThrow({
       where: { id: sessionId },
-      ...options,
+      ...(include ? { include } : {}),
+      ...(select ? { select } : {}),
     })) as PRS.LearningSessionGetPayload<{ include: T; select: U }>;
   }
 
@@ -172,9 +220,11 @@ class SessionService {
     accessCode: string,
     options?: SessionReturnType<T, U>
   ): Promise<PRS.LearningSessionGetPayload<{ include: T; select: U }>> {
+    const { include, select } = options || {};
     const session = await this.prisma.learningSession.findUnique({
       where: { accessCode },
-      ...options,
+      ...(include ? { include } : {}),
+      ...(select ? { select } : {}),
     });
     if (!session) {
       const err = new BadRequestError(`Session (${accessCode}) not found.`, {
@@ -278,15 +328,21 @@ class SessionService {
     })) as PRS.LearningSessionGetPayload<{ include: T; select: U }>[];
   }
 
-  // 基本情報（title,isActive）の更新 セッションの存在は確認済みであること
+  /**
+   * ラーニングセッションの基本情報（title,isActive）の更新
+   * @param sessionId 呼び出し元で有効性を保証すべきセッションID
+   * @param data バリデーション済みの更新データ
+   * @note dataに id が含まれていても内部処理で無視するので問題ない
+   */
   @withErrorHandling()
   public async update(
     sessionId: string,
     data: UpdateSessionRequest
   ): Promise<void> {
+    const { id, ...updateData } = data; // id は更新させない
     await this.prisma.learningSession.update({
       where: { id: sessionId },
-      data: { ...data },
+      data: { ...updateData },
     });
   }
 
@@ -313,7 +369,11 @@ class SessionService {
     }
   }
 
-  // 新規作成と初期化（設問１個付き）
+  /**
+   * ラーニングセッションを新規作成と初期化（1個の設問の自動生成）をする
+   * @param teacherId 呼び出し元で有効性を保証すべきセッションID
+   * @param title セッションのタイトル(バリエーション済み)
+   */
   @withErrorHandling()
   public async create(
     teacherId: string,
@@ -321,45 +381,113 @@ class SessionService {
   ): Promise<CreateSessionReturnType> {
     let session: LearningSession | null = null;
     const accessCode = await this.generateAccessCode();
-    // トランザクション内でセッションと初期設問を作成
-    await this.prisma.$transaction(
-      async (tx) => {
-        // 1. セッションの作成
-        try {
-          session = await tx.learningSession.create({
-            data: {
-              teacherId,
-              accessCode,
-              title,
-            },
-          });
-        } catch (error: any) {
-          if (error.code === "P2002") {
-            throw new DomainRuleViolationError(
-              `Unique constraint failed on the accessCode ${accessCode}`,
-              { teacherId, title, accessCode }
-            );
-          } else if (error.code === "P2003") {
-            throw new DomainRuleViolationError(
-              `FK constraint failed on the teacherId ${teacherId}`,
-              { teacherId, title, accessCode }
-            );
-          }
-          throw error;
-        }
 
-        // 2. 設問の作成
-        const questionService = new QuestionService(tx);
-        await questionService.createQuestion(session.id);
-      },
-      { timeout: 5000 }
-    );
+    // ※トランザクションを構成したほうがよいが
+    // SessionService と QuestionService にまたがる
+    // トランザクションは極めて複雑なため、ここではシンプルな実装としている
+
+    // 1. セッションの作成
+    try {
+      session = await this.prisma.learningSession.create({
+        data: {
+          teacherId,
+          accessCode,
+          title,
+        },
+      });
+    } catch (error: any) {
+      if (error.code === "P2002") {
+        throw new DomainRuleViolationError(
+          `Unique constraint failed on the accessCode ${accessCode}`,
+          { teacherId, title, accessCode }
+        );
+      } else if (error.code === "P2003") {
+        throw new DomainRuleViolationError(
+          `FK constraint failed on the teacherId ${teacherId}`,
+          { teacherId, title, accessCode }
+        );
+      }
+      throw error;
+    }
+
+    // 2. 設問の作成
+    const questionService = new QuestionService(this.prisma);
+    await questionService.create(session.id);
 
     // 3. 設問と選択肢を含めた完全なセッション情報の再取得
     return (await this.getById(
       session!.id,
       fullSessionSchema
     )) as CreateSessionReturnType;
+  }
+
+  /**
+   * ラーニングセッションを複製する
+   * @param sessionId 呼び出し元で有効性を保証すべきセッションID
+   */
+  @withErrorHandling()
+  public async duplicate(sessionId: string): Promise<void> {
+    const session = (await this.getById(
+      sessionId,
+      fullSessionSchema
+    )) as PRS.LearningSessionGetPayload<typeof fullSessionSchema>;
+    const newAccessCode = await this.generateAccessCode();
+
+    this.prisma.$transaction(async (tx) => {
+      //
+      // 1. 新しいセッションを作成
+      const newSession = await tx.learningSession.create({
+        data: {
+          teacherId: session.teacherId,
+          accessCode: newAccessCode,
+          title: `Copy ${session.title}`.substring(0, 16),
+        },
+      });
+
+      // 2. 質問を複製
+      await Promise.all(
+        session.questions.map(async (question) => {
+          // デフォルトオプションのインデックスを取得
+          const defaultOptionIndex = question.options.findIndex(
+            (o) => o.id === question.defaultOptionId
+          );
+
+          // 新しい質問を作成
+          const newQuestion = await tx.question.create({
+            data: {
+              sessionId: newSession.id,
+              order: question.order,
+              title: question.title,
+              description: question.description,
+            },
+          });
+
+          // 新しい質問のオプションを作成
+          await tx.option.createMany({
+            data: question.options.map((option) => ({
+              questionId: newQuestion.id,
+              order: option.order,
+              title: option.title,
+              description: option.description,
+              rewardMessage: option.rewardMessage,
+              rewardPoint: option.rewardPoint,
+              effect: option.effect,
+            })),
+          });
+
+          // デフォルトオプションを設定
+          const newOptions = await tx.option.findMany({
+            where: { questionId: newQuestion.id },
+            select: { id: true },
+          });
+          const defaultOptionId = newOptions[defaultOptionIndex].id;
+          await tx.question.update({
+            where: { id: newQuestion.id },
+            data: { defaultOptionId },
+          });
+        })
+      );
+    });
   }
 
   /**
@@ -390,6 +518,47 @@ class SessionService {
         deletedAt: null,
       },
     });
+
+    // 以降の(1)～(4)で、未回答の設問に対してデフォルトの回答を登録
+    // ※トランザクションを構成したほうがよいが
+    // SessionService と QuestionService にまたがる
+    // トランザクションは極めて複雑なため、ここではシンプルな実装としている
+
+    // (1) セッションに紐づく全設問を取得
+    const session = (await this.getById(
+      sessionId,
+      fullSessionSchema
+    )) as PRS.LearningSessionGetPayload<typeof fullSessionSchema>;
+    const questions = session.questions;
+
+    // (2) 学生が既に回答済みの設問を取得
+    const existingResponses = await this.prisma.response.findMany({
+      where: {
+        studentId,
+        questionId: {
+          in: questions.map((q) => q.id),
+        },
+      },
+      select: {
+        questionId: true,
+      },
+    });
+
+    // (3) 回答済み設問IDをSetとして取得して、未回答の設問を特定
+    const respondedQuestionIds = new Set(
+      existingResponses.map((r) => r.questionId)
+    );
+    const missingResponseQuestionIds: string[] = questions
+      .filter((q) => !respondedQuestionIds.has(q.id))
+      .map((q) => q.id);
+    if (missingResponseQuestionIds.length === 0) return;
+
+    // (4) 未回答の設問に対して、デフォルトの選択肢を回答として一括登録
+    const questionService = new QuestionService(this.prisma);
+    questionService.fillMissingDefaultResponses(
+      studentId,
+      missingResponseQuestionIds
+    );
   }
 
   /**
@@ -438,7 +607,11 @@ class SessionService {
     });
   }
 
-  // ラーニングセッションの削除
+  /**
+   * ラーニングセッションを削除する
+   * @param sessionId 呼び出し元で有効性を保証すべきセッションID
+   * @note 存在しない場合は PrismaClientKnownRequestError がスローされる
+   */
   @withErrorHandling()
   public async delete(sessionId: string): Promise<void> {
     await this.prisma.learningSession.delete({

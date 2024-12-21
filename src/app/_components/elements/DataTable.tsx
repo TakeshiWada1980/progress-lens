@@ -33,11 +33,12 @@ interface Props<TData> {
     accessorKey: string;
     msg: string;
   };
+  headerClassName?: string;
 }
 
 // prettier-ignore
 export const DataTable: <TData>(props: Props<TData>) => React.ReactElement = ({
-  columns, data, filterableColumn,
+  columns, data, filterableColumn, headerClassName="bg-indigo-50 hover:bg-indigo-50"
 }) => {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -83,7 +84,7 @@ export const DataTable: <TData>(props: Props<TData>) => React.ReactElement = ({
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow
                 key={headerGroup.id}
-                className="bg-sky-50 hover:bg-sky-50"
+                className={headerClassName}
               >
                 {headerGroup.headers.map((header) => {
                   const style = twMerge(
@@ -110,13 +111,15 @@ export const DataTable: <TData>(props: Props<TData>) => React.ReactElement = ({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
+                  className="hover:bg-white"
                 >
                   {row.getVisibleCells().map((cell) => {
                     const style = twMerge(
                       cell.column.id === "title" ? "pr-0.5" : "px-0.5",
                       !["title", "teacher", "accessCode"].includes(
                         cell.column.id
-                      ) && "sm:max-w-10"
+                      ) && "sm:max-w-10",
+                      cell.column.id === "title" && "hover:font-bold"
                     );
                     return (
                       <TableCell

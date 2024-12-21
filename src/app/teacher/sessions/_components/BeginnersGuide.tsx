@@ -1,7 +1,6 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faChalkboardUser,
-  faGraduationCap,
   faEllipsisVertical,
   faCommentDots,
 } from "@fortawesome/free-solid-svg-icons";
@@ -11,26 +10,22 @@ const BeginnersGuide: React.FC = () => {
     <div className="space-y-6">
       <div className="space-y-2 break-words text-justify">
         <p className="indent-paragraph text-slate-500">
-          Microsoft Forms や Google Forms では、
-          設問群を管理する単位を「フォーム」と呼びますが、
-          プログレスレンズでは、これを「<strong>ラーニングセッション</strong>
+          Microsoft Forms や Google Forms における「フォーム」を ここでは「
+          <strong>ラーニングセッション</strong>
           」と呼びます。
-          通常、授業1回ごとに個別のラーニングセッションを作成して活用します。
+          通常、授業ごとに1個のラーニングセッションを作成して使用します。
         </p>
       </div>
 
       <div className="flex w-full flex-col gap-x-4 gap-y-3 px-5 md:flex-row md:items-start">
         <div className="w-full md:w-1/2">
-          <div className="text-sm font-bold text-orange-400">
+          <div className="text-sm font-bold text-indigo-500">
             <FontAwesomeIcon icon={faChalkboardUser} className="mr-1" />
             ラーニングセッション
           </div>
-          <div className="mt-0.5 rounded-md bg-orange-400 px-3 py-2">
+          <div className="mt-0.5 rounded-md bg-indigo-400 px-3 py-2">
             <div className=" text-white">
-              <div className="">
-                <FontAwesomeIcon icon={faGraduationCap} className="mr-2" />
-                第03回 プログラミング基礎演習
-              </div>
+              <div>第03回 プログラミング基礎演習</div>
               <ul className="ml-2 mt-1 text-sm">
                 <li>
                   <FontAwesomeIcon
@@ -61,16 +56,13 @@ const BeginnersGuide: React.FC = () => {
           </div>
         </div>
         <div className="w-full md:w-1/2">
-          <div className="text-sm font-bold text-orange-400">
+          <div className="text-sm font-bold text-indigo-500">
             <FontAwesomeIcon icon={faChalkboardUser} className="mr-1" />
             ラーニングセッション
           </div>
-          <div className="mt-0.5 rounded-md bg-orange-400 px-3 py-2">
+          <div className="mt-0.5 rounded-md bg-indigo-400 px-3 py-2">
             <div className="text-white">
-              <div className="">
-                <FontAwesomeIcon icon={faGraduationCap} className="mr-2" />
-                第06回 データベース工学
-              </div>
+              <div>第06回 データベース工学</div>
               <ul className="ml-2 mt-1 text-sm">
                 <li>
                   <FontAwesomeIcon

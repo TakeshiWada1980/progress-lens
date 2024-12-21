@@ -25,6 +25,7 @@ import { twMerge } from "tailwind-merge";
 
 interface RowActionHandlers {
   confirmDeleteSession: (id: string, name: string) => Promise<void>;
+  confirmDuplicateSession: (id: string, name: string) => Promise<void>;
   updateSessionSummary: <K extends keyof SessionSummary>(
     id: string,
     key: K,
@@ -34,6 +35,7 @@ interface RowActionHandlers {
 
 const useTeacherSessionTableColumns = ({
   updateSessionSummary,
+  confirmDuplicateSession,
   confirmDeleteSession,
 }: RowActionHandlers): ColumnDef<SessionSummary>[] => {
   //
@@ -70,7 +72,7 @@ const useTeacherSessionTableColumns = ({
         cell: ({ row }) => {
           const id = row.original.id;
           const session = row.original;
-          const href = `/teacher/sessions/${session.accessCode}`;
+          const href = `/teacher/sessions/${session.id}`;
           return (
             <div
               className={twMerge(
@@ -209,11 +211,12 @@ const useTeacherSessionTableColumns = ({
                     <FontAwesomeIcon icon={faPen} className="mr-2" />
                     名前の変更
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="cursor-pointer">
-                    <Link href="#" style="nav" state="notImplemented">
-                      <FontAwesomeIcon icon={faClone} className="mr-2" />
-                      複製
-                    </Link>
+                  <DropdownMenuItem
+                    onClick={() => confirmDuplicateSession(id, title)}
+                    className="cursor-pointer"
+                  >
+                    <FontAwesomeIcon icon={faClone} className="mr-2" />
+                    複製
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
@@ -230,7 +233,12 @@ const useTeacherSessionTableColumns = ({
         },
       },
     ],
-    [confirmDeleteSession, renameTitle, switchActiveState]
+    [
+      confirmDeleteSession,
+      confirmDuplicateSession,
+      renameTitle,
+      switchActiveState,
+    ]
   );
 };
 

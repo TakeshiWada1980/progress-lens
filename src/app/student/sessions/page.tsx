@@ -23,12 +23,6 @@ import PageTitle from "@/app/_components/elements/PageTitle";
 import LoadingSpinner from "@/app/_components/elements/LoadingSpinner";
 import { DataTable } from "@/app/_components/elements/DataTable";
 import FormFieldErrorMsg from "@/app/_components/elements/FormFieldErrorMsg";
-import {
-  InputOTP,
-  InputOTPGroup,
-  InputOTPSeparator,
-  InputOTPSlot,
-} from "@/app/_components/shadcn/ui/input-otp";
 import { ConfirmDialog } from "@/app/_components/elements/ConfirmDialog";
 import TextInputField from "@/app/_components/elements/TextInputField";
 
@@ -38,7 +32,7 @@ import {
   SessionSummary,
   SessionEnrollmentResponse,
   AccessCode,
-  accessCodeSchema,
+  accessCodeObjSchema,
 } from "@/app/_types/SessionTypes";
 import ActionButton from "@/app/_components/elements/ActionButton";
 import AppErrorCode from "@/app/_types/AppErrorCode";
@@ -64,7 +58,7 @@ const Page: React.FC = () => {
   // アクセスコードの入力に使用するフォーム
   const accessCodeFormMethods = useForm<AccessCode>({
     mode: "onChange",
-    resolver: zodResolver(accessCodeSchema),
+    resolver: zodResolver(accessCodeObjSchema),
   });
 
   // セッションに参加する処理
@@ -164,6 +158,7 @@ const Page: React.FC = () => {
               disabled={
                 !accessCodeFormMethods.formState.isValid || isSubmitting
               }
+              className="bg-pink-500 tracking-widest hover:bg-pink-600"
             >
               参加
             </ActionButton>
@@ -183,6 +178,7 @@ const Page: React.FC = () => {
               columns={columns}
               data={data.data}
               filterableColumn={filterableColumn}
+              headerClassName="bg-pink-50 hover:bg-pink-50"
             />
           ) : (
             <LoadingSpinner message="バックグラウンドでデータを読み込んでいます..." />
