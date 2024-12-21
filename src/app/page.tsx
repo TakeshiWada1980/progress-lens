@@ -9,7 +9,7 @@ const Home: React.FC = () => {
     <div>
       <PageTitle
         title={`Visualize and Share Your Progress with ${appName}`}
-        className="floating mb-8 text-3xl font-bold text-blue-800"
+        className="mb-8 text-3xl font-bold text-blue-800"
       />
       <ul>
         <li>
