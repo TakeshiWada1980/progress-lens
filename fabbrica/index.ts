@@ -93,6 +93,10 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 name: "questions",
                 type: "Question",
                 relationName: "LearningSessionToQuestion"
+            }, {
+                name: "responses",
+                type: "Response",
+                relationName: "LearningSessionToResponse"
             }]
     }, {
         name: "SessionEnrollment",
@@ -146,13 +150,17 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 type: "Student",
                 relationName: "ResponseToStudent"
             }, {
+                name: "option",
+                type: "Option",
+                relationName: "OptionToResponse"
+            }, {
                 name: "question",
                 type: "Question",
                 relationName: "QuestionToResponse"
             }, {
-                name: "option",
-                type: "Option",
-                relationName: "OptionToResponse"
+                name: "session",
+                type: "LearningSession",
+                relationName: "LearningSessionToResponse"
             }]
     }];
 
@@ -813,6 +821,7 @@ type LearningSessionFactoryDefineInput = {
     teacher: LearningSessionteacherFactory | Prisma.TeacherCreateNestedOneWithoutSessionsInput;
     enrollments?: Prisma.SessionEnrollmentCreateNestedManyWithoutLearningSessionInput;
     questions?: Prisma.QuestionCreateNestedManyWithoutSessionInput;
+    responses?: Prisma.ResponseCreateNestedManyWithoutSessionInput;
 };
 
 type LearningSessionTransientFields = Record<string, unknown> & Partial<Record<keyof LearningSessionFactoryDefineInput, never>>;
@@ -1468,21 +1477,27 @@ type ResponsestudentFactory = {
     build: () => PromiseLike<Prisma.StudentCreateNestedOneWithoutResponsesInput["create"]>;
 };
 
-type ResponsequestionFactory = {
-    _factoryFor: "Question";
-    build: () => PromiseLike<Prisma.QuestionCreateNestedOneWithoutResponsesInput["create"]>;
-};
-
 type ResponseoptionFactory = {
     _factoryFor: "Option";
     build: () => PromiseLike<Prisma.OptionCreateNestedOneWithoutResponsesInput["create"]>;
 };
 
+type ResponsequestionFactory = {
+    _factoryFor: "Question";
+    build: () => PromiseLike<Prisma.QuestionCreateNestedOneWithoutResponsesInput["create"]>;
+};
+
+type ResponsesessionFactory = {
+    _factoryFor: "LearningSession";
+    build: () => PromiseLike<Prisma.LearningSessionCreateNestedOneWithoutResponsesInput["create"]>;
+};
+
 type ResponseFactoryDefineInput = {
     updatedAt?: Date;
     student: ResponsestudentFactory | Prisma.StudentCreateNestedOneWithoutResponsesInput;
-    question: ResponsequestionFactory | Prisma.QuestionCreateNestedOneWithoutResponsesInput;
     option: ResponseoptionFactory | Prisma.OptionCreateNestedOneWithoutResponsesInput;
+    question: ResponsequestionFactory | Prisma.QuestionCreateNestedOneWithoutResponsesInput;
+    session: ResponsesessionFactory | Prisma.LearningSessionCreateNestedOneWithoutResponsesInput;
 };
 
 type ResponseTransientFields = Record<string, unknown> & Partial<Record<keyof ResponseFactoryDefineInput, never>>;
@@ -1502,12 +1517,16 @@ function isResponsestudentFactory(x: ResponsestudentFactory | Prisma.StudentCrea
     return (x as any)?._factoryFor === "Student";
 }
 
+function isResponseoptionFactory(x: ResponseoptionFactory | Prisma.OptionCreateNestedOneWithoutResponsesInput | undefined): x is ResponseoptionFactory {
+    return (x as any)?._factoryFor === "Option";
+}
+
 function isResponsequestionFactory(x: ResponsequestionFactory | Prisma.QuestionCreateNestedOneWithoutResponsesInput | undefined): x is ResponsequestionFactory {
     return (x as any)?._factoryFor === "Question";
 }
 
-function isResponseoptionFactory(x: ResponseoptionFactory | Prisma.OptionCreateNestedOneWithoutResponsesInput | undefined): x is ResponseoptionFactory {
-    return (x as any)?._factoryFor === "Option";
+function isResponsesessionFactory(x: ResponsesessionFactory | Prisma.LearningSessionCreateNestedOneWithoutResponsesInput | undefined): x is ResponsesessionFactory {
+    return (x as any)?._factoryFor === "LearningSession";
 }
 
 type ResponseTraitKeys<TOptions extends ResponseFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
@@ -1571,12 +1590,15 @@ function defineResponseFactoryInternal<TTransients extends Record<string, unknow
                 student: isResponsestudentFactory(defaultData.student) ? {
                     create: await defaultData.student.build()
                 } : defaultData.student,
+                option: isResponseoptionFactory(defaultData.option) ? {
+                    create: await defaultData.option.build()
+                } : defaultData.option,
                 question: isResponsequestionFactory(defaultData.question) ? {
                     create: await defaultData.question.build()
                 } : defaultData.question,
-                option: isResponseoptionFactory(defaultData.option) ? {
-                    create: await defaultData.option.build()
-                } : defaultData.option
+                session: isResponsesessionFactory(defaultData.session) ? {
+                    create: await defaultData.session.build()
+                } : defaultData.session
             } as Prisma.ResponseCreateInput;
             const data: Prisma.ResponseCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
             await handleAfterBuild(data, transientFields);

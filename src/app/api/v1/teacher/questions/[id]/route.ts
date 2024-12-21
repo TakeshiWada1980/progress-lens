@@ -31,7 +31,6 @@ export const DELETE = async (req: NextRequest, { params }: Params) => {
   const { id: questionId } = params;
   const userService = new UserService(prisma);
   const questionService = new QuestionService(prisma);
-  let reqBody: any;
 
   try {
     // トークンが不正なときは InvalidTokenError がスローされる

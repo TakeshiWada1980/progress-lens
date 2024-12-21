@@ -35,6 +35,7 @@ import {
   faSpinner,
   faRetweet,
   faPersonChalkboard,
+  faTurnUp,
 } from "@fortawesome/free-solid-svg-icons";
 import ActionButton from "@/app/_components/elements/ActionButton";
 import CustomModal from "@/app/_components/CustomModal";
@@ -329,19 +330,22 @@ const Page: React.FC = () => {
           </TooltipProvider>
         </div>
       </div>
-      <div className="mb-2 ml-2 mr-1 flex items-center justify-between space-x-2">
+      <div className="mb-2 ml-2 mr-1 flex items-center justify-between">
         <span className=" text-gray-400">
-          アクセスコード: &nbsp;
-          <Link
-            style="unstyled"
-            href={`/student/sessions/${dataRef.current.accessCode}`}
-          >
-            {dataRef.current.accessCode}
+          AccessCode:&nbsp;{dataRef.current.accessCode} (
+          <Link href={`/student/sessions/${dataRef.current.accessCode}`}>
+            Preview
           </Link>
+          )
         </span>
-        <Link href="/teacher/sessions" className="">
-          セッション一覧
-        </Link>
+        <span>
+          <FontAwesomeIcon
+            icon={faTurnUp}
+            rotation={90}
+            className="mr-1 text-blue-500"
+          />
+          <Link href="/teacher/sessions">セッション一覧</Link>
+        </span>
       </div>
 
       {/* 設問 */}

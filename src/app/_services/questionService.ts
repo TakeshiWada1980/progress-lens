@@ -122,7 +122,66 @@ export const forUpdateOptionSchema = {
 
 ///////////////////////////////////////////////////////////////
 
-type TransactionCapablePrisma = PrismaClient | PRS.TransactionClient;
+export const forPostResponseSchema = {
+  select: {
+    id: true,
+    sessionId: true,
+    session: {
+      select: {
+        isActive: true,
+      },
+    },
+    options: {
+      select: {
+        id: true,
+        questionId: true,
+      },
+    },
+  },
+} as const;
+
+///////////////////////////////////////////////////////////////
+
+export const forSnapshotOptionSchema = {
+  select: {
+    id: true,
+    order: true,
+    title: true,
+    questionId: true,
+    description: true,
+    rewardMessage: true,
+    rewardPoint: true,
+    effect: true,
+    _count: {
+      select: {
+        responses: true,
+      },
+    },
+  },
+  orderBy: {
+    order: "asc" as const,
+  },
+} as const;
+
+export const forSnapshotQuestionSchema = {
+  select: {
+    id: true,
+    order: true,
+    title: true,
+    description: true,
+    defaultOptionId: true,
+    // sessionId: true,
+    options: {
+      select: forSnapshotOptionSchema.select,
+      orderBy: forSnapshotOptionSchema.orderBy,
+    },
+  },
+  orderBy: {
+    order: "asc" as const,
+  },
+} as const;
+
+///////////////////////////////////////////////////////////////
 
 class QuestionService {
   private prisma: PrismaClient;
@@ -176,6 +235,28 @@ class QuestionService {
       ...(select ? { select } : {}),
       // ...options,
     })) as PRS.OptionGetPayload<{ include: T; select: U }>;
+    return question;
+  }
+
+  /**
+   * 指定のoptionIdを持つ設問 (単数) を取得
+   * @param optionId 呼び出し元で有効性を【保証不要】の選択肢ID
+   * @note 該当なしは例外をスロー
+   */
+  @withErrorHandling()
+  public async getByOptionId<
+    T extends PRS.OptionInclude,
+    U extends PRS.OptionSelect
+  >(
+    optionId: string,
+    options?: OptionReturnType<T, U>
+  ): Promise<PRS.QuestionGetPayload<{ include: T; select: U }>> {
+    const { include, select } = options || {};
+    const question = (await this.prisma.question.findFirstOrThrow({
+      where: { options: { some: { id: optionId } } },
+      ...(include ? { include } : {}),
+      ...(select ? { select } : {}),
+    })) as PRS.QuestionGetPayload<{ include: T; select: U }>;
     return question;
   }
 
@@ -236,15 +317,6 @@ class QuestionService {
         )
       );
     });
-
-    // await this.prisma.$transaction(
-    //   questionOrderUpdates.map(({ questionId, order }) =>
-    //     this.prisma.question.update({
-    //       where: { id: questionId },
-    //       data: { order },
-    //     })
-    //   )
-    // );
   }
 
   /**
@@ -268,15 +340,6 @@ class QuestionService {
         )
       );
     });
-
-    // await this.prisma.$transaction(
-    //   optionOrderUpdates.map(({ optionId, order }) =>
-    //     this.prisma.option.update({
-    //       where: { id: optionId },
-    //       data: { order },
-    //     })
-    //   )
-    // );
   }
 
   /**
@@ -298,15 +361,6 @@ class QuestionService {
     )) as PRS.QuestionGetPayload<typeof forDuplicateQuestionSchema>;
 
     // 1-1. コピー先に適用するデフォルト選択肢の取得
-    // const defaultOptionTitle = question.options.find(
-    //   (option) => option.id === question.defaultOptionId
-    // )?.title;
-    // if (!defaultOptionTitle) {
-    //   throw new DomainRuleViolationError(
-    //     "コピー元の設問にデフォルト選択肢が設定されていません",
-    //     question
-    //   );
-    // }
     const defaultOptionIndex = question.options.findIndex(
       (o) => o.id === question.defaultOptionId
     );
@@ -333,7 +387,10 @@ class QuestionService {
       order: q.order + 1,
     }));
 
-    this.prisma.$transaction(async (tx) => {
+    let newQuestionId = "";
+    let newDefaultOptionId = "";
+
+    await this.prisma.$transaction(async (tx) => {
       //
       // 2. 設問の複製
       const newQuestion = await tx.question.create({
@@ -365,10 +422,10 @@ class QuestionService {
         where: { questionId: newQuestion.id },
         orderBy: { order: "asc" },
       });
-      const newDefaultOptionId = options[defaultOptionIndex];
+      const newDefaultOption = options[defaultOptionIndex];
       await tx.question.update({
         where: { id: newQuestion.id },
-        data: { defaultOptionId: newDefaultOptionId.id },
+        data: { defaultOptionId: newDefaultOption.id },
       });
 
       // 5. 並び順の更新  length > 0 の場合のみ実行
@@ -382,7 +439,16 @@ class QuestionService {
           )
         );
       }
+      newQuestionId = newQuestion.id;
+      newDefaultOptionId = newDefaultOption.id;
     });
+
+    // 6. セッションに登録済みの学生がいれば、その学生のレスポンスにデフォルト選択肢を登録
+    await this.registerDefaultResponsesForEnrolledStudents(
+      question.sessionId,
+      newQuestionId,
+      newDefaultOptionId
+    );
   }
 
   // 設問の新規作成・初期化
@@ -419,11 +485,139 @@ class QuestionService {
     });
 
     // 4. 設問にデフォルト選択肢を設定
-    return await this.prisma.question.update({
+    const res = await this.prisma.question.update({
       where: { id: question.id },
       data: { defaultOptionId: options[0].id },
     });
+
+    // 5. セッションに登録済みの学生がいれば、その学生のレスポンスにデフォルト選択肢を登録
+    await this.registerDefaultResponsesForEnrolledStudents(
+      sessionId,
+      question.id,
+      options[0].id
+    );
+    return res;
   }
+
+  /**
+   * 設問が新規作成・複製されたときに、その設問が所属するセッションに登録済みの学生が
+   * いれば、その学生のレスポンスにデフォルト選択肢を登録する
+   * @param sessionId 呼び出し元で有効性を保証すべきセッションID
+   * @param questionId 呼び出し元で有効性を保証すべき設問ID
+   * @param defaultOptionId 呼び出し元で有効性を保証すべきデフォルト選択肢ID
+   */
+  private async registerDefaultResponsesForEnrolledStudents(
+    sessionId: string,
+    questionId: string,
+    defaultOptionId: string
+  ): Promise<void> {
+    // セッションに登録済みの学生を取得
+    const studentIds = (
+      await this.prisma.sessionEnrollment.findMany({
+        where: {
+          sessionId,
+          deletedAt: null,
+        },
+      })
+    ).map((e) => e.studentId);
+    if (studentIds.length == 0) return;
+
+    // デフォルト選択肢をレスポンスとして登録
+    await Promise.all(
+      studentIds.map((studentId) =>
+        this.prisma.response.create({
+          data: {
+            sessionId,
+            studentId,
+            questionId,
+            optionId: defaultOptionId, // デフォルト選択肢
+          },
+        })
+      )
+    );
+
+    return;
+  }
+
+  /**
+   * レスポンスの登録 (upsert)
+   * @param userId 呼び出し元で有効性を保証すべきユーザID (studentId)
+   * @param sessionId 呼び出し元で有効性を保証すべきセッションID
+   * @param questionId 呼び出し元で有効性を保証すべき設問ID
+   * @param optionId 呼び出し元で有効性を保証すべき設問ID
+   */
+  @withErrorHandling()
+  public async upsertResponse(
+    userId: string,
+    sessionId: string,
+    questionId: string,
+    optionId: string
+  ): Promise<void> {
+    await this.prisma.response.upsert({
+      where: {
+        // 複合ユニークインデックスを指定
+        unique_response_composite: {
+          sessionId,
+          studentId: userId,
+          questionId,
+        },
+      },
+      // レコードが存在しない場合の作成データ
+      create: {
+        sessionId,
+        studentId: userId,
+        questionId,
+        optionId,
+      },
+      // レコードが存在する場合の更新データ（optionIdのみ）
+      update: {
+        optionId,
+      },
+    });
+  }
+
+  /**
+   * 未回答の設問に対して、デフォルトの選択肢を回答として一括登録
+   * @param studentId 呼び出し元で有効性を保証すべきユーザID
+   * @param missingResponseQuestionIds 呼び出し元で有効性を保証すべき未回答設問IDのリスト
+   * */
+  @withErrorHandling()
+  public async fillMissingDefaultResponses(
+    studentId: string,
+    missingResponseQuestionIds: string[]
+  ): Promise<void> {
+    const questions = await this.prisma.question.findMany({
+      where: {
+        id: { in: missingResponseQuestionIds },
+      },
+      select: {
+        id: true,
+        sessionId: true,
+        defaultOptionId: true,
+      },
+    });
+    await Promise.all(
+      questions.map((question) =>
+        this.upsertResponse(
+          studentId,
+          question.sessionId,
+          question.id,
+          question.defaultOptionId!
+        )
+      )
+    );
+  }
+
+  /**
+   * 回答状況の取得
+   * @param sessionId 呼び出し元で有効性を保証すべきセッションID
+   * @param userId 呼び出し元で有効性を保証すべきユーザID
+   */
+  @withErrorHandling()
+  public async getResponseStatus(
+    sessionId: string,
+    userId: string
+  ): Promise<void> {}
 }
 
 export default QuestionService;

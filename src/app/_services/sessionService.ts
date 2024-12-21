@@ -7,6 +7,7 @@ import {
 import { BadRequestError } from "@/app/api/_helpers/apiExceptions";
 import QuestionService, {
   forEditQuestionSchema,
+  forSnapshotQuestionSchema,
 } from "@/app/_services/questionService";
 import {
   type UpdateSessionRequest,
@@ -86,6 +87,31 @@ export const forEditSessionSchema = {
     questions: {
       select: forEditQuestionSchema.select,
       orderBy: forEditQuestionSchema.orderBy,
+    },
+  },
+} as const;
+
+///////////////////////////////////////////////////////////////
+
+export const forSnapshotSessionSchema = {
+  select: {
+    id: true,
+    title: true,
+    accessCode: true,
+    isActive: true,
+    teacherId: true,
+    teacher: {
+      select: {
+        user: {
+          select: {
+            displayName: true,
+          },
+        },
+      },
+    },
+    questions: {
+      select: forSnapshotQuestionSchema.select,
+      orderBy: forSnapshotQuestionSchema.orderBy,
     },
   },
 } as const;
@@ -343,7 +369,11 @@ class SessionService {
     }
   }
 
-  // 新規作成と初期化（設問１個付き）
+  /**
+   * ラーニングセッションを新規作成と初期化（1個の設問の自動生成）をする
+   * @param teacherId 呼び出し元で有効性を保証すべきセッションID
+   * @param title セッションのタイトル(バリエーション済み)
+   */
   @withErrorHandling()
   public async create(
     teacherId: string,
@@ -488,6 +518,47 @@ class SessionService {
         deletedAt: null,
       },
     });
+
+    // 以降の(1)～(4)で、未回答の設問に対してデフォルトの回答を登録
+    // ※トランザクションを構成したほうがよいが
+    // SessionService と QuestionService にまたがる
+    // トランザクションは極めて複雑なため、ここではシンプルな実装としている
+
+    // (1) セッションに紐づく全設問を取得
+    const session = (await this.getById(
+      sessionId,
+      fullSessionSchema
+    )) as PRS.LearningSessionGetPayload<typeof fullSessionSchema>;
+    const questions = session.questions;
+
+    // (2) 学生が既に回答済みの設問を取得
+    const existingResponses = await this.prisma.response.findMany({
+      where: {
+        studentId,
+        questionId: {
+          in: questions.map((q) => q.id),
+        },
+      },
+      select: {
+        questionId: true,
+      },
+    });
+
+    // (3) 回答済み設問IDをSetとして取得して、未回答の設問を特定
+    const respondedQuestionIds = new Set(
+      existingResponses.map((r) => r.questionId)
+    );
+    const missingResponseQuestionIds: string[] = questions
+      .filter((q) => !respondedQuestionIds.has(q.id))
+      .map((q) => q.id);
+    if (missingResponseQuestionIds.length === 0) return;
+
+    // (4) 未回答の設問に対して、デフォルトの選択肢を回答として一括登録
+    const questionService = new QuestionService(this.prisma);
+    questionService.fillMissingDefaultResponses(
+      studentId,
+      missingResponseQuestionIds
+    );
   }
 
   /**
@@ -536,7 +607,11 @@ class SessionService {
     });
   }
 
-  // ラーニングセッションの削除
+  /**
+   * ラーニングセッションを削除する
+   * @param sessionId 呼び出し元で有効性を保証すべきセッションID
+   * @note 存在しない場合は PrismaClientKnownRequestError がスローされる
+   */
   @withErrorHandling()
   public async delete(sessionId: string): Promise<void> {
     await this.prisma.learningSession.delete({

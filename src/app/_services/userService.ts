@@ -17,6 +17,22 @@ export type UserReturnType<
   select?: U;
 };
 
+export type StudentReturnType<
+  T extends PRS.StudentInclude,
+  U extends PRS.StudentSelect
+> = {
+  include?: T;
+  select?: U;
+};
+
+export type ResponseReturnType<
+  T extends PRS.ResponseInclude,
+  U extends PRS.ResponseSelect
+> = {
+  include?: T;
+  select?: U;
+};
+
 export const studentUserSchema = {
   include: { student: true },
 } as const;
@@ -30,6 +46,34 @@ export const adminUserSchema = {
 } as const;
 
 export const fullUserSchema = adminUserSchema;
+
+export const forGetStudentsBySessionIdSchema = {
+  include: { user: true },
+} as const;
+
+export const forGetResponsesSchema = {
+  select: {
+    studentId: true,
+    sessionId: true,
+    questionId: true,
+    optionId: true,
+    session: {
+      select: {
+        title: true,
+      },
+    },
+    question: {
+      select: {
+        title: true,
+      },
+    },
+    option: {
+      select: {
+        title: true,
+      },
+    },
+  },
+} as const;
 
 type CreateUserAsStudentReturnType = PRS.UserGetPayload<
   typeof studentUserSchema
@@ -194,6 +238,56 @@ class UserService {
       },
     });
     return await this.getById(id, options);
+  }
+
+  /**
+   * Idで指定されるラーニングセッションに参加登録されている学生を取得する
+   * @param sessionId 呼び出し元で有効性を【保証不要】のセッションID
+   * @param includeDeleted 削除済みの学生も含めるかどうか
+   */
+  @withErrorHandling()
+  public async getStudentsBySessionId<
+    T extends PRS.StudentInclude,
+    U extends PRS.StudentSelect
+  >(
+    sessionId: string,
+    includeDeleted = false,
+    options?: StudentReturnType<T, U>
+  ): Promise<PRS.StudentGetPayload<{ include: T; select: U }>[]> {
+    return (await this.prisma.student.findMany({
+      where: {
+        enrollments: {
+          some: {
+            sessionId: sessionId,
+            ...(!includeDeleted && { deletedAt: null }),
+          },
+        },
+      },
+      ...options,
+    })) as PRS.StudentGetPayload<{ include: T; select: U }>[];
+  }
+
+  /**
+   * 指定されたユーザのレスポンスを一覧を取得する
+   * @param id 呼び出し元で有効性を保証すべきユーザID
+   * @param sessionId 呼び出し元で有効性を保証すべきユーザID (省略時は全てのレスポンスを取得)
+   */
+  @withErrorHandling()
+  public async getResponses<
+    T extends PRS.ResponseInclude,
+    U extends PRS.ResponseSelect
+  >(
+    id: string,
+    sessionId?: string,
+    options?: ResponseReturnType<T, U>
+  ): Promise<PRS.ResponseGetPayload<{ include: T; select: U }>[]> {
+    return (await this.prisma.response.findMany({
+      where: {
+        studentId: id,
+        ...(sessionId && { sessionId: sessionId }),
+      },
+      ...options,
+    })) as PRS.ResponseGetPayload<{ include: T; select: U }>[];
   }
 
   public static UserNotFoundError = class extends ApiError {

@@ -327,7 +327,7 @@ const Page: React.FC = () => {
         />
       </FormProvider>
 
-      <Collapsible defaultValue={accordionValue}>
+      <Collapsible defaultValue={accordionValue} className="mt-2">
         <CollapsibleTrigger className="ml-2 text-blue-500 hover:cursor-pointer">
           <div className="mb-2 font-bold">
             <FontAwesomeIcon

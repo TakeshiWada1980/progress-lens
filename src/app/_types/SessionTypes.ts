@@ -11,7 +11,7 @@ import { optionSetSize } from "@/config/app-config";
 export const isCUID = (value: string) => /^c[a-z0-9]{24}$/.test(value);
 export const isAccessCode = (value: string) => /^\d{3}-\d{4}$/.test(value);
 
-const cuidSchema = z.string().refine(isCUID, {
+export const cuidSchema = z.string().refine(isCUID, {
   message: "Invalid CUID format.",
 });
 
@@ -98,6 +98,47 @@ export const sessionEditableFieldsSchema = z.object({
 });
 
 export type SessionEditableFields = z.infer<typeof sessionEditableFieldsSchema>;
+
+///////////////////////////////////////////////////////////////
+
+export const optionSnapshotSchema = z.object({
+  id: cuidSchema,
+  questionId: cuidSchema,
+  order: orderSchema,
+  title: optionTitleSchema,
+  description: z.string(),
+  rewardMessage: z.string(),
+  rewardPoint: rewardPointSchema,
+  effect: z.boolean(),
+  responseCount: z.number(),
+  isUserResponse: z.boolean(),
+});
+
+export type OptionSnapshot = z.infer<typeof optionSnapshotSchema>;
+
+export const questionSnapshotSchema = z.object({
+  id: cuidSchema,
+  order: orderSchema,
+  title: questionTitleSchema,
+  description: z.string(),
+  defaultOptionId: cuidSchema,
+  options: z.array(optionSnapshotSchema),
+});
+
+export type QuestionSnapshot = z.infer<typeof questionSnapshotSchema>;
+
+export const sessionSnapshotSchema = z.object({
+  id: cuidSchema,
+  title: sessionTitleSchema,
+  accessCode: accessCodeSchema,
+  isActive: z.boolean(),
+  teacherId: uuidSchema,
+  teacherName: z.string(),
+  questions: z.array(questionSnapshotSchema),
+  previewMode: z.boolean(),
+});
+
+export type SessionSnapshot = z.infer<typeof sessionSnapshotSchema>;
 
 ///////////////////////////////////////////////////////////////
 
