@@ -108,6 +108,7 @@ const UserProfilePage: React.FC = () => {
             <ProfileUpdateForm
               disabled={isSubmitting || !data}
               email={session?.user.email}
+              provider={data?.data?.provider || ""}
             />
           </FormProvider>
           <ActionButton

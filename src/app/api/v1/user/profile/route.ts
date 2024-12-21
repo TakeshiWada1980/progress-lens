@@ -38,6 +38,7 @@ export const GET = async (req: NextRequest) => {
       role: appUser.role,
       avatarImgKey: appUser.avatarImgKey ?? undefined,
       avatarImgUrl: avatarImgUrl,
+      provider: authUser.app_metadata?.provider,
     };
 
     return NextResponse.json(

@@ -62,6 +62,7 @@ export interface UserProfile {
   displayName: string;
   avatarImgKey?: string;
   avatarImgUrl?: string;
+  provider?: string;
 }
 
 export const userProfileSchema = z.object({
