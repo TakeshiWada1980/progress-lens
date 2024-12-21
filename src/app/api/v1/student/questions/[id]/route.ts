@@ -41,38 +41,27 @@ export const POST = async (req: NextRequest, { params }: Params) => {
     const reqBody = await req.json();
     const postResponseRequest = postResponseRequestSchema.parse(reqBody);
 
-    // (1) URLとBodyのIDが一致することを確認
-    if (questionId !== postResponseRequest.questionId) {
-      throw new BadRequestError(
-        `リクエストボディの設問IDとURLの設問IDが一致しません。`,
-        {
-          urlId: questionId,
-          body: postResponseRequest,
-        }
-      );
-    }
-
-    // (2) 設問をDBから取得 (存在しない場合は Error がスローされる)
-    const question = (await questionService.getById(
-      questionId,
+    // (1) オプションIDから設問を取得 (存在しない場合はErrorがスローされる)
+    const question = (await questionService.getByOptionId(
+      postResponseRequest.optionId,
       forPostResponseSchema
     )) as PRS.QuestionGetPayload<typeof forPostResponseSchema>;
 
-    // (3) リクエストボディのオプションIDが設問に存在することを確認
-    const option = question.options.find(
-      (option) => option.id === postResponseRequest.optionId
-    );
-    // prettier-ignore
-    if (!option) throw new BadRequestError(`リクエストボディの「オプションID」が不正です。`,null);
+    // ルートパラメータのIDと設問IDが一致しない場合
+    if (question.id !== questionId)
+      throw new BadRequestError(
+        `リクエストボディの「オプションID」とルートパラメータの「設問ID」に不整合があります。`,
+        null
+      );
 
-    // (4) セッションがアクティブであることを確認
+    // (2) セッションがアクティブであることを確認
     if (!question.session.isActive) {
       throw new BadRequestError(`セッションがアクティブではありません。`, {
         session: question.session,
       });
     }
 
-    // (5) ユーザがセッションに参加していることを確認
+    // (3) ユーザがセッションに参加していることを確認
     const isEnrolled = await sessionService.isStudentEnrolled(
       question.sessionId,
       appUser.id
@@ -85,7 +74,7 @@ export const POST = async (req: NextRequest, { params }: Params) => {
     await questionService.upsertResponse(
       appUser.id,
       question.sessionId,
-      postResponseRequest.questionId,
+      questionId,
       postResponseRequest.optionId
     );
 

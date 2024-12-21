@@ -530,7 +530,6 @@ class SessionService {
       fullSessionSchema
     )) as PRS.LearningSessionGetPayload<typeof fullSessionSchema>;
     const questions = session.questions;
-    const questionService = new QuestionService(this.prisma);
 
     // (2) 学生が既に回答済みの設問を取得
     const existingResponses = await this.prisma.response.findMany({
@@ -545,23 +544,20 @@ class SessionService {
       },
     });
 
-    // (3) 回答済み設問IDをSetとして取得
+    // (3) 回答済み設問IDをSetとして取得して、未回答の設問を特定
     const respondedQuestionIds = new Set(
       existingResponses.map((r) => r.questionId)
     );
+    const missingResponseQuestionIds: string[] = questions
+      .filter((q) => !respondedQuestionIds.has(q.id))
+      .map((q) => q.id);
+    if (missingResponseQuestionIds.length === 0) return;
 
     // (4) 未回答の設問に対して、デフォルトの選択肢を回答として一括登録
-    await Promise.all(
-      questions
-        .filter((question) => !respondedQuestionIds.has(question.id))
-        .map((question) =>
-          questionService.upsertResponse(
-            studentId,
-            sessionId,
-            question.id,
-            question.defaultOptionId!
-          )
-        )
+    const questionService = new QuestionService(this.prisma);
+    questionService.fillMissingDefaultResponses(
+      studentId,
+      missingResponseQuestionIds
     );
   }
 

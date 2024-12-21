@@ -104,7 +104,6 @@ const QuestionContent: React.FC<Props> = memo(
         // バックエンド同期:
         const ep = `/api/v1/student/questions/${question.id}`;
         const reqBody: PostResponseRequest = postResponseRequestSchema.parse({
-          questionId: question.id,
           optionId: newResponseId,
         });
         dev.console.log("■ >>> " + JSON.stringify(reqBody, null, 2));

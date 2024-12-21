@@ -183,8 +183,6 @@ export const forSnapshotQuestionSchema = {
 
 ///////////////////////////////////////////////////////////////
 
-type TransactionCapablePrisma = PrismaClient | PRS.TransactionClient;
-
 class QuestionService {
   private prisma: PrismaClient;
 
@@ -237,6 +235,28 @@ class QuestionService {
       ...(select ? { select } : {}),
       // ...options,
     })) as PRS.OptionGetPayload<{ include: T; select: U }>;
+    return question;
+  }
+
+  /**
+   * 指定のoptionIdを持つ設問 (単数) を取得
+   * @param optionId 呼び出し元で有効性を【保証不要】の選択肢ID
+   * @note 該当なしは例外をスロー
+   */
+  @withErrorHandling()
+  public async getByOptionId<
+    T extends PRS.OptionInclude,
+    U extends PRS.OptionSelect
+  >(
+    optionId: string,
+    options?: OptionReturnType<T, U>
+  ): Promise<PRS.QuestionGetPayload<{ include: T; select: U }>> {
+    const { include, select } = options || {};
+    const question = (await this.prisma.question.findFirstOrThrow({
+      where: { options: { some: { id: optionId } } },
+      ...(include ? { include } : {}),
+      ...(select ? { select } : {}),
+    })) as PRS.QuestionGetPayload<{ include: T; select: U }>;
     return question;
   }
 
@@ -554,6 +574,38 @@ class QuestionService {
         optionId,
       },
     });
+  }
+
+  /**
+   * 未回答の設問に対して、デフォルトの選択肢を回答として一括登録
+   * @param studentId 呼び出し元で有効性を保証すべきユーザID
+   * @param missingResponseQuestionIds 呼び出し元で有効性を保証すべき未回答設問IDのリスト
+   * */
+  @withErrorHandling()
+  public async fillMissingDefaultResponses(
+    studentId: string,
+    missingResponseQuestionIds: string[]
+  ): Promise<void> {
+    const questions = await this.prisma.question.findMany({
+      where: {
+        id: { in: missingResponseQuestionIds },
+      },
+      select: {
+        id: true,
+        sessionId: true,
+        defaultOptionId: true,
+      },
+    });
+    await Promise.all(
+      questions.map((question) =>
+        this.upsertResponse(
+          studentId,
+          question.sessionId,
+          question.id,
+          question.defaultOptionId!
+        )
+      )
+    );
   }
 
   /**
