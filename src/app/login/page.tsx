@@ -74,15 +74,13 @@ const LoginPage: React.FC = () => {
   const fieldErrors = form.formState.errors;
 
   const oAuthLogin = async () => {
+    const queryParam = returnPath ? `?returnPath=${returnPath}` : "";
+    const redirectTo = `${appBaseUrl}/login/oauth/callback/google${queryParam}`;
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: {
-        redirectTo: `${appBaseUrl}/login/oauth/callback/google`,
-      },
+      options: { redirectTo },
     });
-    if (error) {
-      setErrorMsg(`${error.message}`);
-    }
+    if (error) setErrorMsg(error.message);
   };
 
   const onSubmit = async (formValues: UserAuth) => {

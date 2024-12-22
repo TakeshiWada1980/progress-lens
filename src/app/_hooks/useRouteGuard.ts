@@ -18,6 +18,9 @@ const useRouteGuard = (requiredRole: Role, returnPath: string) => {
       return;
     }
 
+    // userProfileが取得できるまで認可の評価を保留
+    if (!userProfile) return;
+
     // ADMIN権限が要求されるページに、ADMIN以外がアクセスした
     if (requiredRole === Role.ADMIN && userProfile?.role !== Role.ADMIN) {
       toast({
