@@ -189,11 +189,12 @@ const LoginPage: React.FC = () => {
         </form>
 
         <ActionButton
+          type="button"
           variant="submit"
           width="stretch"
           className="tracking-widest"
           onClick={oAuthLogin}
-          disabled={form.watch(c_Email) !== ""}
+          disabled={!!form.watch(c_Email)}
         >
           <FontAwesomeIcon icon={faGoogle} className="mr-2" />
           Googleアカウントでログイン
