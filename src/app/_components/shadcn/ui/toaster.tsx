@@ -9,9 +9,7 @@ import {
   ToastTitle,
   ToastViewport,
 } from "@/app/_components/shadcn/ui/toast";
-import { Check } from "lucide-react"; // Lucide Reactからチェックアイコンをインポート
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faCircleCheck } from "@fortawesome/free-solid-svg-icons";
+import { Check, X } from "lucide-react";
 
 export function Toaster() {
   const { toasts } = useToast();
@@ -34,10 +32,9 @@ export function Toaster() {
                 <ToastDescription>
                   {variant === "success" && (
                     <Check className="mr-1.5 inline-block size-4" />
-                    // <FontAwesomeIcon
-                    //   icon={faCircleCheck}
-                    //   className="mr-2 inline-block size-4"
-                    // />
+                  )}
+                  {variant === "destructive" && (
+                    <X className="mr-1.5 inline-block size-4" />
                   )}
                   {description}
                 </ToastDescription>

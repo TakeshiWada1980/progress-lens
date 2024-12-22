@@ -1,6 +1,8 @@
 "use client";
+
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
+import { useSearchParams } from "next/navigation";
 
 // カスタムフック・APIリクエスト系
 import { supabase } from "@/lib/supabase";
@@ -34,6 +36,13 @@ const LoginPage: React.FC = () => {
   const router = useRouter();
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const { setIsUserProfileRefreshRequired, logout } = useAuth();
+
+  const [returnPath, setReturnPath] = useState<string | null>(null);
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const rawReturnPath = searchParams.get("returnPath");
+    setReturnPath(rawReturnPath?.startsWith("http") ? null : rawReturnPath);
+  }, []);
 
   const c_Email = "email";
   const c_Password = "password";
@@ -101,8 +110,13 @@ const LoginPage: React.FC = () => {
       apiRequestHeader
     );
 
-    // ロールやユーザステート（初回ログインなど）に合わせたリダイレクト
+    // ログイン後のリダイレクト処理
     if (res.success) {
+      // クエリで returnPath が与えられていれば、それを優先する。
+      if (returnPath) {
+        router.replace(returnPath);
+        return;
+      }
       router.replace(res.data?.redirectTo!);
       return;
     }
