@@ -24,13 +24,15 @@ import { UserProfile } from "@/app/_types/UserTypes";
 import { avatarBucket } from "@/config/app-config";
 import { calculateMD5Hash } from "@/app/_utils/md5";
 import { roleEnum2str } from "@/app/_utils/roleEnum2str";
+import { twMerge } from "tailwind-merge";
 
 interface Props {
   disabled: boolean;
+  provider: string;
   email?: string;
 }
 
-const ProfileUpdateForm: React.FC<Props> = ({ disabled, email }) => {
+const ProfileUpdateForm: React.FC<Props> = ({ disabled, email, provider }) => {
   const c_DisplayName = "displayName";
   const c_AvatarImgUrl = "avatarImgUrl";
   const c_AvatarImgKey = "avatarImgKey";
@@ -193,7 +195,21 @@ const ProfileUpdateForm: React.FC<Props> = ({ disabled, email }) => {
         />
       </div>
 
-      <div className="mb-6">
+      <div className={twMerge("mb-6", provider !== "google" && "hidden")}>
+        <div className="mb-1 block font-bold text-gray-700">
+          ログインプロバイダ
+        </div>
+        <TextInputField
+          tabIndex={-1}
+          type="text"
+          value={`Logged in with Google (${email})`}
+          placeholder="(自動取得されます)"
+          readOnly
+          disabled={disabled}
+        />
+      </div>
+
+      <div className={twMerge("mb-6", provider === "google" && "hidden")}>
         <label htmlFor={c_Mail} className="mb-1 block font-bold text-gray-700">
           メールアドレス（ログインID）
         </label>

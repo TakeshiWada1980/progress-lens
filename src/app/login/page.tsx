@@ -20,11 +20,13 @@ import PageTitle from "@/app/_components/elements/PageTitle";
 import TextInputField from "@/app/_components/elements/TextInputField";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faComment } from "@fortawesome/free-solid-svg-icons";
+import { faGoogle } from "@fortawesome/free-brands-svg-icons";
 
 // 型・定数・ユーティリティ
 import { RedirectTo } from "@/app/_types/RedirectTo";
 import { ApiResponse } from "@/app/_types/ApiResponse";
 import { UserAuth, userAuthSchema } from "../_types/UserTypes";
+import { appBaseUrl } from "@/config/app-config";
 
 const LoginPage: React.FC = () => {
   const [errorMsg, setErrorMsg] = useState<string | null>();
@@ -62,13 +64,25 @@ const LoginPage: React.FC = () => {
   });
   const fieldErrors = form.formState.errors;
 
+  const oAuthLogin = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${appBaseUrl}/login/oauth/callback/google`,
+      },
+    });
+    if (error) {
+      setErrorMsg(`${error.message}`);
+    }
+  };
+
   const onSubmit = async (formValues: UserAuth) => {
     setErrorMsg(null);
     const { data, error } = await supabase.auth.signInWithPassword({
       email: formValues.email,
       password: formValues.password,
     });
-    // console.log("■ ログイン処理委に成功:", JSON.stringify(data));
+    // console.log("■ ログイン処理に成功:", JSON.stringify(data));
     if (error) {
       setErrorMsg("メールアドレスまたはパスワードを確認してください。");
       return;
@@ -132,7 +146,7 @@ const LoginPage: React.FC = () => {
         <form
           noValidate
           onSubmit={form.handleSubmit(onSubmit)}
-          className="space-y-4"
+          className="mb-2 space-y-4"
         >
           <div>
             <label htmlFor={c_Email} className="mb-2 block font-bold">
@@ -173,6 +187,17 @@ const LoginPage: React.FC = () => {
             </ActionButton>
           </div>
         </form>
+
+        <ActionButton
+          variant="submit"
+          width="stretch"
+          className="tracking-widest"
+          onClick={oAuthLogin}
+          disabled={form.watch(c_Email) !== ""}
+        >
+          <FontAwesomeIcon icon={faGoogle} className="mr-2" />
+          Googleアカウントでログイン
+        </ActionButton>
         <div className="mt-2">
           <div className="text-red-500">{errorMsg}</div>
         </div>

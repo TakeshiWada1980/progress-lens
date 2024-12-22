@@ -18,6 +18,7 @@ import PageTitle from "@/app/_components/elements/PageTitle";
 import TextInputField from "@/app/_components/elements/TextInputField";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faComment } from "@fortawesome/free-solid-svg-icons";
+import { faGoogle } from "@fortawesome/free-brands-svg-icons";
 
 // 型・定数・ユーティリティ
 import { UserAuth, userAuthSchema } from "../_types/UserTypes";
@@ -60,6 +61,18 @@ const SignUpPage: React.FC = () => {
     resolver: zodResolver(userAuthSchema),
   });
   const fieldErrors = form.formState.errors;
+
+  const oAuthLogin = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${appBaseUrl}/login/oauth/callback/google`,
+      },
+    });
+    if (error) {
+      setErrorMsg(`${error.message}`);
+    }
+  };
 
   const onSubmit = async (formValues: UserAuth) => {
     setErrorMsg(null);
@@ -134,7 +147,7 @@ const SignUpPage: React.FC = () => {
         <form
           noValidate
           onSubmit={form.handleSubmit(onSubmit)}
-          className="space-y-4"
+          className="mb-2 space-y-4"
         >
           <div>
             <label htmlFor={c_Email} className="mb-2 block font-bold">
@@ -177,6 +190,16 @@ const SignUpPage: React.FC = () => {
             </ActionButton>
           </div>
         </form>
+        <ActionButton
+          variant="submit"
+          width="stretch"
+          className="tracking-widest"
+          onClick={oAuthLogin}
+          disabled={form.watch(c_Email) !== ""}
+        >
+          <FontAwesomeIcon icon={faGoogle} className="mr-2" />
+          Googleアカウントでログイン
+        </ActionButton>
         <div className="mt-2">
           <div className="break-all text-blue-500">{msg}</div>
           <div className="text-red-500">{errorMsg}</div>
