@@ -190,12 +190,14 @@ const SignUpPage: React.FC = () => {
             </ActionButton>
           </div>
         </form>
+
         <ActionButton
+          type="button"
           variant="submit"
           width="stretch"
           className="tracking-widest"
           onClick={oAuthLogin}
-          disabled={form.watch(c_Email) !== ""}
+          disabled={!!form.watch(c_Email)}
         >
           <FontAwesomeIcon icon={faGoogle} className="mr-2" />
           Googleアカウントでログイン
@@ -206,7 +208,7 @@ const SignUpPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="mt-8 space-y-2 break-all text-sm">
+      <div className="mt-6 space-y-2 break-all text-sm">
         <div>
           <FontAwesomeIcon
             icon={faComment}
