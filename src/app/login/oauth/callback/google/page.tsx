@@ -7,7 +7,7 @@ import { RedirectTo } from "@/app/_types/RedirectTo";
 import LoadingPage from "@/app/_components/LoadingPage";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCircleExclamation } from "@fortawesome/free-solid-svg-icons";
-import useAuth from "@/app/_hooks/useAuth";
+import { useSearchParams } from "next/navigation";
 
 export default function OAuthCallback() {
   const router = useRouter();
@@ -16,12 +16,10 @@ export default function OAuthCallback() {
 
   const getApiCaller = createGetRequest<ApiResponse<RedirectTo>>();
 
-  const [returnPath, setReturnPath] = useState<string | null>(null);
-  useEffect(() => {
-    const searchParams = new URLSearchParams(window.location.search);
-    const rawReturnPath = searchParams.get("returnPath");
-    setReturnPath(rawReturnPath?.startsWith("http") ? null : rawReturnPath);
-  }, []);
+  // returnPath の取得（オープンリダイレクト対処付き）
+  const searchParams = useSearchParams();
+  const rawReturnPath = searchParams.get("returnPath");
+  const returnPath = rawReturnPath?.startsWith("http") ? null : rawReturnPath;
 
   useEffect(() => {
     const hash = window.location.hash.substring(1);
