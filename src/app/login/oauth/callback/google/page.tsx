@@ -7,7 +7,7 @@ import { RedirectTo } from "@/app/_types/RedirectTo";
 import LoadingPage from "@/app/_components/LoadingPage";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCircleExclamation } from "@fortawesome/free-solid-svg-icons";
-import Link from "@/app/_components/elements/Link";
+import { useSearchParams } from "next/navigation";
 
 export default function OAuthCallback() {
   const router = useRouter();
@@ -15,6 +15,11 @@ export default function OAuthCallback() {
   const [error, setError] = useState<string | null>(null);
 
   const getApiCaller = createGetRequest<ApiResponse<RedirectTo>>();
+
+  // returnPath の取得（オープンリダイレクト対処付き）
+  const searchParams = useSearchParams();
+  const rawReturnPath = searchParams.get("returnPath");
+  const returnPath = rawReturnPath?.startsWith("http") ? null : rawReturnPath;
 
   useEffect(() => {
     const hash = window.location.hash.substring(1);
@@ -38,18 +43,25 @@ export default function OAuthCallback() {
           Authorization: accessToken,
         };
         const res = await getApiCaller(ep, apiRequestHeader);
-        // ロールやユーザステート（初回ログインなど）に合わせたリダイレクト
+
+        // ログイン後のリダイレクト処理
         if (res.success) {
+          // クエリで returnPath が与えられていれば、それを優先する。
+          if (returnPath) {
+            router.replace(returnPath);
+            return;
+          }
           router.replace(res.data?.redirectTo!);
           return;
         }
+
         console.error("■ ログイン処理に失敗:", JSON.stringify(res, null, 2));
       } catch (e) {
         console.error("ユーザー情報の登録に失敗:", e);
       }
     };
     postUser();
-  }, [accessToken, error, getApiCaller, router]);
+  }, [accessToken, error, getApiCaller, returnPath, router]);
 
   if (error === "access_denied") {
     return (

@@ -3,6 +3,8 @@
 import React from "react";
 import useRouteGuard from "@/app/_hooks/useRouteGuard";
 import LoadingPage from "@/app/_components/LoadingPage";
+import { Role } from "@/app/_types/UserTypes";
+import { usePathname } from "next/navigation";
 
 interface Props {
   children: React.ReactNode;
@@ -10,16 +12,15 @@ interface Props {
 
 const Layout: React.FC<Props> = (props) => {
   const { children } = props;
-  const { isAuthenticated, isLoading } = useRouteGuard();
+  const { isAuthorized, isLoading } = useRouteGuard(
+    Role.STUDENT,
+    usePathname()
+  );
 
-  if (isLoading) {
-    return <LoadingPage />;
-  }
+  if (isLoading) return <LoadingPage />;
 
-  if (!isAuthenticated) {
-    return null; // 認証されていない場合は何も表示しない
-  }
-  // ログイン(認証済み)が確認できてから子コンポーネントをレンダリング
+  // 認可がない場合は何も表示しない
+  if (!isAuthorized) return null;
   return <>{children}</>;
 };
 

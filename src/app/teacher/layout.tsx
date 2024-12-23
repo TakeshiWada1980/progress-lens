@@ -4,7 +4,7 @@ import React from "react";
 import useRouteGuard from "@/app/_hooks/useRouteGuard";
 import LoadingPage from "@/app/_components/LoadingPage";
 import { Role } from "@/app/_types/UserTypes";
-import { useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 
 interface Props {
   children: React.ReactNode;
@@ -12,22 +12,15 @@ interface Props {
 
 const Layout: React.FC<Props> = (props) => {
   const { children } = props;
-  const { isAuthenticated, isLoading, role } = useRouteGuard();
-  const router = useRouter();
+  const { isAuthorized, isLoading } = useRouteGuard(
+    Role.TEACHER,
+    usePathname()
+  );
 
-  if (isLoading) {
-    return <LoadingPage />;
-  }
+  if (isLoading) return <LoadingPage />;
 
-  // 認証を終えるまでは何も表示しない
-  if (!isAuthenticated) return null;
-
-  // 管理者もしくは教員ではないとき（つまり学生のとき）
-  if (role === Role.STUDENT) {
-    router.replace("/");
-    return null;
-  }
-
+  // 認可がない場合は何も表示しない
+  if (!isAuthorized) return null;
   return <>{children}</>;
 };
 
