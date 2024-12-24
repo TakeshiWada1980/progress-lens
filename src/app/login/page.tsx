@@ -42,13 +42,6 @@ const LoginPage: React.FC = () => {
   const rawReturnPath = searchParams.get("returnPath");
   const returnPath = rawReturnPath?.startsWith("http") ? null : rawReturnPath;
 
-  // const [returnPath, setReturnPath] = useState<string | null>(null);
-  // useEffect(() => {
-  //   const searchParams = new URLSearchParams(window.location.search);
-  //   const rawReturnPath = searchParams.get("returnPath");
-  //   setReturnPath(rawReturnPath?.startsWith("http") ? null : rawReturnPath);
-  // }, []);
-
   const c_Email = "email";
   const c_Password = "password";
 
