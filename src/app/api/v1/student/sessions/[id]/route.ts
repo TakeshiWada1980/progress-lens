@@ -4,7 +4,11 @@ import { ApiErrorResponse } from "@/app/_types/ApiResponse";
 import SuccessResponseBuilder from "@/app/api/_helpers/successResponseBuilder";
 import ErrorResponseBuilder from "@/app/api/_helpers/errorResponseBuilder";
 import { StatusCodes } from "@/app/_utils/extendedStatusCodes";
-import { ApiError, BadRequestError } from "@/app/api/_helpers/apiExceptions";
+import {
+  ApiError,
+  BadRequestError,
+  SessionNotEnrolledError,
+} from "@/app/api/_helpers/apiExceptions";
 import AppErrorCode from "@/app/_types/AppErrorCode";
 
 // ユーザ認証・サービスクラス関係
@@ -61,12 +65,13 @@ export const GET = async (req: NextRequest, { params: { id } }: Params) => {
       appUser.id
     );
     if (!isEnrolled && session.teacherId !== appUser.id) {
-      throw new BadRequestError("Not enrolled in the session.", {
-        sessionId: session.id,
-        userId: appUser.id,
-        accessCode: accessCode,
-        title: session.title,
-      });
+      throw new SessionNotEnrolledError(
+        appUser.id,
+        appUser.displayName,
+        session.id,
+        session.title,
+        session.accessCode
+      );
     }
 
     // 当該ユーザの回答状況を取得

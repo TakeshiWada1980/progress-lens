@@ -21,7 +21,7 @@ import ActionLink from "@/app/_components/elements/ActionLink";
 import PageTitle from "@/app/_components/elements/PageTitle";
 import TextInputField from "@/app/_components/elements/TextInputField";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faComment } from "@fortawesome/free-solid-svg-icons";
+import { faComment, faEnvelope } from "@fortawesome/free-solid-svg-icons";
 import { faGoogle } from "@fortawesome/free-brands-svg-icons";
 
 // 型・定数・ユーティリティ
@@ -193,7 +193,8 @@ const LoginPage: React.FC = () => {
               isBusy={form.formState.isSubmitting}
               className="tracking-widest"
             >
-              ログイン
+              <FontAwesomeIcon icon={faEnvelope} className="mr-2" />
+              メールアドレスとパスワードでログイン
             </ActionButton>
           </div>
         </form>

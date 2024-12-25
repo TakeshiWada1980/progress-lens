@@ -14,7 +14,7 @@ const AuthProviderLayer: React.FC<Props> = (props) => {
     <>
       <AuthProvider>
         <Header />
-        <main className="mx-auto mt-14 w-full max-w-2xl px-5 md:px-0">
+        <main className="mx-auto mt-14 w-full max-w-2xl px-3">
           <div className="relative pt-6 md:px-4">
             <div>{props.children}</div>
           </div>

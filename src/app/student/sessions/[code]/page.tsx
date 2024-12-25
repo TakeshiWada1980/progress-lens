@@ -1,10 +1,12 @@
 "use client";
 
-import React, { useRef } from "react";
+import React, { useRef, useEffect } from "react";
 import { useParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 // カスタムフック・APIリクエスト系
 import useAuthenticatedGetRequest from "@/app/_hooks/useAuthenticatedGetRequest";
+import AppErrorCode from "@/app/_types/AppErrorCode";
 
 // UIコンポーネント
 import PageTitle from "@/app/_components/elements/PageTitle";
@@ -16,25 +18,55 @@ import {
 import QuestionContent from "./_components/QuestionContent";
 import Link from "@/app/_components/elements/Link";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faGhost, faRetweet } from "@fortawesome/free-solid-svg-icons";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/app/_components/shadcn/ui/tooltip";
+import { faGhost, faRotate } from "@fortawesome/free-solid-svg-icons";
+import { twMerge } from "tailwind-merge";
 
 const Page: React.FC = () => {
   const { code } = useParams<{ code: string }>();
   const ep = `/api/v1/student/sessions/${code}`;
   const { data, mutate } = useAuthenticatedGetRequest<SessionSnapshot>(ep);
 
+  const router = useRouter();
+
   const dataRef = useRef<SessionSnapshot>();
   const getOptimisticLatestData = () => dataRef.current;
   const revalidate = () => mutate(undefined);
 
+  // セッション未登録の場合は「登録ページ」にリダイレクト
+  useEffect(() => {
+    const isUnenrolled =
+      data?.success === false &&
+      data.error?.appErrorCode === AppErrorCode.SESSION_NOT_ENROLLED;
+    if (isUnenrolled) router.replace(`/student/sessions/?code=${code}`);
+  }, [data, code, router]);
+
   if (!data) return <LoadingPage />;
 
+  if (!data.success) {
+    // セッションは存在するが、未登録の場合
+    if (data.error?.appErrorCode === AppErrorCode.SESSION_NOT_ENROLLED) {
+      return <LoadingPage />;
+    }
+
+    // セッションが存在しない場合
+    if (data.error?.appErrorCode === AppErrorCode.SESSION_NOT_FOUND) {
+      return (
+        <div>
+          アクセスコード「{code}」に該当するセッションが見つかりません。
+        </div>
+      );
+    }
+
+    // その他
+    return (
+      <div>
+        <div>エラーが発生しました</div>
+        <pre className="mt-10 bg-red-50 p-3 text-xs">
+          {JSON.stringify(data.error, null, 2)}
+        </pre>
+      </div>
+    );
+  }
   dataRef.current = sessionSnapshotSchema.parse(data.data);
   const totalRewardPoint = dataRef.current.questions
     .flatMap((question) => question.options)
@@ -46,21 +78,16 @@ const Page: React.FC = () => {
       <div className="flex justify-between">
         <PageTitle title={dataRef.current.title} />
         <div className="pr-2">
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  className="text-xl text-gray-300 hover:text-gray-400"
-                  onClick={revalidate}
-                >
-                  <FontAwesomeIcon icon={faRetweet} />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent className="bg-slate-700 text-white">
-                <p>再読み込み</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          <button
+            className={twMerge(
+              "rounded-full bg-gray-300 px-2 py-0.5 text-sm text-white",
+              "hover:bg-gray-400"
+            )}
+            onClick={revalidate}
+          >
+            <FontAwesomeIcon icon={faRotate} />
+            <span className="ml-1 hidden sm:inline">再読込み</span>
+          </button>
         </div>
       </div>
 

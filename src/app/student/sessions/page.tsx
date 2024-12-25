@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useForm } from "react-hook-form";
 
 // カスタムフック・APIリクエスト系
@@ -25,6 +25,9 @@ import { DataTable } from "@/app/_components/elements/DataTable";
 import FormFieldErrorMsg from "@/app/_components/elements/FormFieldErrorMsg";
 import { ConfirmDialog } from "@/app/_components/elements/ConfirmDialog";
 import TextInputField from "@/app/_components/elements/TextInputField";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faCaretRight } from "@fortawesome/free-solid-svg-icons";
+import party from "party-js";
 
 // 型・定数・ユーティリティ
 import { produce, Draft } from "immer";
@@ -44,7 +47,7 @@ const Page: React.FC = () => {
   const { apiRequestHeader } = useAuth();
   const { data, mutate } = useAuthenticatedGetRequest<SessionSummary[]>(getEp);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-  // const [accessCode, setAccessCode] = useState<string>("");
+
   const [errorMsg, setErrorMsg] = useState<string>("");
 
   const router = useRouter();
@@ -60,6 +63,20 @@ const Page: React.FC = () => {
     mode: "onChange",
     resolver: zodResolver(accessCodeObjSchema),
   });
+
+  // クエリパラメータにアクセスコードが含まれているときはフォームにセット
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const code = accessCodeObjSchema.safeParse({
+      accessCode: searchParams.get("code"),
+    });
+    if (code.success)
+      accessCodeFormMethods.setValue(c_AccessCode, code.data.accessCode);
+  }, [accessCodeFormMethods]);
+
+  const partyEffect = useCallback((id: string) => {
+    party.sparkles(document.getElementById(id)!);
+  }, []);
 
   // セッションに参加する処理
   const enrollSession = useCallback(
@@ -133,11 +150,14 @@ const Page: React.FC = () => {
   return (
     <div className="space-y-6">
       <div>
-        <PageTitle title="ラーニングセッションに参加" />
+        <PageTitle title="ラーニングセッションに参加する" />
       </div>
 
       <div className="space-y-2">
-        <h2 className="text-xl font-bold">アクセスコードを使って参加</h2>
+        <h2 className="text-xl font-bold">
+          <FontAwesomeIcon icon={faCaretRight} className="mr-1.5" />
+          アクセスコードを入力
+        </h2>
         <form
           noValidate
           onSubmit={accessCodeFormMethods.handleSubmit(enrollSession)}
@@ -151,6 +171,7 @@ const Page: React.FC = () => {
               disabled={isSubmitting}
               className="w-40 py-1.5 text-center text-lg tracking-widest"
               error={!!accessCodeFormMethods.formState.errors.accessCode}
+              // onChange={() => partyEffect(c_AccessCode)}
             />
             <ActionButton
               type="submit"
@@ -171,7 +192,10 @@ const Page: React.FC = () => {
       </div>
 
       <div className="space-y-2">
-        <h2 className="text-xl font-bold">登録済みリストから参加</h2>
+        <h2 className="text-xl font-bold">
+          <FontAwesomeIcon icon={faCaretRight} className="mr-1.5" />
+          登録済みセッション
+        </h2>
         <div className="px-0 md:px-2">
           {data?.data ? (
             <DataTable

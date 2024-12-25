@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 
 // カスタムフック・APIリクエスト系
@@ -17,10 +17,28 @@ import { SearchCheck } from "lucide-react";
 // 型・定数・ユーティリティ
 import { twMerge } from "tailwind-merge";
 import { appName } from "@/config/app-config";
+import { Role } from "@/app/_types/UserTypes";
 
 const Header: React.FC = () => {
   const isVisible = useHeaderVisibility();
-  const { session, isLoading } = useAuth();
+  const { session, isLoading, userProfile } = useAuth();
+  const [homeLink, setHomeLink] = useState("/");
+  useEffect(() => {
+    switch (userProfile?.role) {
+      case Role.STUDENT:
+        setHomeLink("/student/sessions");
+        break;
+      case Role.TEACHER:
+        setHomeLink("/teacher/sessions");
+        break;
+      case Role.ADMIN:
+        setHomeLink("/admin");
+        break;
+      default:
+        setHomeLink("/");
+        break;
+    }
+  }, [userProfile?.role]);
 
   return (
     <header
@@ -29,9 +47,9 @@ const Header: React.FC = () => {
         isVisible ? "translate-y-0" : "-translate-y-full"
       )}
     >
-      <nav className="mx-auto flex max-w-2xl items-center justify-between space-x-2 px-5 py-1.5 md:px-0">
+      <nav className="mx-auto flex max-w-2xl items-center justify-between space-x-2 px-3 py-1.5">
         <Link
-          href="/"
+          href={homeLink}
           style="unstyled"
           className="text-xl font-bold text-blue-800"
         >

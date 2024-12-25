@@ -34,7 +34,12 @@ import {
 import { roleEnum2str } from "@/app/_utils/roleEnum2str";
 import { IconDefinition } from "@fortawesome/free-solid-svg-icons";
 import { type VariantProps } from "tailwind-variants";
-import { Role } from "@prisma/client";
+import { Role } from "@/app/_types/UserTypes";
+import {
+  studentMenuItems,
+  teacherMenuItems,
+  adminMenuItems,
+} from "@/app/_components/elements/menuItems";
 
 type LinkVariants = VariantProps<typeof link>;
 
@@ -50,64 +55,17 @@ export const UserNavWidget: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const router = useRouter();
   const displayName = userProfile ? userProfile.displayName : "";
-  let role = roleEnum2str(userProfile?.role);
 
-  // TODO: ロールに応じてメニュー項目を変更
-  const studentMenuItems: MenuItem[] = [
-    {
-      label: "アカウント設定",
-      href: "/user/profile",
-      state: "enabled",
-      icon: faAddressCard,
-    },
-    {
-      label: "セッション一覧",
-      href: "/student/sessions",
-      state: "enabled",
-      icon: faChalkboardUser,
-    },
-    {
-      label: "項目1 (仮)",
-      href: "#",
-      state: "notImplemented",
-      icon: faPersonDigging,
-    },
-    {
-      label: "項目2 (仮)",
-      href: "#",
-      state: "notImplemented",
-      icon: faPersonDigging,
-    },
-    {
-      label: "項目3 (仮)",
-      href: "#",
-      state: "notImplemented",
-      icon: faPersonDigging,
-    },
-  ];
-
-  const teacherMenuItems: MenuItem[] = [
-    {
-      label: "アカウント設定",
-      href: "/user/profile",
-      state: "enabled",
-      icon: faAddressCard,
-    },
-    {
-      label: "セッション一覧",
-      href: "/teacher/sessions",
-      state: "enabled",
-      icon: faChalkboardUser,
-    },
-    {
-      label: "項目1 (仮)",
-      href: "#",
-      state: "notImplemented",
-      icon: faPersonDigging,
-    },
-  ];
-
-  const menuItems = role === "学生" ? studentMenuItems : teacherMenuItems;
+  let roleStr = roleEnum2str(userProfile?.role);
+  let menuItems = studentMenuItems;
+  switch (userProfile?.role) {
+    case Role.TEACHER:
+      menuItems = teacherMenuItems;
+      break;
+    case Role.ADMIN:
+      menuItems = adminMenuItems;
+      break;
+  }
 
   const logoutAction = async () => {
     if (await logout()) {
@@ -117,8 +75,8 @@ export const UserNavWidget: React.FC = () => {
 
   return (
     <div className="flex items-center">
-      {role !== "" ? (
-        <div className="mr-2 text-xs text-slate-500">[{role}]</div>
+      {roleStr !== "" ? (
+        <div className="mr-2 text-xs text-slate-500">[{roleStr}]</div>
       ) : (
         <LoadingSpinner message="Loading..." />
       )}
@@ -138,7 +96,7 @@ export const UserNavWidget: React.FC = () => {
             </Avatar>
           </div>
         </DropdownMenuTrigger>
-        <DropdownMenuContent>
+        <DropdownMenuContent className="mr-1">
           {menuItems.map((item, index) => (
             <DropdownMenuItem key={index} onClick={() => setIsMenuOpen(false)}>
               <Link href={item.href} style="nav" state={item.state}>

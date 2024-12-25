@@ -44,6 +44,26 @@ export const NonTeacherOperationError = class extends ApiError {
   }
 };
 
+export const SessionNotEnrolledError = class extends ApiError {
+  readonly httpStatus: StatusCodes = StatusCodes.FORBIDDEN;
+  readonly appErrorCode: string = AppErrorCode.SESSION_NOT_ENROLLED;
+  readonly origin: Origin = Origin.CLIENT;
+  readonly technicalInfo: string;
+  readonly technicalInfoObject: any;
+  constructor(
+    userId: string,
+    displayName: string,
+    sessionId: string,
+    sessionTitle: string,
+    accessCode: string
+  ) {
+    const msg = `${displayName} は ${sessionTitle} (${accessCode}) の受講登録がされていません。`;
+    super(msg);
+    this.technicalInfo = msg;
+    this.technicalInfoObject = { userId, displayName, sessionId };
+  }
+};
+
 export const BadRequestError = class extends ApiError {
   readonly httpStatus: StatusCodes = StatusCodes.BAD_REQUEST;
   appErrorCode: string = AppErrorCode.BAD_REQUEST_BODY;

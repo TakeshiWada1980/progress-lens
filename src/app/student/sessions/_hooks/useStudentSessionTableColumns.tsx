@@ -9,6 +9,7 @@ import {
   faEllipsisVertical,
   faTrash,
   faCommentSlash,
+  faClock,
 } from "@fortawesome/free-solid-svg-icons";
 import {
   DropdownMenu,
@@ -96,8 +97,10 @@ const useStudentSessionTableColumns = ({
         accessorKey: "createdAt",
         header: ({ column }) => (
           <div className="flex flex-row items-center justify-center px-1 text-center font-bold">
-            <div>作成</div>
-            <div className="hidden sm:block">日</div>
+            <div>
+              <FontAwesomeIcon icon={faClock} className="mr-1 sm:hidden" />
+            </div>
+            <div className="hidden sm:block">作成日</div>
             <FontAwesomeIcon
               className="ml-1 cursor-pointer text-slate-400 hover:text-slate-700"
               icon={faSort}

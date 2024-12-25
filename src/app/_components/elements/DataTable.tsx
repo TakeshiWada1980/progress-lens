@@ -72,7 +72,7 @@ export const DataTable: <TData>(props: Props<TData>) => React.ReactElement = ({
                 .getColumn(filterableColumn.accessorKey)
                 ?.setFilterValue(event.target.value)
             }
-            className="max-w-sm"
+            className="h-8 w-full rounded-md"
           />
         </div>
       )}
@@ -92,7 +92,7 @@ export const DataTable: <TData>(props: Props<TData>) => React.ReactElement = ({
                     header.column.id === "actions" && "px-1"
                   );
                   return (
-                    <TableHead key={header.id} className={style}>
+                    <TableHead key={header.id} className={twMerge(style,"h-10")}>
                       {header.isPlaceholder
                         ? null
                         : flexRender(

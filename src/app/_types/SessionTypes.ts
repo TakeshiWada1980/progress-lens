@@ -16,8 +16,7 @@ export const cuidSchema = z.string().refine(isCUID, {
 });
 
 const accessCodeSchema = z.string().refine(isAccessCode, {
-  message:
-    "Invalid AccessCode format. NNN-NNNN の形式が必要です（Nは半角数字）",
+  message: "半角数字で「NNN-NNNN」を入力",
 });
 
 export const sessionTitleSchema = z
