@@ -31,6 +31,7 @@ import { UserAuth, userAuthSchema } from "../_types/UserTypes";
 import { appBaseUrl } from "@/config/app-config";
 import { Role } from "@/app/_types/UserTypes";
 import dev from "@/app/_utils/devConsole";
+import { resolveDashboardPage } from "../_utils/resolveDashboardPage";
 
 const LoginPage: React.FC = () => {
   const [errorMsg, setErrorMsg] = useState<string | null>();
@@ -100,7 +101,7 @@ const LoginPage: React.FC = () => {
         return;
     }
     // dev.console.log("■ ゲストログインID:", id);
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { error } = await supabase.auth.signInWithPassword({
       email: id,
       password: id,
     });
@@ -110,11 +111,10 @@ const LoginPage: React.FC = () => {
     }
     setIsUserProfileRefreshRequired(true);
     setIsLoggedIn(true);
-    router.replace(
-      role === Role.STUDENT ? "/student/sessions" : "/teacher/sessions"
-    );
+    router.replace(resolveDashboardPage(role));
   };
 
+  // メールアドレスとパスワードでのログイン処理
   const onSubmit = async (formValues: UserAuth) => {
     setErrorMsg(null);
     const { data, error } = await supabase.auth.signInWithPassword({

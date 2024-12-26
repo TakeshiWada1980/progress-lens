@@ -24,6 +24,7 @@ import LoadingSpinner from "@/app/_components/elements/LoadingSpinner";
 import { UserProfile, userProfileSchema } from "@/app/_types/UserTypes";
 import { roleEnum2str } from "@/app/_utils/roleEnum2str";
 import { Role } from "@/app/_types/UserTypes";
+import { resolveDashboardPage } from "@/app/_utils/resolveDashboardPage";
 
 const defaultValues: UserProfile = {
   id: "00000000-0000-0000-0000-000000000000",
@@ -94,17 +95,13 @@ const UserProfilePage: React.FC = () => {
 
   useEffect(() => {
     if (data?.data) {
-      // ゲストはアカウントはリダイレクト
+      // ゲストはアカウントはダッシュボードページにリダイレクト
       if (data.data.isGuest) {
         toast({
           description: `ゲストはアカウント設定にアクセスできません。`,
           variant: "destructive",
         });
-        router.replace(
-          data.data.role === Role.STUDENT
-            ? "/student/sessions"
-            : "/teacher/sessions"
-        );
+        router.replace(resolveDashboardPage(data.data.role));
         return;
       }
 

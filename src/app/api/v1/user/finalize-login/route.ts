@@ -12,8 +12,8 @@ import { getAuthUser } from "@/app/api/_helpers/getAuthUser";
 import UserService from "@/app/_services/userService";
 
 // 型定義・データ検証関連
-import { Role } from "@/app/_types/UserTypes";
 import { RedirectTo } from "@/app/_types/RedirectTo";
+import { resolveDashboardPage } from "@/app/_utils/resolveDashboardPage";
 
 export const revalidate = 0; // キャッシュを無効化
 
@@ -28,32 +28,19 @@ export const GET = async (req: NextRequest) => {
 
     // appUser が存在するなら早期リターン
     if (appUser) {
-      console.log("■ appUser が存在します。");
-      let redirectTo = "/student/sessions";
-      switch (appUser.role) {
-        case Role.TEACHER:
-          redirectTo = "/teacher/sessions";
-          break;
-        case Role.ADMIN:
-          redirectTo = "/admin";
-          break;
-        default:
-          break;
-      }
       const res = {
-        redirectTo,
+        redirectTo: resolveDashboardPage(appUser.role),
       } as RedirectTo;
       return NextResponse.json(
         new SuccessResponseBuilder(res).setHttpStatus(StatusCodes.OK).build()
       );
     }
-    console.log("■ appUser が存在しないので新規作成します。");
 
     // appUser が存在しないなら appUser にレコードを挿入（新規作成）
     const name = (authUser.email ?? "").split("@")[0]; // 仮の表示名
     await userService.createAsStudent(authUser.id, name);
 
-    // プロフィール設定画面にリダイレクト
+    // 名前などを設定して欲しいのでプロフィール設定画面にリダイレクト
     const res = {
       redirectTo: "/user/profile",
     } as RedirectTo;

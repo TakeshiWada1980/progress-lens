@@ -9,7 +9,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCircleExclamation } from "@fortawesome/free-solid-svg-icons";
 import { useSearchParams } from "next/navigation";
 
-export default function OAuthCallback() {
+const OAuthCallback = () => {
   const router = useRouter();
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -82,4 +82,6 @@ export default function OAuthCallback() {
     );
   }
   return <LoadingPage />;
-}
+};
+
+export default OAuthCallback;
