@@ -87,11 +87,12 @@ model Admin {
 
 // ラーニングセッション
 model LearningSession {
-  id          String   @id @default(cuid())
-  teacherId   String   @map("teacher_id")
-  title       String
-  accessCode  String   @unique @map("access_code")
-  isActive    Boolean  @default(true) @map("is_active")
+  id                   String   @id @default(cuid())
+  teacherId            String   @map("teacher_id")
+  title                String
+  accessCode           String   @unique @map("access_code")
+  isActive             Boolean  @default(true) @map("is_active")
+  allowGuestEnrollment Boolean  @default(true) @map("allow_guest_enrollment")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 

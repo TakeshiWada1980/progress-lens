@@ -7,16 +7,10 @@ import { useRouter } from "next/navigation";
 import useAuth from "@/app/_hooks/useAuth";
 
 // UIコンポーネント
-import Link, { link } from "@/app/_components/elements/Link";
+import Link from "@/app/_components/elements/Link";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import LoadingSpinner from "./LoadingSpinner";
-import {
-  faAddressCard,
-  faPersonDigging,
-  faRightFromBracket,
-  faPersonChalkboard,
-  faChalkboardUser,
-} from "@fortawesome/free-solid-svg-icons";
+import { faRightFromBracket } from "@fortawesome/free-solid-svg-icons";
 import {
   Avatar,
   AvatarFallback,
@@ -32,23 +26,14 @@ import {
 
 // 型・定数・ユーティリティ
 import { roleEnum2str } from "@/app/_utils/roleEnum2str";
-import { IconDefinition } from "@fortawesome/free-solid-svg-icons";
-import { type VariantProps } from "tailwind-variants";
 import { Role } from "@/app/_types/UserTypes";
 import {
   studentMenuItems,
+  guestStudentMenuItems,
   teacherMenuItems,
+  guestTeacherMenuItems,
   adminMenuItems,
 } from "@/app/_components/elements/menuItems";
-
-type LinkVariants = VariantProps<typeof link>;
-
-interface MenuItem {
-  label: string;
-  href: string;
-  state?: LinkVariants["state"];
-  icon: IconDefinition;
-}
 
 export const UserNavWidget: React.FC = () => {
   const { logout, userProfile } = useAuth();
@@ -59,8 +44,13 @@ export const UserNavWidget: React.FC = () => {
   let roleStr = roleEnum2str(userProfile?.role);
   let menuItems = studentMenuItems;
   switch (userProfile?.role) {
+    case Role.STUDENT:
+      if (userProfile.isGuest) menuItems = guestStudentMenuItems;
+      break;
     case Role.TEACHER:
-      menuItems = teacherMenuItems;
+      menuItems = userProfile.isGuest
+        ? guestTeacherMenuItems
+        : teacherMenuItems;
       break;
     case Role.ADMIN:
       menuItems = adminMenuItems;

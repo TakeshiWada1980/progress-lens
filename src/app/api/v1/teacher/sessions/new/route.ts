@@ -63,6 +63,7 @@ export const POST = async (req: NextRequest) => {
       teacherName: appUser.displayName,
       accessCode: session.accessCode,
       isActive: session.isActive,
+      allowGuestEnrollment: session.allowGuestEnrollment,
       enrollmentCount: 0,
       questionsCount: 1,
       updatedAt: session.updatedAt,

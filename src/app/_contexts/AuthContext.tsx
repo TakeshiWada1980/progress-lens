@@ -5,6 +5,7 @@ import ApiRequestHeader from "@/app/_types/ApiRequestHeader";
 import { UserProfile } from "@/app/_types/UserTypes";
 import createGetRequest from "@/app/_utils/createGetRequest";
 import { ApiResponse } from "../_types/ApiResponse";
+import { mutate } from "swr";
 
 interface AuthContextProps {
   session: Session | null | undefined;
@@ -50,6 +51,7 @@ const AuthProvider: React.FC<Props> = ({ children }) => {
       console.error("Error logging out:", error);
       return false;
     }
+    mutate(() => true, undefined, { revalidate: false });
     return true;
   };
 

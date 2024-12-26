@@ -44,6 +44,7 @@ export const forGetAllByTeacherIdSchema = {
     title: true,
     accessCode: true,
     isActive: true,
+    allowGuestEnrollment: true,
     updatedAt: true,
     createdAt: true,
     _count: {
@@ -61,6 +62,7 @@ export const forGetAllByStudentIdSchema = {
     title: true,
     accessCode: true,
     isActive: true,
+    allowGuestEnrollment: true,
     updatedAt: true,
     createdAt: true,
     teacher: {
@@ -83,6 +85,7 @@ export const forEditSessionSchema = {
     title: true,
     accessCode: true,
     isActive: true,
+    allowGuestEnrollment: true,
     teacherId: true,
     questions: {
       select: forEditQuestionSchema.select,
@@ -99,6 +102,7 @@ export const forSnapshotSessionSchema = {
     title: true,
     accessCode: true,
     isActive: true,
+    allowGuestEnrollment: true,
     teacherId: true,
     teacher: {
       select: {

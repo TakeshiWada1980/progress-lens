@@ -44,6 +44,20 @@ export const NonTeacherOperationError = class extends ApiError {
   }
 };
 
+export const GuestNotAllowedError = class extends ApiError {
+  readonly httpStatus: StatusCodes = StatusCodes.FORBIDDEN;
+  readonly appErrorCode: string = AppErrorCode.GUEST_OPERATION_NOT_ALLOWED;
+  readonly origin: Origin = Origin.CLIENT;
+  readonly technicalInfo: string;
+  readonly technicalInfoObject: any;
+  constructor(userId: string, displayName: string) {
+    const msg = `ゲストには許可されていない操作です。${displayName} (ID: ${userId}) はゲストです。`;
+    super(msg);
+    this.technicalInfo = msg;
+    this.technicalInfoObject = { userId, displayName };
+  }
+};
+
 export const SessionNotEnrolledError = class extends ApiError {
   readonly httpStatus: StatusCodes = StatusCodes.FORBIDDEN;
   readonly appErrorCode: string = AppErrorCode.SESSION_NOT_ENROLLED;

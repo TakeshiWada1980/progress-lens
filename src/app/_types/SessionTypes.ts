@@ -51,6 +51,7 @@ export interface SessionSummary {
   teacherName: string; // *
   accessCode: string;
   isActive: boolean;
+  allowGuestEnrollment: boolean;
   enrollmentCount: number; // *
   questionsCount: number; // *
   updatedAt: Date;
@@ -92,6 +93,7 @@ export const sessionEditableFieldsSchema = z.object({
   title: sessionTitleSchema,
   accessCode: accessCodeSchema,
   isActive: z.boolean(),
+  allowGuestEnrollment: z.boolean(),
   teacherId: uuidSchema,
   questions: z.array(questionEditableFieldsSchema),
 });
@@ -153,6 +155,7 @@ export const updateSessionRequestSchema = z.object({
   id: cuidSchema,
   title: sessionTitleSchema.optional(),
   isActive: z.boolean().optional(),
+  allowGuestEnrollment: z.boolean().optional(),
 });
 
 export type UpdateSessionRequest = z.infer<typeof updateSessionRequestSchema>;

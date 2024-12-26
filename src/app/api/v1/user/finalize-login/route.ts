@@ -26,14 +26,13 @@ export const GET = async (req: NextRequest) => {
     const authUser = await getAuthUser(req);
     const appUser = await userService.tryGetById(authUser.id);
 
-    //TODO: appUser?.isGuest の場合は displayName と avatarImgKey を初期化
-
     // appUser が存在するなら早期リターン
     if (appUser) {
-      let redirectTo = "/student";
+      console.log("■ appUser が存在します。");
+      let redirectTo = "/student/sessions";
       switch (appUser.role) {
         case Role.TEACHER:
-          redirectTo = "/teacher";
+          redirectTo = "/teacher/sessions";
           break;
         case Role.ADMIN:
           redirectTo = "/admin";
@@ -48,6 +47,7 @@ export const GET = async (req: NextRequest) => {
         new SuccessResponseBuilder(res).setHttpStatus(StatusCodes.OK).build()
       );
     }
+    console.log("■ appUser が存在しないので新規作成します。");
 
     // appUser が存在しないなら appUser にレコードを挿入（新規作成）
     const name = (authUser.email ?? "").split("@")[0]; // 仮の表示名

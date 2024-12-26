@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, use } from "react";
 import { useForm } from "react-hook-form";
 
 // カスタムフック・APIリクエスト系
@@ -44,7 +44,7 @@ const Page: React.FC = () => {
   const c_Title = "title";
   const c_AccessCode = "accessCode";
   const getEp = "/api/v1/student/sessions";
-  const { apiRequestHeader } = useAuth();
+  const { apiRequestHeader, userProfile } = useAuth();
   const { data, mutate } = useAuthenticatedGetRequest<SessionSummary[]>(getEp);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
@@ -70,13 +70,11 @@ const Page: React.FC = () => {
     const code = accessCodeObjSchema.safeParse({
       accessCode: searchParams.get("code"),
     });
-    if (code.success)
+    if (code.success) {
       accessCodeFormMethods.setValue(c_AccessCode, code.data.accessCode);
+      accessCodeFormMethods.trigger(c_AccessCode);
+    }
   }, [accessCodeFormMethods]);
-
-  const partyEffect = useCallback((id: string) => {
-    party.sparkles(document.getElementById(id)!);
-  }, []);
 
   // セッションに参加する処理
   const enrollSession = useCallback(
@@ -89,18 +87,29 @@ const Page: React.FC = () => {
       const res = await getApiCaller(enrollEp, apiRequestHeader);
       console.log("■ <<< " + JSON.stringify(res, null, 2));
 
+      setIsSubmitting(false);
       if (res.success) {
         router.push(`/student/sessions/${res.data?.accessCode}`);
-      } else if (res.error.appErrorCode === AppErrorCode.SESSION_NOT_ACTIVE) {
-        setErrorMsg(`セッション（${code}）は現在アクティブではありません。`);
-      } else if (res.error.appErrorCode === AppErrorCode.SESSION_NOT_FOUND) {
-        setErrorMsg(
-          `セッション（${code}）は存在しません。アクセスコードを確認してください。`
-        );
-      } else {
-        alert("エラーが発生しました。" + res.error.technicalInfo);
+        return;
       }
-      setIsSubmitting(false);
+
+      const errCode = res.error?.appErrorCode;
+      switch (errCode) {
+        case AppErrorCode.SESSION_NOT_ACTIVE:
+          setErrorMsg(`セッション（${code}）は現在アクティブではありません。`);
+          break;
+        case AppErrorCode.SESSION_NOT_FOUND:
+          // prettier-ignore
+          setErrorMsg(`セッション（${code}）は存在しません。アクセスコードを確認してください。`);
+          break;
+        case AppErrorCode.GUEST_OPERATION_NOT_ALLOWED:
+          // prettier-ignore
+          setErrorMsg(`セッション（${code}）はゲストユーザの参加を許可していません。`);
+          break;
+        default:
+          alert("エラーが発生しました。" + res.error.technicalInfo);
+          break;
+      }
     },
     [data, getApiCaller, apiRequestHeader, router]
   );
@@ -140,6 +149,7 @@ const Page: React.FC = () => {
   );
 
   const columns = useStudentSessionTableColumns({
+    isGuest: userProfile?.isGuest ?? false,
     confirmUnenrollSession,
   });
   const filterableColumn = {
@@ -147,10 +157,16 @@ const Page: React.FC = () => {
     msg: "Filter learning session names...",
   };
 
+  let tableData = data?.data;
+  // ゲストユーザの場合はアクティブなセッションのみ表示
+  if (tableData && userProfile?.isGuest) {
+    tableData = tableData.filter((s) => s.isActive);
+  }
+
   return (
     <div className="space-y-6">
       <div>
-        <PageTitle title="ラーニングセッションに参加する" />
+        <PageTitle title="ラーニングセッションに参加" />
       </div>
 
       <div className="space-y-2">
@@ -197,10 +213,10 @@ const Page: React.FC = () => {
           登録済みセッション
         </h2>
         <div className="px-0 md:px-2">
-          {data?.data ? (
+          {tableData ? (
             <DataTable
               columns={columns}
-              data={data.data}
+              data={tableData}
               filterableColumn={filterableColumn}
               headerClassName="bg-pink-50 hover:bg-pink-50"
             />

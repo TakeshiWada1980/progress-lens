@@ -29,6 +29,8 @@ import { RedirectTo } from "@/app/_types/RedirectTo";
 import { ApiResponse } from "@/app/_types/ApiResponse";
 import { UserAuth, userAuthSchema } from "../_types/UserTypes";
 import { appBaseUrl } from "@/config/app-config";
+import { Role } from "@/app/_types/UserTypes";
+import dev from "@/app/_utils/devConsole";
 
 const LoginPage: React.FC = () => {
   const [errorMsg, setErrorMsg] = useState<string | null>();
@@ -44,6 +46,8 @@ const LoginPage: React.FC = () => {
 
   const c_Email = "email";
   const c_Password = "password";
+
+  const guestStudentNum = 2;
 
   useEffect(() => {
     const checkSession = async () => {
@@ -79,6 +83,36 @@ const LoginPage: React.FC = () => {
       options: { redirectTo },
     });
     if (error) setErrorMsg(error.message);
+  };
+
+  // ゲストログイン処理
+  const guestLogin = async (role: Role, n: number) => {
+    if (n < 1 || n > guestStudentNum) return;
+    let id: string;
+    switch (role) {
+      case Role.STUDENT:
+        id = `g-student${String(n).padStart(2, "0")}@example.com`;
+        break;
+      case Role.TEACHER:
+        id = `g-teacher${String(n).padStart(2, "0")}@example.com`;
+        break;
+      default:
+        return;
+    }
+    // dev.console.log("■ ゲストログインID:", id);
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: id,
+      password: id,
+    });
+    if (error) {
+      setErrorMsg("ゲストログインに失敗しました。");
+      return;
+    }
+    setIsUserProfileRefreshRequired(true);
+    setIsLoggedIn(true);
+    router.replace(
+      role === Role.STUDENT ? "/student/sessions" : "/teacher/sessions"
+    );
   };
 
   const onSubmit = async (formValues: UserAuth) => {
@@ -215,7 +249,7 @@ const LoginPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="mt-8 space-y-2 break-all text-sm">
+      <div className="my-6 space-y-2 break-all text-sm">
         <div>
           <FontAwesomeIcon
             icon={faComment}
@@ -235,8 +269,27 @@ const LoginPage: React.FC = () => {
           <Link href="/forget-password" state="notImplemented">
             パスワードの再設定
           </Link>
-          を行なってください。
+          をしてください。
         </div>
+      </div>
+
+      <PageTitle title="ゲスト利用" />
+      <div className="mt-4 flex flex-wrap gap-x-2">
+        {[...Array(guestStudentNum)]
+          .map((_, i) => i + 1)
+          .map((n) => (
+            <div key={n} className="mb-2">
+              <ActionButton
+                tabIndex={-1}
+                type="button"
+                variant="pink"
+                width="slim"
+                onClick={() => guestLogin(Role.STUDENT, n)}
+              >
+                学生{String(n).padStart(2, "0")}
+              </ActionButton>
+            </div>
+          ))}
       </div>
     </div>
   );
