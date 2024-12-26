@@ -42,6 +42,7 @@ export const DataTable: <TData>(props: Props<TData>) => React.ReactElement = ({
 }) => {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+
   // prettier-ignore
   const table = useReactTable({
     data, columns,

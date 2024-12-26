@@ -33,6 +33,9 @@ import { ConfirmDialog } from "@/app/_components/elements/ConfirmDialog";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faSpinner,
+  faCaretRight,
+  faChalkboardUser,
+  faRotate,
   faRetweet,
   faPersonChalkboard,
   faTurnUp,
@@ -49,6 +52,9 @@ import {
   TooltipTrigger,
 } from "@/app/_components/shadcn/ui/tooltip";
 import Link from "@/app/_components/elements/Link";
+import { twMerge } from "tailwind-merge";
+import { Switch } from "@/app/_components/shadcn/ui/switch";
+import PageTitle from "@/app/_components/elements/PageTitle";
 
 // 型・定数・ユーティリティ
 import { produce, Draft } from "immer";
@@ -62,10 +68,15 @@ import {
   UpdateSessionRequest,
   updateSessionRequestSchema,
   sessionTitleSchema,
+  SessionSummary,
 } from "@/app/_types/SessionTypes";
 import dev from "@/app/_utils/devConsole";
 
 const Page: React.FC = () => {
+  const c_Title = "title";
+  const c_IsActive = "isActive";
+  const c_AllowGuestEnrollment = "allowGuestEnrollment";
+
   const { id } = useParams<{ id: string }>();
   const ep = `/api/v1/teacher/sessions/${id}`;
   const { data, mutate } =
@@ -120,6 +131,45 @@ const Page: React.FC = () => {
     []
   );
 
+  //【セッションプロパティ（title,isActive,allowGuestEnrollment）の更新】
+  const updateSessionProperty = useCallback(
+    async <K extends keyof SessionEditableFields>(
+      key: K,
+      value: SessionEditableFields[K]
+    ): Promise<void> => {
+      try {
+        // 楽観的UI更新の処理
+        const optimisticLatestData = produce(
+          getOptimisticLatestData(),
+          (draft: Draft<SessionEditableFields>) => {
+            draft[key] = value;
+          }
+        );
+        // prettier-ignore
+        mutate(
+          new SuccessResponseBuilder<SessionEditableFields>(optimisticLatestData!)
+            .setHttpStatus(StatusCodes.OK)
+            .build(),
+          false
+        );
+        // バックエンド同期
+        const putEp = `/api/v1/teacher/sessions/${id}`;
+        const reqBody: UpdateSessionRequest = {
+          id: id,
+          [key]: value,
+        };
+        dev.console.log("■ >>> " + JSON.stringify(reqBody));
+        const res = await putApiCaller(putEp, reqBody, apiRequestHeader);
+        dev.console.log("■ <<< " + JSON.stringify(res!));
+        return;
+      } catch (error) {
+        console.error("Update SessionProperty failed:", error);
+        return;
+      }
+    },
+    [apiRequestHeader, id, mutate, putApiCaller]
+  );
+
   //【セッションタイトルの更新】
   const updateSessionTitle = useCallback(
     async (e: React.FocusEvent<HTMLInputElement, Element>) => {
@@ -145,31 +195,9 @@ const Page: React.FC = () => {
       setTitle(updatedTitle);
       prevTitle.current = updatedTitle;
 
-      // 楽観的UI更新の処理
-      const optimisticLatestData = produce(
-        getOptimisticLatestData(),
-        (draft: Draft<SessionEditableFields>) => {
-          draft.title = updatedTitle;
-        }
-      );
-      mutate(
-        new SuccessResponseBuilder<SessionEditableFields>(optimisticLatestData!)
-          .setHttpStatus(StatusCodes.OK)
-          .build(),
-        false
-      );
-
-      // バックエンド同期: セッションタイトル変更APIリクエスト
-      const ep = `/api/v1/teacher/sessions/${sessionId}`;
-      const reqBody: UpdateSessionRequest = updateSessionRequestSchema.parse({
-        id: sessionId,
-        title: updatedTitle,
-      });
-      dev.console.log("■ >>> " + JSON.stringify(reqBody));
-      const res = await putApiCaller(ep, reqBody, apiRequestHeader);
-      dev.console.log("■ <<< " + JSON.stringify(res!));
+      await updateSessionProperty("title", updatedTitle);
     },
-    [apiRequestHeader, data?.data?.id, mutate, putApiCaller, title]
+    [data?.data?.id, title, updateSessionProperty]
   );
 
   //【設問の追加】
@@ -289,85 +317,131 @@ const Page: React.FC = () => {
 
   if (!data) return <LoadingPage />;
 
+  if (!data.success) {
+    return (
+      <div>
+        <PageTitle title="エラーが発生しました。" className="mb-2" />
+        <div className="mb-2">
+          <FormFieldErrorMsg msg={data.error.technicalInfo} />
+        </div>
+        <div className="mb-2">
+          <pre className="bg-red-50 p-3 text-xs text-red-700">
+            {JSON.stringify(data.error, null, 2)}
+          </pre>
+        </div>
+
+        <div className="mb-4 flex justify-end">
+          <Link href="/teacher/sessions" className="">
+            <FontAwesomeIcon icon={faChalkboardUser} className="mr-1" />
+            セッション一覧に戻る
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   dataRef.current = sessionEditableFieldsSchema.parse(data.data);
 
   return (
-    <div>
-      {/* ヘッダ */}
-      <div className="flex items-start space-x-3">
-        {/* セッションタイトル */}
-        <div className="grow">
-          <div className="flex items-center justify-between">
-            <TextInputField
-              id={"title" + id}
-              value={title}
-              border="hoverOnly"
-              className="px-2 py-0.5 text-2xl font-bold"
-              error={!!titleError}
-              onChange={handleSessionTitleChange}
-              onBlur={(e) => updateSessionTitle(e)}
-              onKeyDown={exitInputOnEnter}
-            />
-          </div>
+    <div className="space-y-4">
+      {/* セッションタイトル */}
+      <div className="grow">
+        <div className="flex items-center justify-between">
+          <TextInputField
+            id={"title" + id}
+            value={title}
+            border="hoverOnly"
+            className="px-2 py-0.5 text-2xl font-bold"
+            error={!!titleError}
+            onChange={handleSessionTitleChange}
+            onBlur={(e) => updateSessionTitle(e)}
+            onKeyDown={exitInputOnEnter}
+          />
+        </div>
+        <div className="ml-1">
           <FormFieldErrorMsg msg={titleError} />
         </div>
-
-        <div className="pr-2">
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  className="text-xl text-gray-300 hover:text-gray-400"
-                  onClick={revalidate}
-                >
-                  <FontAwesomeIcon icon={faRetweet} />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent className="bg-slate-700 text-white">
-                <p>再読み込み</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        </div>
-      </div>
-      <div className="mb-2 ml-2 mr-1 flex items-center justify-between">
-        <span className=" text-gray-400">
+        {/* アクセスコード */}
+        <div className="ml-2 mr-1 text-gray-400">
+          <FontAwesomeIcon icon={faCaretRight} className="mr-1.5" />
           AccessCode:&nbsp;{dataRef.current.accessCode} (
           <Link href={`/student/sessions/${dataRef.current.accessCode}`}>
             Preview
           </Link>
           )
-        </span>
-        <span>
-          <FontAwesomeIcon
-            icon={faTurnUp}
-            rotation={90}
-            className="mr-1 text-blue-500"
+        </div>
+      </div>
+
+      {/* 設定 */}
+      <div className="ml-3 space-y-2">
+        {/* 有効・無効 {c_IsActive} */}
+        <div className="flex items-center space-x-2">
+          <Switch
+            id={c_IsActive}
+            checked={dataRef.current.isActive}
+            onCheckedChange={async (value) =>
+              await updateSessionProperty(c_IsActive, value)
+            }
           />
-          <Link href="/teacher/sessions">セッション一覧</Link>
-        </span>
+          <label htmlFor={c_IsActive} className="text-sm">
+            {dataRef.current.isActive ? (
+              <span>学生の参加と回答が可能です</span>
+            ) : (
+              <span className="text-gray-400">
+                学生の参加と回答を停止しています
+              </span>
+            )}
+          </label>
+        </div>
+
+        {/* ゲスト参加の可否 {c_AllowGuestEnrollment} */}
+        <div className="flex items-center space-x-2">
+          <Switch
+            id={c_AllowGuestEnrollment}
+            checked={dataRef.current.allowGuestEnrollment}
+            onCheckedChange={async (value) =>
+              await updateSessionProperty(c_AllowGuestEnrollment, value)
+            }
+          />
+          <label htmlFor={c_AllowGuestEnrollment} className="text-sm">
+            {dataRef.current.allowGuestEnrollment ? (
+              <span>ゲストユーザも参加可能です</span>
+            ) : (
+              <span className="text-gray-400">
+                ゲストユーザは参加できません
+              </span>
+            )}
+          </label>
+        </div>
       </div>
 
       {/* 設問 */}
-      <div className="mb-2">
-        <PageContent
-          session={dataRef.current}
-          getOptimisticLatestData={getOptimisticLatestData}
-          confirmDeleteQuestion={confirmDeleteQuestion}
-          duplicateQuestion={duplicateQuestion}
-        />
-      </div>
+      <PageContent
+        session={dataRef.current}
+        getOptimisticLatestData={getOptimisticLatestData}
+        confirmDeleteQuestion={confirmDeleteQuestion}
+        duplicateQuestion={duplicateQuestion}
+      />
 
-      <div className="mb-4 flex justify-end space-x-2">
-        <ActionButton
-          type="button"
-          variant="add"
-          className="py-1"
-          isBusy={isAddingQuestion}
-          onClick={addQuestion}
-        >
-          設問を追加
-        </ActionButton>
+      <div>
+        <div className="mb-2 flex justify-end space-x-2">
+          <ActionButton
+            type="button"
+            variant="add"
+            className="py-1"
+            isBusy={isAddingQuestion}
+            onClick={addQuestion}
+          >
+            設問を追加
+          </ActionButton>
+        </div>
+
+        <div className="mb-4 flex justify-end">
+          <Link href="/teacher/sessions" className="">
+            <FontAwesomeIcon icon={faChalkboardUser} className="mr-1" />
+            セッション一覧
+          </Link>
+        </div>
       </div>
 
       <ConfirmDialog {...confirmDeleteDialog} />

@@ -24,15 +24,17 @@ export const ConfirmDialog: React.FC<Props> = (props) => {
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>{description}</DialogDescription>
+          <DialogDescription className=" text-left">
+            {description}
+          </DialogDescription>
         </DialogHeader>
-        <DialogFooter>
+        <DialogFooter className="gap-y-2">
           <Button variant="outline" onClick={submitAction}>
             OK
           </Button>
           <DialogClose asChild>
-            <Button variant="default" autoFocus>
-              Cancel
+            <Button variant="default" className="bg-slate-500" autoFocus>
+              キャンセル
             </Button>
           </DialogClose>
         </DialogFooter>

@@ -816,6 +816,7 @@ type LearningSessionFactoryDefineInput = {
     title?: string;
     accessCode?: string;
     isActive?: boolean;
+    allowGuestEnrollment?: boolean;
     createdAt?: Date;
     updatedAt?: Date;
     teacher: LearningSessionteacherFactory | Prisma.TeacherCreateNestedOneWithoutSessionsInput;

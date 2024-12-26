@@ -4,7 +4,11 @@ import { ApiErrorResponse } from "@/app/_types/ApiResponse";
 import SuccessResponseBuilder from "@/app/api/_helpers/successResponseBuilder";
 import ErrorResponseBuilder from "@/app/api/_helpers/errorResponseBuilder";
 import { StatusCodes } from "@/app/_utils/extendedStatusCodes";
-import { ApiError, BadRequestError } from "@/app/api/_helpers/apiExceptions";
+import {
+  ApiError,
+  BadRequestError,
+  GuestNotAllowedError,
+} from "@/app/api/_helpers/apiExceptions";
 import AppErrorCode from "@/app/_types/AppErrorCode";
 
 // ユーザ認証・サービスクラス関係
@@ -50,6 +54,11 @@ export const GET = async (req: NextRequest, { params: { id } }: Params) => {
       throw err;
     }
 
+    // ゲストユーザの参加許可を確認
+    if (!session.allowGuestEnrollment && appUser.isGuest) {
+      throw new GuestNotAllowedError(appUser.id, appUser.displayName);
+    }
+
     // セッションに参加
     await sessionService.enrollStudent(session.id, appUser.id);
 
@@ -84,6 +93,11 @@ export const DELETE = async (req: NextRequest, { params: { id } }: Params) => {
 
     // ユーザが存在しない場合は UserService.NotFoundError がスローされる
     const appUser = await userService.getById(authUser.id);
+
+    // ゲストユーザから要求を拒否
+    if (appUser.isGuest) {
+      throw new GuestNotAllowedError(appUser.id, appUser.displayName);
+    }
 
     // 登録済みかを確認。未登録の場合は BadRequestError がスローされる
     const isEnrolled = await sessionService.isStudentEnrolled(

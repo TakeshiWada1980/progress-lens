@@ -138,9 +138,7 @@ const ProfileUpdateForm: React.FC<Props> = ({ disabled, email, provider }) => {
       </div>
 
       <div className="mb-6">
-        <label className="mb-1 block font-bold text-gray-700">
-          アバター画像
-        </label>
+        <div className="mb-1 block font-bold text-gray-700">アバター画像</div>
 
         <div className="flex items-baseline space-x-3">
           <div className="relative inline-block">
@@ -201,6 +199,7 @@ const ProfileUpdateForm: React.FC<Props> = ({ disabled, email, provider }) => {
         </div>
         <TextInputField
           tabIndex={-1}
+          id="provider"
           type="text"
           value={`Logged in with Google (${email})`}
           placeholder="(自動取得されます)"
@@ -220,6 +219,7 @@ const ProfileUpdateForm: React.FC<Props> = ({ disabled, email, provider }) => {
           value={email}
           placeholder="(自動取得されます)"
           readOnly
+          autoComplete="off"
           disabled={disabled}
         />
       </div>

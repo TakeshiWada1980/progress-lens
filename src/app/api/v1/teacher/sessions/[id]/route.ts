@@ -49,6 +49,7 @@ export const GET = async (req: NextRequest, { params: { id } }: Params) => {
       title: session.title,
       accessCode: session.accessCode,
       isActive: session.isActive,
+      allowGuestEnrollment: session.allowGuestEnrollment,
       teacherId: session.teacherId,
       questions: session.questions.map((q): QuestionEditableFields => {
         return {

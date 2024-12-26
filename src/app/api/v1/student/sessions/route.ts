@@ -14,6 +14,7 @@ import SessionService, {
   forGetAllByStudentIdSchema,
 } from "@/app/_services/sessionService";
 import { Prisma as PRS } from "@prisma/client";
+import { Role } from "@/app/_types/UserTypes";
 
 // 型定義・データ検証関連
 import { SessionSummary } from "@/app/_types/SessionTypes";
@@ -21,7 +22,8 @@ import { SessionSummary } from "@/app/_types/SessionTypes";
 export const revalidate = 0; // キャッシュを無効化
 
 // [GET] /api/v1/student/sessions/
-// ユーザーが [学生] として作成したセッションの一覧を取得
+// ユーザーが [学生] として参加したセッションの一覧を取得
+// ゲスト属性の場合は「アクティブなセッションのみ」を取得する
 export const GET = async (req: NextRequest) => {
   const userService = new UserService(prisma);
   const sessionService = new SessionService(prisma);
@@ -34,10 +36,19 @@ export const GET = async (req: NextRequest) => {
     const appUser = await userService.getById(authUser.id);
 
     // レスポンスデータの作成
-    const sessions = (await sessionService.getAllByStudentId(
-      appUser.id,
-      forGetAllByStudentIdSchema
-    )) as PRS.LearningSessionGetPayload<typeof forGetAllByStudentIdSchema>[];
+    // prettier-ignore
+    let sessions: PRS.LearningSessionGetPayload<typeof forGetAllByStudentIdSchema>[] = [];
+    if (appUser.isGuest) {
+      sessions = (await sessionService.getIsActiveByStudentId(
+        appUser.id,
+        forGetAllByStudentIdSchema
+      )) as PRS.LearningSessionGetPayload<typeof forGetAllByStudentIdSchema>[];
+    } else {
+      sessions = (await sessionService.getAllByStudentId(
+        appUser.id,
+        forGetAllByStudentIdSchema
+      )) as PRS.LearningSessionGetPayload<typeof forGetAllByStudentIdSchema>[];
+    }
 
     const res: SessionSummary[] = sessions.map((session) => {
       return {

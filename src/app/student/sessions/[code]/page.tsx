@@ -18,8 +18,13 @@ import {
 import QuestionContent from "./_components/QuestionContent";
 import Link from "@/app/_components/elements/Link";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faGhost, faRotate } from "@fortawesome/free-solid-svg-icons";
+import {
+  faGhost,
+  faRotate,
+  faChalkboardUser,
+} from "@fortawesome/free-solid-svg-icons";
 import { twMerge } from "tailwind-merge";
+import FormFieldErrorMsg from "@/app/_components/elements/FormFieldErrorMsg";
 
 const Page: React.FC = () => {
   const { code } = useParams<{ code: string }>();
@@ -43,30 +48,28 @@ const Page: React.FC = () => {
   if (!data) return <LoadingPage />;
 
   if (!data.success) {
-    // セッションは存在するが、未登録の場合
-    if (data.error?.appErrorCode === AppErrorCode.SESSION_NOT_ENROLLED) {
-      return <LoadingPage />;
-    }
-
-    // セッションが存在しない場合
-    if (data.error?.appErrorCode === AppErrorCode.SESSION_NOT_FOUND) {
-      return (
-        <div>
-          アクセスコード「{code}」に該当するセッションが見つかりません。
-        </div>
-      );
-    }
-
-    // その他
     return (
       <div>
-        <div>エラーが発生しました</div>
-        <pre className="mt-10 bg-red-50 p-3 text-xs">
-          {JSON.stringify(data.error, null, 2)}
-        </pre>
+        <PageTitle title="エラーが発生しました。" className="mb-2" />
+        <div className="mb-2">
+          <FormFieldErrorMsg msg={data.error.technicalInfo} />
+        </div>
+        <div className="mb-2">
+          <pre className="bg-red-50 p-3 text-xs text-red-700">
+            {JSON.stringify(data.error, null, 2)}
+          </pre>
+        </div>
+
+        <div className="mb-4 flex justify-end">
+          <Link href="/student/sessions" className="">
+            <FontAwesomeIcon icon={faChalkboardUser} className="mr-1" />
+            セッション一覧に戻る
+          </Link>
+        </div>
       </div>
     );
   }
+
   dataRef.current = sessionSnapshotSchema.parse(data.data);
   const totalRewardPoint = dataRef.current.questions
     .flatMap((question) => question.options)
@@ -106,7 +109,7 @@ const Page: React.FC = () => {
       {!dataRef.current.isActive && (
         <div className="font-bold text-red-400">
           <FontAwesomeIcon icon={faGhost} className="mr-1" />
-          このセッションは回答受付を終了しました。
+          このセッションは回答受付を停止中です。
         </div>
       )}
 

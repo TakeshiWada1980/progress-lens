@@ -18,16 +18,24 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/app/_components/shadcn/ui/dropdown-menu";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/app/_components/shadcn/ui/tooltip";
 import Link from "@/app/_components/elements/Link";
 import { twMerge } from "tailwind-merge";
 
-interface RowActionHandlers {
+interface SessionRowContext {
+  isGuest: boolean;
   confirmUnenrollSession: (id: string, name: string) => Promise<void>;
 }
 
 const useStudentSessionTableColumns = ({
+  isGuest,
   confirmUnenrollSession,
-}: RowActionHandlers): ColumnDef<SessionSummary>[] => {
+}: SessionRowContext): ColumnDef<SessionSummary>[] => {
   //
 
   return useMemo(
@@ -60,10 +68,21 @@ const useStudentSessionTableColumns = ({
                 {session.title}
               </Link>
               {!session.isActive && (
-                <FontAwesomeIcon
-                  icon={faCommentSlash}
-                  className="ml-2 text-sm"
-                />
+                <TooltipProvider delayDuration={0}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="text-sm text-pink-300">
+                        <FontAwesomeIcon
+                          icon={faCommentSlash}
+                          className="mx-1"
+                        />
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent className="bg-slate-700 text-white">
+                      回答の受付を停止中です（回答の確認は可能です）。
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               )}
             </div>
           );
@@ -144,13 +163,22 @@ const useStudentSessionTableColumns = ({
                   </div>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
-                  <DropdownMenuItem
-                    onClick={() => confirmUnenrollSession(id, title)}
-                    className="cursor-pointer"
-                  >
-                    <FontAwesomeIcon icon={faTrash} className="mr-2" />
-                    リストから削除
-                  </DropdownMenuItem>
+                  {isGuest ? (
+                    <DropdownMenuItem>
+                      <div className="cursor-not-allowed text-gray-500">
+                        <FontAwesomeIcon icon={faTrash} className="mr-2" />
+                        削除（ゲストは利用不可）
+                      </div>
+                    </DropdownMenuItem>
+                  ) : (
+                    <DropdownMenuItem
+                      onClick={() => confirmUnenrollSession(id, title)}
+                      className="cursor-pointer"
+                    >
+                      <FontAwesomeIcon icon={faTrash} className="mr-2" />
+                      削除
+                    </DropdownMenuItem>
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -158,7 +186,7 @@ const useStudentSessionTableColumns = ({
         },
       },
     ],
-    [confirmUnenrollSession]
+    [confirmUnenrollSession, isGuest]
   );
 };
 

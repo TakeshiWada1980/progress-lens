@@ -244,8 +244,8 @@ const QuestionContent: React.FC<Props> = memo(
                       value={option.responseCount}
                       max={totalResponseCount}
                       animationTrigger={animationTrigger}
-                      color1={isActiveSession ? "bg-pink-300" : "bg-gray-500"}
-                      color2={isActiveSession ? "bg-pink-50" : "bg-gray-500"}
+                      color1={isActiveSession ? "bg-pink-300" : "bg-gray-300"}
+                      color2={isActiveSession ? "bg-pink-50" : "bg-gray-300"}
                     />
                   </div>
                 </div>

@@ -1,3 +1,4 @@
+import { Provider } from "@radix-ui/react-tooltip";
 import { z } from "zod";
 
 // フロントエンド <-> WebAPI層 の DTO
@@ -63,6 +64,7 @@ export interface UserProfile {
   avatarImgKey?: string;
   avatarImgUrl?: string;
   provider?: string;
+  isGuest?: boolean;
 }
 
 export const userProfileSchema = z.object({
@@ -76,4 +78,6 @@ export const userProfileSchema = z.object({
     .optional(),
   avatarImgKey: imageKeySchema.optional(),
   avatarImgUrl: z.string().optional(),
+  provider: z.string().optional(),
+  isGuest: z.boolean().optional(),
 });

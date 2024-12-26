@@ -12,7 +12,10 @@ import { getAuthUser } from "@/app/api/_helpers/getAuthUser";
 import UserService from "@/app/_services/userService";
 
 // 型定義・データ検証関連
-import { ZodValidationError } from "@/app/api/_helpers/apiExceptions";
+import {
+  ZodValidationError,
+  GuestNotAllowedError,
+} from "@/app/api/_helpers/apiExceptions";
 import { z } from "zod";
 import { UserProfile, userProfileSchema } from "@/app/_types/UserTypes";
 import { getAvatarImgUrl } from "@/app/api/_helpers/getAvatarImgUrl";
@@ -39,6 +42,7 @@ export const GET = async (req: NextRequest) => {
       avatarImgKey: appUser.avatarImgKey ?? undefined,
       avatarImgUrl: avatarImgUrl,
       provider: authUser.app_metadata?.provider,
+      isGuest: appUser.isGuest,
     };
 
     return NextResponse.json(
@@ -58,6 +62,12 @@ export const POST = async (req: NextRequest) => {
   try {
     // トークンが不正なときは InvalidTokenError がスローされる
     const authUser = await getAuthUser(req);
+
+    // ゲストアカウントはプロフィール更新不可
+    const appUser = await userService.getById(authUser.id);
+    if (appUser.isGuest) {
+      throw new GuestNotAllowedError(appUser.id, appUser.displayName);
+    }
 
     // リクエストボディの検証
     postBody = await req.json();

@@ -20,6 +20,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/app/_components/shadcn/ui/dropdown-menu";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/app/_components/shadcn/ui/tooltip";
 import Link from "@/app/_components/elements/Link";
 import { twMerge } from "tailwind-merge";
 
@@ -83,11 +89,20 @@ const useTeacherSessionTableColumns = ({
               <Link href={href} style="unstyled">
                 {session.title}
               </Link>
-              <FontAwesomeIcon
-                className="ml-1 cursor-pointer text-xs text-slate-300 hover:text-slate-600"
-                icon={faPen}
-                onClick={() => renameTitle(id, session.title)}
-              />
+              <TooltipProvider delayDuration={500}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <FontAwesomeIcon
+                      className="ml-1 cursor-pointer text-xs text-indigo-300 hover:text-indigo-500"
+                      icon={faPen}
+                      onClick={() => renameTitle(id, session.title)}
+                    />
+                  </TooltipTrigger>
+                  <TooltipContent className="bg-slate-700 text-white">
+                    タイトルを変更
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
           );
         },

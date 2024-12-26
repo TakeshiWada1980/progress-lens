@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo } from "react";
 import { useForm, FormProvider } from "react-hook-form";
+import { useRouter } from "next/navigation";
 
 // カスタムフック・APIリクエスト系
 import useAuthenticatedGetRequest from "@/app/_hooks/useAuthenticatedGetRequest";
@@ -10,6 +11,7 @@ import { ApiResponse } from "@/app/_types/ApiResponse";
 import { zodResolver } from "@hookform/resolvers/zod";
 import useAuth from "@/app/_hooks/useAuth";
 import { useSWRConfig } from "swr";
+import { useToast } from "@/app/_components/shadcn/hooks/use-toast";
 
 // UIコンポーネント
 import PageTitle from "@/app/_components/elements/PageTitle";
@@ -22,6 +24,7 @@ import LoadingSpinner from "@/app/_components/elements/LoadingSpinner";
 import { UserProfile, userProfileSchema } from "@/app/_types/UserTypes";
 import { roleEnum2str } from "@/app/_utils/roleEnum2str";
 import { Role } from "@/app/_types/UserTypes";
+import { resolveDashboardPage } from "@/app/_utils/resolveDashboardPage";
 
 const defaultValues: UserProfile = {
   id: "00000000-0000-0000-0000-000000000000",
@@ -38,6 +41,8 @@ const UserProfilePage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [roleValue, setRoleValue] = React.useState<string>("");
   const { cache } = useSWRConfig();
+  const router = useRouter();
+  const { toast } = useToast();
 
   const postApiCaller = useMemo(
     () => createPostRequest<UserProfile, ApiResponse<null>>(),
@@ -73,7 +78,12 @@ const UserProfilePage: React.FC = () => {
       console.log("■ <<< " + JSON.stringify(res));
       if (res.error) {
         alert(`処理に失敗\n${res.error.technicalInfo}`);
+        return;
       }
+      toast({
+        description: `アカウントの情報を更新しました。`,
+        variant: "success",
+      });
     } catch (error) {
       let msg = "処理に失敗";
       msg += error instanceof Error ? `\n${error.message}` : "";
@@ -85,6 +95,16 @@ const UserProfilePage: React.FC = () => {
 
   useEffect(() => {
     if (data?.data) {
+      // ゲストはアカウントはダッシュボードページにリダイレクト
+      if (data.data.isGuest) {
+        toast({
+          description: `ゲストはアカウント設定にアクセスできません。`,
+          variant: "destructive",
+        });
+        router.replace(resolveDashboardPage(data.data.role));
+        return;
+      }
+
       // data.data.avatarImgKey が undefined の場合に
       // 空文字 "" でフォームを上書きするために data2 を生成
       const data2 = { ...defaultValues, ...data.data };
@@ -92,7 +112,7 @@ const UserProfilePage: React.FC = () => {
       methods.trigger(["id", "role"]);
       setRoleValue(`(${roleEnum2str(data2.role)})`);
     }
-  }, [data, methods]);
+  }, [data, methods, router, toast]);
 
   return (
     <div>
