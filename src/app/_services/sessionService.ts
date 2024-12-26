@@ -307,7 +307,7 @@ class SessionService {
     })) as PRS.LearningSessionGetPayload<{ include: T; select: U }>[];
   }
 
-  // 指定IDの [学生] が参加している LS の取得
+  // 指定IDの [学生] が参加している全ての LS の取得
   @withErrorHandling()
   public async getAllByStudentId<
     T extends PRS.LearningSessionInclude,
@@ -320,6 +320,33 @@ class SessionService {
   ): Promise<PRS.LearningSessionGetPayload<{ include: T; select: U }>[]> {
     return (await this.prisma.learningSession.findMany({
       where: {
+        enrollments: {
+          some: {
+            studentId: studentId,
+            deletedAt: null,
+          },
+        },
+      },
+      orderBy: { [sortKey]: sortDirection },
+      ...options,
+    })) as PRS.LearningSessionGetPayload<{ include: T; select: U }>[];
+  }
+
+  // TODO: 引数をオブジェクト型にして、getAllByStudentId　と統合する
+  // 指定IDの [学生] が参加している　IsActive な LS の取得
+  @withErrorHandling()
+  public async getIsActiveByStudentId<
+    T extends PRS.LearningSessionInclude,
+    U extends PRS.LearningSessionSelect
+  >(
+    studentId: string,
+    options?: SessionReturnType<T, U>,
+    sortKey: "updatedAt" | "createdAt" | "title" = "updatedAt",
+    sortDirection: "asc" | "desc" = "desc"
+  ): Promise<PRS.LearningSessionGetPayload<{ include: T; select: U }>[]> {
+    return (await this.prisma.learningSession.findMany({
+      where: {
+        isActive: true,
         enrollments: {
           some: {
             studentId: studentId,

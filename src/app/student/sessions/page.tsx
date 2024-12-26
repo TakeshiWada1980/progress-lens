@@ -157,11 +157,7 @@ const Page: React.FC = () => {
     msg: "Filter learning session names...",
   };
 
-  let tableData = data?.data;
-  // ゲストユーザの場合はアクティブなセッションのみ表示
-  if (tableData && userProfile?.isGuest) {
-    tableData = tableData.filter((s) => s.isActive);
-  }
+  const tableData = data?.data;
 
   return (
     <div className="space-y-6">
