@@ -138,9 +138,19 @@ const SignUpPage: React.FC = () => {
         <p>無料で利用できる ProgressLens にようこそ。</p>
         <p className="text-sm">
           はじめに、メールアドレスを使ってサインアップしていきましょう。
-          <br />
-          以下で設定したメールに届いた「認証リンク」をクリックすれば利用の準備は完了です。
+          以下のフォームで設定したメールアドレスに届いた「認証リンク」をクリックすれば利用の準備は完了です。
         </p>
+        <ul className="ml-2 list-inside list-disc text-sm">
+          <li>
+            体験利用（登録せずにゲストログイン）は
+            <Link href="/login#guest-login">こちら</Link>
+          </li>
+
+          <li>
+            Googleアカウントでソーシャルログインする場合は
+            <Link href="/login">こちら</Link>
+          </li>
+        </ul>
       </div>
 
       <div className="mt-5">
@@ -208,7 +218,7 @@ const SignUpPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="mt-6 space-y-2 break-all text-sm">
+      <div className="my-4 space-y-2 break-all text-sm">
         <div>
           <FontAwesomeIcon
             icon={faComment}

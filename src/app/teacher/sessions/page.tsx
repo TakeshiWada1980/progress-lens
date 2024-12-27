@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, useEffect } from "react";
 import { useForm, FormProvider } from "react-hook-form";
 
 // カスタムフック・APIリクエスト系
@@ -48,6 +48,12 @@ import {
 } from "./_components/TitleEditorDialog";
 import ActionButton from "@/app/_components/elements/ActionButton";
 import dev from "@/app/_utils/devConsole";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/app/_components/shadcn/ui/tooltip";
 
 enum Mode {
   Creation = "creation",
@@ -61,7 +67,7 @@ const Page: React.FC = () => {
   const c_Title = "title";
   const getEp = "/api/v1/teacher/sessions";
   const postEp = "/api/v1/teacher/sessions/new";
-  const { apiRequestHeader } = useAuth();
+  const { apiRequestHeader, userProfile } = useAuth();
   const { data, mutate } = useAuthenticatedGetRequest<SessionSummary[]>(getEp);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -71,6 +77,7 @@ const Page: React.FC = () => {
   const [dialogSubmitButtonLabel, setDialogSubmitButtonLabel] = useState("");
 
   const [isDuplicatingSession, setIsDuplicatingSession] = React.useState(false);
+  const [isGuest, setIsGuest] = React.useState(true);
 
   const router = useRouter();
   // const confirmDeleteDialog = useConfirmDialog<{ id: string }>();
@@ -84,6 +91,10 @@ const Page: React.FC = () => {
   const putApiCaller = useMemo(() => createPutRequest<UpdateSessionRequest, ApiResponse<null>>(),[]);
   // prettier-ignore
   const deleteApiCaller = useMemo(() => createDeleteRequest<ApiResponse<null>>(),[]);
+
+  useEffect(() => {
+    setIsGuest(userProfile?.isGuest ?? true);
+  }, [userProfile]);
 
   // セッションのタイトルの設定（新規・変更）に使用するフォーム
   const titleEditFormMethods = useForm<EditTitlePayload>({
@@ -102,6 +113,7 @@ const Page: React.FC = () => {
       switch (titleEditMode) {
         // [セッションの新規作成]
         case Mode.Creation:
+          if (isGuest) return;
           res = await createSessionApiCaller(postEp, payload, apiRequestHeader);
           if (!res.success) new Error(res.error.technicalInfo);
           router.push(`/teacher/sessions/${res.data.id}`);
@@ -143,8 +155,9 @@ const Page: React.FC = () => {
     }
   };
 
-  // セッションの [新規作成]ボタン の押下処理
+  // セッションの [新規作成]ボタン の押下処理 ＜ゲスト利用不可＞
   const createSessionAction = () => {
+    if (isGuest) return;
     setTitleEditMode(Mode.Creation);
     setDialogTitle("ラーニングセッションの新規作成");
     setDialogSubmitButtonLabel("作成");
@@ -208,9 +221,11 @@ const Page: React.FC = () => {
     [apiRequestHeader, data?.data, mutate, putApiCaller, titleEditFormMethods]
   );
 
-  // 既存セッションの複製処理(確認ダイアログ)
+  // 既存セッションの複製処理(確認ダイアログ) ＜ゲスト利用不可＞
   const duplicateSession = useCallback(
     async (id: string): Promise<void> => {
+      if (isGuest) return;
+
       dev.console.log("duplicateSession", id);
       setIsDuplicatingSession(true);
 
@@ -225,24 +240,26 @@ const Page: React.FC = () => {
 
       setIsDuplicatingSession(false);
     },
-    [apiRequestHeader, duplicateSessionApiCaller, mutate]
+    [apiRequestHeader, duplicateSessionApiCaller, isGuest, mutate]
   );
 
-  // 既存セッションの削除処理(確認ダイアログ)
+  // 既存セッションの削除処理(確認ダイアログ) ＜ゲスト利用不可＞
   const confirmDuplicateSession = useCallback(
     async (id: string, name: string): Promise<void> => {
+      if (isGuest) return;
       confirmDialog.openDialog(
         "確認",
         `セッション "${name}" を複製しますか？`,
         () => duplicateSession(id)
       );
     },
-    [confirmDialog, duplicateSession]
+    [confirmDialog, duplicateSession, isGuest]
   );
 
-  // 既存セッションの削除処理
+  // 既存セッションの削除処理 ＜ゲスト利用不可＞
   const deleteSession = useCallback(
     async (id: string): Promise<void> => {
+      if (isGuest) return;
       // 楽観的UI更新処理
       const newData = produce(data?.data, (draft: Draft<SessionSummary[]>) => {
         const targetIndex = draft.findIndex((s) => s.id === id);
@@ -260,22 +277,24 @@ const Page: React.FC = () => {
 
       // mutate(); // 負荷軽減のため、mutate() の実行は一旦保留
     },
-    [apiRequestHeader, data?.data, deleteApiCaller, mutate]
+    [apiRequestHeader, data?.data, deleteApiCaller, isGuest, mutate]
   );
 
-  // 既存セッションの削除処理(確認ダイアログ)
+  // 既存セッションの削除処理(確認ダイアログ) ＜ゲスト利用不可＞
   const confirmDeleteSession = useCallback(
     async (id: string, name: string): Promise<void> => {
+      if (isGuest) return;
       confirmDialog.openDialog(
         "削除確認",
         `セッション "${name}" を削除しますか？実行後は元に戻せません。`,
         () => deleteSession(id)
       );
     },
-    [confirmDialog, deleteSession]
+    [confirmDialog, deleteSession, isGuest]
   );
 
   const columns = useTeacherSessionTableColumns({
+    isGuest,
     updateSessionSummary,
     confirmDuplicateSession,
     confirmDeleteSession,
@@ -294,9 +313,24 @@ const Page: React.FC = () => {
         </div>
 
         <div className="flex flex-row justify-end">
-          <ActionButton onClick={createSessionAction} className="py-1">
-            新規作成
-          </ActionButton>
+          {isGuest ? (
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <ActionButton className="py-1" disabled={isGuest}>
+                    新規作成
+                  </ActionButton>
+                </TooltipTrigger>
+                <TooltipContent className="bg-slate-700 text-white">
+                  ゲストは利用不可
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          ) : (
+            <ActionButton onClick={createSessionAction} className="py-1">
+              新規作成
+            </ActionButton>
+          )}
         </div>
       </div>
 

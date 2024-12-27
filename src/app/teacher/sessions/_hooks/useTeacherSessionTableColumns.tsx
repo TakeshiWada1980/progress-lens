@@ -5,6 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import datetime2str from "@/app/_utils/datetime2str";
 import {
   faPen,
+  faPenToSquare,
   faBoltLightning,
   faSort,
   faEllipsisVertical,
@@ -30,6 +31,7 @@ import Link from "@/app/_components/elements/Link";
 import { twMerge } from "tailwind-merge";
 
 interface RowActionHandlers {
+  isGuest: boolean;
   confirmDeleteSession: (id: string, name: string) => Promise<void>;
   confirmDuplicateSession: (id: string, name: string) => Promise<void>;
   updateSessionSummary: <K extends keyof SessionSummary>(
@@ -40,6 +42,7 @@ interface RowActionHandlers {
 }
 
 const useTeacherSessionTableColumns = ({
+  isGuest,
   updateSessionSummary,
   confirmDuplicateSession,
   confirmDeleteSession,
@@ -93,8 +96,8 @@ const useTeacherSessionTableColumns = ({
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <FontAwesomeIcon
-                      className="ml-1 cursor-pointer text-xs text-indigo-300 hover:text-indigo-500"
-                      icon={faPen}
+                      className="ml-1.5 cursor-pointer text-xs text-indigo-300 hover:text-indigo-500"
+                      icon={faPenToSquare}
                       onClick={() => renameTitle(id, session.title)}
                     />
                   </TooltipTrigger>
@@ -154,22 +157,6 @@ const useTeacherSessionTableColumns = ({
           );
         },
       },
-
-      // {
-      //   accessorKey: "questionsCount",
-      //   header: () => (
-      //     <div className="hidden px-1 text-center sm:block sm:px-2">
-      //       <FontAwesomeIcon icon={faFileLines} />
-      //     </div>
-      //   ),
-      //   cell: ({ row }) => {
-      //     const questionsCount = row.original.questionsCount;
-      //     return (
-      //       <div className="hidden text-center sm:block">{questionsCount}</div>
-      //     );
-      //   },
-      // },
-
       {
         accessorKey: "createdAt",
         header: ({ column }) => (
@@ -218,7 +205,7 @@ const useTeacherSessionTableColumns = ({
                     <FontAwesomeIcon icon={faEllipsisVertical} />
                   </div>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent>
+                <DropdownMenuContent className="mr-1">
                   <DropdownMenuItem
                     onClick={() => renameTitle(id, title)}
                     className="cursor-pointer"
@@ -226,21 +213,40 @@ const useTeacherSessionTableColumns = ({
                     <FontAwesomeIcon icon={faPen} className="mr-2" />
                     名前の変更
                   </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => confirmDuplicateSession(id, title)}
-                    className="cursor-pointer"
-                  >
-                    <FontAwesomeIcon icon={faClone} className="mr-2" />
-                    複製
-                  </DropdownMenuItem>
+                  {isGuest ? (
+                    <DropdownMenuItem>
+                      <div className="cursor-not-allowed text-gray-500">
+                        <FontAwesomeIcon icon={faClone} className="mr-2" />
+                        複製（ゲストは利用不可）
+                      </div>
+                    </DropdownMenuItem>
+                  ) : (
+                    <DropdownMenuItem
+                      onClick={() => confirmDuplicateSession(id, title)}
+                      className="cursor-pointer"
+                    >
+                      <FontAwesomeIcon icon={faClone} className="mr-2" />
+                      複製
+                    </DropdownMenuItem>
+                  )}
+
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={() => confirmDeleteSession(id, title)}
-                    className="cursor-pointer"
-                  >
-                    <FontAwesomeIcon icon={faTrash} className="mr-2" />
-                    削除
-                  </DropdownMenuItem>
+                  {isGuest ? (
+                    <DropdownMenuItem>
+                      <div className="cursor-not-allowed text-gray-500">
+                        <FontAwesomeIcon icon={faTrash} className="mr-2" />
+                        削除（ゲストは利用不可）
+                      </div>
+                    </DropdownMenuItem>
+                  ) : (
+                    <DropdownMenuItem
+                      onClick={() => confirmDeleteSession(id, title)}
+                      className="cursor-pointer"
+                    >
+                      <FontAwesomeIcon icon={faTrash} className="mr-2" />
+                      削除
+                    </DropdownMenuItem>
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -251,6 +257,7 @@ const useTeacherSessionTableColumns = ({
     [
       confirmDeleteSession,
       confirmDuplicateSession,
+      isGuest,
       renameTitle,
       switchActiveState,
     ]

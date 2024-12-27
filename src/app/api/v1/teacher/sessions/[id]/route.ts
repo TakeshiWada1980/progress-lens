@@ -4,7 +4,10 @@ import { ApiErrorResponse } from "@/app/_types/ApiResponse";
 import SuccessResponseBuilder from "@/app/api/_helpers/successResponseBuilder";
 import ErrorResponseBuilder from "@/app/api/_helpers/errorResponseBuilder";
 import { StatusCodes } from "@/app/_utils/extendedStatusCodes";
-import { ApiError } from "@/app/api/_helpers/apiExceptions";
+import {
+  ApiError,
+  GuestNotAllowedError,
+} from "@/app/api/_helpers/apiExceptions";
 
 // ユーザ認証・サービスクラス関係
 import prisma from "@/lib/prisma";
@@ -116,9 +119,18 @@ export const DELETE = async (req: NextRequest, { params: { id } }: Params) => {
   const sessionId = id;
 
   try {
-    // prettier-ignore
     // セッションの所有権と操作権限を確認
-    await verifySessionOwnershipAndPermissions(req, sessionId, userService, sessionService);
+    const { appUser } = await verifySessionOwnershipAndPermissions(
+      req,
+      sessionId,
+      userService,
+      sessionService
+    );
+
+    // ゲストユーザからの要求を拒否
+    if (appUser.isGuest) {
+      throw new GuestNotAllowedError(appUser.id, appUser.displayName);
+    }
 
     // 削除処理の実行
     await sessionService.delete(sessionId);

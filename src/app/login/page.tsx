@@ -49,6 +49,7 @@ const LoginPage: React.FC = () => {
   const c_Password = "password";
 
   const guestStudentNum = 2;
+  const guestTeacherNum = 1;
 
   useEffect(() => {
     const checkSession = async () => {
@@ -273,7 +274,10 @@ const LoginPage: React.FC = () => {
         </div>
       </div>
 
-      <PageTitle title="ゲスト利用" />
+      <PageTitle title="お試し利用（ゲストログイン）" />
+      <div className="mt-2 text-sm" id="guest-login">
+        ゲストログインした場合は一部の機能がご利用になれません。
+      </div>
       <div className="mt-4 flex flex-wrap gap-x-2">
         {[...Array(guestStudentNum)]
           .map((_, i) => i + 1)
@@ -287,6 +291,23 @@ const LoginPage: React.FC = () => {
                 onClick={() => guestLogin(Role.STUDENT, n)}
               >
                 学生{String(n).padStart(2, "0")}
+              </ActionButton>
+            </div>
+          ))}
+      </div>
+      <div className="mb-4 mt-1 flex flex-wrap gap-x-2">
+        {[...Array(guestTeacherNum)]
+          .map((_, i) => i + 1)
+          .map((n) => (
+            <div key={n} className="mb-2">
+              <ActionButton
+                tabIndex={-1}
+                type="button"
+                variant="indigo"
+                width="slim"
+                onClick={() => guestLogin(Role.TEACHER, n)}
+              >
+                教員{String(n).padStart(2, "0")}
               </ActionButton>
             </div>
           ))}

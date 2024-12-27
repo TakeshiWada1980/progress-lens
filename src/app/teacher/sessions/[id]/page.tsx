@@ -436,7 +436,7 @@ const Page: React.FC = () => {
           </ActionButton>
         </div>
 
-        <div className="mb-4 flex justify-end">
+        <div className="mb-4 mt-5 flex justify-end">
           <Link href="/teacher/sessions" className="">
             <FontAwesomeIcon icon={faChalkboardUser} className="mr-1" />
             セッション一覧

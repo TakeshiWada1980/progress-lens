@@ -94,7 +94,7 @@ export const DELETE = async (req: NextRequest, { params: { id } }: Params) => {
     // ユーザが存在しない場合は UserService.NotFoundError がスローされる
     const appUser = await userService.getById(authUser.id);
 
-    // ゲストユーザから要求を拒否
+    // ゲストユーザからの要求を拒否
     if (appUser.isGuest) {
       throw new GuestNotAllowedError(appUser.id, appUser.displayName);
     }
