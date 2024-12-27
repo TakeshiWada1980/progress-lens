@@ -8,6 +8,7 @@ import {
   ApiError,
   ZodValidationError,
   NonTeacherOperationError,
+  GuestNotAllowedError,
 } from "@/app/api/_helpers/apiExceptions";
 
 // ユーザ認証・サービスクラス関係
@@ -27,7 +28,7 @@ import {
 
 export const revalidate = 0; // キャッシュを無効化
 
-// [POST] /api/v1/teacher/sessions/new　セッションの新規作成
+// [POST] /api/v1/teacher/sessions/new セッションの新規作成
 export const POST = async (req: NextRequest) => {
   const userService = new UserService(prisma);
   const sessionService = new SessionService(prisma);
@@ -43,6 +44,11 @@ export const POST = async (req: NextRequest) => {
     // ユーザーが 教員 または 管理者 のロールを持たない場合は Error がスローされる
     if (appUser.role === Role.STUDENT) {
       throw new NonTeacherOperationError(appUser.id, appUser.displayName);
+    }
+
+    // ゲストユーザからの要求を拒否
+    if (appUser.isGuest) {
+      throw new GuestNotAllowedError(appUser.id, appUser.displayName);
     }
 
     // リクエストボディの検証

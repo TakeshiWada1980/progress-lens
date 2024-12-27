@@ -4,20 +4,19 @@ import { ApiErrorResponse } from "@/app/_types/ApiResponse";
 import SuccessResponseBuilder from "@/app/api/_helpers/successResponseBuilder";
 import ErrorResponseBuilder from "@/app/api/_helpers/errorResponseBuilder";
 import { StatusCodes } from "@/app/_utils/extendedStatusCodes";
-import { ApiError } from "@/app/api/_helpers/apiExceptions";
+import {
+  ApiError,
+  GuestNotAllowedError,
+} from "@/app/api/_helpers/apiExceptions";
 
 // ユーザ認証・サービスクラス関係
 import prisma from "@/lib/prisma";
 import UserService from "@/app/_services/userService";
 import QuestionService from "@/app/_services/questionService";
-import SessionService, {
-  forGetAllByTeacherIdSchema,
-} from "@/app/_services/sessionService";
-import { Prisma as PRS } from "@prisma/client";
+import SessionService from "@/app/_services/sessionService";
 import { verifySessionOwnershipAndPermissions } from "../_helpers/verifySessionAuth";
 
 // 型定義・データ検証関連
-import { SessionSummary } from "@/app/_types/SessionTypes";
 
 export const revalidate = 0; // キャッシュを無効化
 
@@ -28,7 +27,6 @@ export const POST = async (req: NextRequest, { params: { id } }: Params) => {
   const sessionId = id;
   const userService = new UserService(prisma);
   const sessionService = new SessionService(prisma);
-  const questionService = new QuestionService(prisma);
 
   try {
     // セッションの所有権と操作権限を確認
@@ -38,6 +36,11 @@ export const POST = async (req: NextRequest, { params: { id } }: Params) => {
       userService,
       sessionService
     );
+
+    // ゲストユーザからの要求を拒否
+    if (appUser.isGuest) {
+      throw new GuestNotAllowedError(appUser.id, appUser.displayName);
+    }
 
     // 設問を複製する
     await sessionService.duplicate(sessionId);

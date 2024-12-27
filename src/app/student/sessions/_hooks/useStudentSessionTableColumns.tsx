@@ -27,7 +27,7 @@ import {
 import Link from "@/app/_components/elements/Link";
 import { twMerge } from "tailwind-merge";
 
-interface SessionRowContext {
+interface RowActionHandlers {
   isGuest: boolean;
   confirmUnenrollSession: (id: string, name: string) => Promise<void>;
 }
@@ -35,7 +35,7 @@ interface SessionRowContext {
 const useStudentSessionTableColumns = ({
   isGuest,
   confirmUnenrollSession,
-}: SessionRowContext): ColumnDef<SessionSummary>[] => {
+}: RowActionHandlers): ColumnDef<SessionSummary>[] => {
   //
 
   return useMemo(
@@ -162,7 +162,7 @@ const useStudentSessionTableColumns = ({
                     <FontAwesomeIcon icon={faEllipsisVertical} />
                   </div>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent>
+                <DropdownMenuContent className="mr-1">
                   {isGuest ? (
                     <DropdownMenuItem>
                       <div className="cursor-not-allowed text-gray-500">
