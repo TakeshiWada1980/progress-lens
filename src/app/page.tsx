@@ -1,5 +1,6 @@
 "use client";
 import React from "react";
+import Image from "next/image";
 import Link from "@/app/_components/elements/Link";
 import PageTitle from "@/app/_components/elements/PageTitle";
 import { appName } from "@/config/app-config";
@@ -7,9 +8,13 @@ import { appName } from "@/config/app-config";
 const Home: React.FC = () => {
   return (
     <div>
-      <PageTitle
-        title={`Visualize and Share Your Progress with ${appName}`}
-        className="mb-8 text-3xl font-bold text-blue-800"
+      <Image
+        src="/progress-lens.jpg"
+        alt="Example Image"
+        width={1024}
+        height={512}
+        priority
+        className="mb-4 rounded-xl shadow-lg"
       />
       <ul>
         <li>

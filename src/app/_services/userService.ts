@@ -89,6 +89,11 @@ class UserService {
     this.prisma = prisma;
   }
 
+  // ユーザ数の取得
+  public async count(): Promise<number> {
+    return await this.prisma.user.count();
+  }
+
   // 許可するロールの変更マップ (key: 現在ロール, value: 変更許可ロールの配列)
   private static roleUpdateMap: Partial<Record<Role, Role[]>> = {
     [Role.STUDENT]: [Role.TEACHER],

@@ -150,6 +150,11 @@ class SessionService {
     this.prisma = prisma;
   }
 
+  // セッション数の取得
+  public async count(): Promise<number> {
+    return await this.prisma.learningSession.count();
+  }
+
   // ユニークなアクセスコードの生成
   @withErrorHandling()
   private async generateAccessCode(): Promise<string> {

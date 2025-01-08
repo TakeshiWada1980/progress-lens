@@ -1,0 +1,22 @@
+name: Daily Ping
+
+on:
+  schedule:
+    # 毎日午前9時(UTC)に実行
+    - cron: "0 9 * * *"
+  # 手動実行用のトリガー
+  workflow_dispatch:
+
+jobs:
+  make_request:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Send HTTP GET request
+        run: |
+          curl -X GET "https://progress-lens.vercel.app/api/v1/status"
+
+      # オプション: リクエストの結果をログに記録
+      - name: Log request time
+        run: |
+          echo "Request completed at $(date)"
