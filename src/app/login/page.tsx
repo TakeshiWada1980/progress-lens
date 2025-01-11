@@ -48,8 +48,8 @@ const LoginPage: React.FC = () => {
   const c_Email = "email";
   const c_Password = "password";
 
-  const guestStudentNum = 2;
-  const guestTeacherNum = 1;
+  const guestStudentNum = 45;
+  const guestTeacherNum = 2;
 
   useEffect(() => {
     const checkSession = async () => {
@@ -110,8 +110,14 @@ const LoginPage: React.FC = () => {
       setErrorMsg("ゲストログインに失敗しました。");
       return;
     }
+
     setIsUserProfileRefreshRequired(true);
     setIsLoggedIn(true);
+
+    if (returnPath) {
+      router.replace(returnPath);
+      return;
+    }
     router.replace(resolveDashboardPage(role));
   };
 
@@ -172,8 +178,8 @@ const LoginPage: React.FC = () => {
       <div>
         <PageTitle title="ログイン" />
         <p className="mt-3 break-all text-sm">
-          現在 <span className="font-bold">{session.user.email}</span>
-          として既にログインしています。
+          現在 <span className="font-bold">{session.user.email}</span> として
+          既にログインしています。
           <br />
           別のアカウントでログインするためには、一度、
           <ActionLink onClick={logoutAction}>ログアウト</ActionLink>
@@ -184,7 +190,7 @@ const LoginPage: React.FC = () => {
   }
 
   return (
-    <div>
+    <div className={!session ? "-mt-5" : ""}>
       <PageTitle title="ログイン" />
 
       <div className="mt-5">
@@ -274,11 +280,11 @@ const LoginPage: React.FC = () => {
         </div>
       </div>
 
-      <PageTitle title="お試し利用（ゲストログイン）" />
+      <PageTitle title="ゲストログイン" />
       <div className="mt-2 text-sm" id="guest-login">
-        ゲストログインした場合は一部の機能がご利用になれません。
+        ゲスト権限では一部の機能がご利用になれません。
       </div>
-      <div className="mt-4 flex flex-wrap gap-x-2">
+      <div className="mx-4 mb-2 mt-4 flex flex-wrap gap-x-2 md:mx-0">
         {[...Array(guestStudentNum)]
           .map((_, i) => i + 1)
           .map((n) => (
@@ -295,7 +301,7 @@ const LoginPage: React.FC = () => {
             </div>
           ))}
       </div>
-      <div className="mb-4 mt-1 flex flex-wrap gap-x-2">
+      <div className="mx-4 mb-4 mt-1 flex flex-wrap gap-x-2 md:mx-0">
         {[...Array(guestTeacherNum)]
           .map((_, i) => i + 1)
           .map((n) => (

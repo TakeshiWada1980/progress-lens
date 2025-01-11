@@ -12,8 +12,8 @@ const button = tv({
       cancel: "bg-slate-500 hover:bg-slate-600 focus:ring-slate-200",
       add: "bg-indigo-500 hover:bg-indigo-600 focus:ring-indigo-200",
       delete: "bg-red-500 hover:bg-red-600 focus:ring-red-200",
-      indigo: "bg-indigo-300 hover:bg-indigo-500 focus:ring-indigo-200",
-      pink: "bg-pink-300 hover:bg-pink-500 focus:ring-pink-200",
+      indigo: "bg-indigo-400 hover:bg-indigo-600 focus:ring-indigo-200",
+      pink: "bg-pink-400 hover:bg-pink-600 focus:ring-pink-200",
     },
     width: {
       auto: "",

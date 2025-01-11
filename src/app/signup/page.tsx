@@ -142,13 +142,9 @@ const SignUpPage: React.FC = () => {
         </p>
         <ul className="ml-2 list-inside list-disc text-sm">
           <li>
-            体験利用（登録せずにゲストログイン）は
+            <span className="font-bold text-indigo-800">体験利用</span>
+            （登録せずにゲストログイン）は
             <Link href="/login#guest-login">こちら</Link>
-          </li>
-
-          <li>
-            Googleアカウントでソーシャルログインする場合は
-            <Link href="/login">こちら</Link>
           </li>
         </ul>
       </div>
@@ -210,7 +206,7 @@ const SignUpPage: React.FC = () => {
           disabled={!!form.watch(c_Email)}
         >
           <FontAwesomeIcon icon={faGoogle} className="mr-2" />
-          Googleアカウントでログイン
+          Googleアカウントでサインアップ
         </ActionButton>
         <div className="mt-2">
           <div className="break-all text-blue-500">{msg}</div>

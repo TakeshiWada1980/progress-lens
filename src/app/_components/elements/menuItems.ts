@@ -6,6 +6,7 @@ import {
   faPersonDigging,
   faRightFromBracket,
   faPersonChalkboard,
+  faUserGear,
   faChalkboardUser,
 } from "@fortawesome/free-solid-svg-icons";
 
@@ -20,62 +21,35 @@ interface MenuItem {
 
 export const studentMenuItems: MenuItem[] = [
   {
-    label: "アカウント",
-    href: "/user/profile",
-    state: "enabled",
-    icon: faAddressCard,
-  },
-  {
     label: "セッション",
     href: "/student/sessions",
     state: "enabled",
     icon: faChalkboardUser,
+  },
+  {
+    label: "アカウント",
+    href: "/user/profile",
+    state: "enabled",
+    icon: faAddressCard,
   },
 ];
 
 export const guestStudentMenuItems: MenuItem[] = [
   {
-    label: "アカウント（ゲストは利用不可）",
-    href: "#",
-    state: "disabled",
-    icon: faAddressCard,
-  },
-  {
     label: "セッション",
     href: "/student/sessions",
     state: "enabled",
     icon: faChalkboardUser,
   },
-];
-
-export const teacherMenuItems: MenuItem[] = [
-  {
-    label: "アカウント",
-    href: "/user/profile",
-    state: "enabled",
-    icon: faAddressCard,
-  },
-  {
-    label: "セッション（教員ロール）",
-    href: "/teacher/sessions",
-    state: "enabled",
-    icon: faChalkboardUser,
-  },
-  {
-    label: "セッション（学生ロール）",
-    href: "/student/sessions",
-    state: "enabled",
-    icon: faChalkboardUser,
-  },
-];
-
-export const guestTeacherMenuItems: MenuItem[] = [
   {
     label: "アカウント（ゲストは利用不可）",
     href: "#",
     state: "disabled",
     icon: faAddressCard,
   },
+];
+
+export const teacherMenuItems: MenuItem[] = [
   {
     label: "セッション（教員ロール）",
     href: "/teacher/sessions",
@@ -88,15 +62,15 @@ export const guestTeacherMenuItems: MenuItem[] = [
     state: "enabled",
     icon: faChalkboardUser,
   },
-];
-
-export const adminMenuItems: MenuItem[] = [
   {
     label: "アカウント",
     href: "/user/profile",
     state: "enabled",
     icon: faAddressCard,
   },
+];
+
+export const guestTeacherMenuItems: MenuItem[] = [
   {
     label: "セッション（教員ロール）",
     href: "/teacher/sessions",
@@ -110,9 +84,36 @@ export const adminMenuItems: MenuItem[] = [
     icon: faChalkboardUser,
   },
   {
-    label: "項目1 (仮)",
+    label: "アカウント（ゲストは利用不可）",
     href: "#",
-    state: "notImplemented",
-    icon: faPersonDigging,
+    state: "disabled",
+    icon: faAddressCard,
+  },
+];
+
+export const adminMenuItems: MenuItem[] = [
+  {
+    label: "セッション（教員ロール）",
+    href: "/teacher/sessions",
+    state: "enabled",
+    icon: faChalkboardUser,
+  },
+  {
+    label: "セッション（学生ロール）",
+    href: "/student/sessions",
+    state: "enabled",
+    icon: faChalkboardUser,
+  },
+  {
+    label: "ロール昇格",
+    href: "/admin/assign-role",
+    state: "enabled",
+    icon: faUserGear,
+  },
+  {
+    label: "アカウント",
+    href: "/user/profile",
+    state: "enabled",
+    icon: faAddressCard,
   },
 ];

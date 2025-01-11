@@ -385,7 +385,7 @@ const Page: React.FC = () => {
           />
           <label htmlFor={c_IsActive} className="text-sm">
             {dataRef.current.isActive ? (
-              <span>学生の参加と回答が可能です</span>
+              <span>学生の参加と回答を受付けています</span>
             ) : (
               <span className="text-gray-400">
                 学生の参加と回答を停止しています
