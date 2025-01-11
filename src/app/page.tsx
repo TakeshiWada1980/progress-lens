@@ -9,8 +9,10 @@ import {
   faComments,
   faCaretRight,
   faThumbsUp,
+  faRightToBracket,
 } from "@fortawesome/free-solid-svg-icons";
 import { twMerge } from "tailwind-merge";
+import ActionButton from "@/app/_components/elements/ActionButton";
 
 const Home: React.FC = () => {
   const { session } = useAuth();
@@ -30,10 +32,23 @@ const Home: React.FC = () => {
         <div className="mb-1">みんなの「学び」が、つながる場所</div>
         <div className="ml-1 w-10 border-b-2 border-black pt-0.5"></div>
       </h2>
-      <h1 className="mx-6 mb-1.5 text-4xl font-bold">ProgressLens</h1>
+      <h1 className="mx-3 mb-1.5 text-4xl font-bold md:mx-6">ProgressLens</h1>
 
-      <div className="mx-6 mb-8 text-sm font-bold italic text-slate-400">
+      <div className="mx-3 mb-4 text-sm font-bold italic text-slate-400 md:mx-6">
         学びの状況（進捗や理解度など）を匿名性を保ちながら可視化して相互シェア
+      </div>
+
+      <div className="mb-2 flex justify-center space-x-2.5 text-sm font-bold  text-indigo-800">
+        <div className="rounded-md border-2 border-indigo-800 px-4 py-0.5 hover:bg-indigo-800 hover:text-white">
+          <Link href="/login" style="unstyled">
+            ProgressLens に ログイン
+          </Link>
+        </div>
+        <div className="rounded-md border-2 border-indigo-800 px-4 py-0.5 hover:bg-indigo-800 hover:text-white">
+          <Link href="/signup" style="unstyled">
+            サインアップ
+          </Link>
+        </div>
       </div>
 
       <h3>
@@ -42,29 +57,30 @@ const Home: React.FC = () => {
           授業での活用
         </div>
       </h3>
-      <div className="mb-6 mt-2">
+      <div className="mb-4 mt-3">
         <div className="mb-2 ml-2">
-          授業の「理解度」や演習の「進み具合」を準リアルタイムに可視化して、全体的な傾向や分布を把握できます。
+          授業の「理解度」や演習の「進み具合」を即時的に可視化し、学習者全体の傾向と分布を確認できます。
         </div>
-        <div className="ml-3 space-y-0.5 text-sm">
+        <div className="ml-3 space-y-2 text-sm">
           <p>
-            <FontAwesomeIcon icon={faThumbsUp} className="mr-2" />
-            演習の進捗に応じた最適なタイミングでヒントを提示
+            <FontAwesomeIcon icon={faThumbsUp} className="mr-2 text-gray-500" />
+            進捗に応じて最適なタイミングでヒントを提示
           </p>
           <p>
-            <FontAwesomeIcon icon={faThumbsUp} className="mr-2" />
-            状況を定量的に把握して的確な授業進行や解説が可能
+            <FontAwesomeIcon icon={faThumbsUp} className="mr-2 text-gray-500" />
+            定量的に状況を把握して授業ペースを最適化
           </p>
           <p>
-            <FontAwesomeIcon icon={faThumbsUp} className="mr-2" />
-            心理的な負担なく匿名で学びの状況を共有
+            <FontAwesomeIcon icon={faThumbsUp} className="mr-2 text-gray-500" />
+            匿名型だから心理的負担なく学びの状況を共有可能
           </p>
           <p>
-            <FontAwesomeIcon icon={faThumbsUp} className="mr-2" />
+            <FontAwesomeIcon icon={faThumbsUp} className="mr-2 text-gray-500" />
             サイレントマジョリティの声を授業にフィードバック
           </p>
         </div>
-        <div className="my-3 px-2 md:px-4">
+
+        <div className="mb-4 mt-3 px-2 md:px-4">
           <div className="flex flex-col items-center justify-center gap-2 md:flex-row">
             <div className="w-full md:w-1/2">
               <Image
@@ -90,14 +106,20 @@ const Home: React.FC = () => {
           </div>
         </div>
 
-        <div className="mb-2 ml-5 space-y-0.5 text-sm">
+        <div className="mb-3 ml-5 space-y-2 text-sm">
           <p>
-            <FontAwesomeIcon icon={faCaretRight} className="mr-2" />
-            教員は、任意の設問と回答選択肢を設定したセッションを作成できます。
+            <FontAwesomeIcon
+              icon={faCaretRight}
+              className="mr-2 text-gray-500"
+            />
+            教員は、設問と回答選択肢を自由に設定したセッションを作成できます。
           </p>
           <p>
-            <FontAwesomeIcon icon={faCaretRight} className="mr-2" />
-            学生は、7桁のアクセスコードを使ってセッションに参加できます。
+            <FontAwesomeIcon
+              icon={faCaretRight}
+              className="mr-2 text-gray-500"
+            />
+            学生は、アクセスコードを入力してセッションに参加できます。
           </p>
         </div>
 
@@ -117,27 +139,35 @@ const Home: React.FC = () => {
         </div>
       </div>
 
+      <div className="mb-6 flex justify-center space-x-2.5 text-sm font-bold  text-indigo-800">
+        <div className="rounded-md border-2 border-indigo-800 px-4 py-0.5 hover:bg-indigo-800 hover:text-white">
+          <Link href="/signup" style="unstyled">
+            ProgressLens を使ってみる（サインアップ）
+          </Link>
+        </div>
+      </div>
+
       <h3>
         <div className="flex items-center text-xl font-bold text-indigo-800">
           <FontAwesomeIcon icon={faComments} className="mr-2" />
           ワークショップでの活用
         </div>
       </h3>
-      <div className="mb-6 mt-2">
+      <div className="mb-6 mt-3">
         <div className="mb-2 ml-2">
-          参加者同士で状況を共有し、学び合いを促進します。ファシリテータは状況に応じた柔軟なプログラム進行が可能です。
+          参加者同士で状況を共有し、学び合いを促進します。ファシリテータは全体状況に応じた柔軟な進行とタイムマネジメントが可能になります。
         </div>
-        <div className="ml-3 space-y-0.5 text-sm">
+        <div className="ml-3 space-y-2 text-sm">
           <p>
-            <FontAwesomeIcon icon={faThumbsUp} className="mr-2" />
+            <FontAwesomeIcon icon={faThumbsUp} className="mr-2 text-gray-500" />
             参加者間の進捗共有でメリハリのあるワークを実現
           </p>
           <p>
-            <FontAwesomeIcon icon={faThumbsUp} className="mr-2" />
+            <FontAwesomeIcon icon={faThumbsUp} className="mr-2 text-gray-500" />
             状況の共有によるコミュニティの活性化
           </p>
           <p>
-            <FontAwesomeIcon icon={faThumbsUp} className="mr-2" />
+            <FontAwesomeIcon icon={faThumbsUp} className="mr-2 text-gray-500" />
             ファシリテータは状況に合わせたサポートを提供
           </p>
         </div>
@@ -150,10 +180,11 @@ const Home: React.FC = () => {
         </div>
       </h3>
       <div className="my-2 ml-2">
-        45名分の「学生用ゲストアカウント」を用意しています。
+        45名分の <span className="font-bold">学生ゲストアカウント</span>{" "}
+        を用意しています。
         <br />
         アカウント作成不要で ProgressLens
-        の主機能が利用できます。単発の授業やデモンストレーションにご利用ください。
+        の主機能が利用できます。単発の授業やデモにご利用ください。
       </div>
       <div className="my-1 px-2 md:px-4">
         <div className="flex flex-col items-center justify-center gap-2 md:flex-row">
@@ -169,11 +200,19 @@ const Home: React.FC = () => {
           </div>
         </div>
       </div>
-      <div className="ml-5 mt-3 space-y-0.5 text-sm">
+      <div className="my-3 ml-5 space-y-0.5 text-sm">
         <p>
-          <FontAwesomeIcon icon={faCaretRight} className="mr-2" />
-          ゲストログインした場合は一部の機能がご利用になれません。
+          <FontAwesomeIcon icon={faCaretRight} className="mr-2 text-gray-500" />
+          ゲストログインでは一部の機能がご利用になれません。
         </p>
+      </div>
+
+      <div className="mb-2 flex justify-center space-x-2.5 text-sm font-bold  text-indigo-800">
+        <div className="rounded-md border-2 border-indigo-800  px-4 py-0.5 hover:bg-indigo-800 hover:text-white">
+          <Link href="/login" style="unstyled">
+            ゲストログインで ProgressLens を体験
+          </Link>
+        </div>
       </div>
     </div>
   );

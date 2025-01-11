@@ -110,8 +110,14 @@ const LoginPage: React.FC = () => {
       setErrorMsg("ゲストログインに失敗しました。");
       return;
     }
+
     setIsUserProfileRefreshRequired(true);
     setIsLoggedIn(true);
+
+    if (returnPath) {
+      router.replace(returnPath);
+      return;
+    }
     router.replace(resolveDashboardPage(role));
   };
 
@@ -276,7 +282,7 @@ const LoginPage: React.FC = () => {
 
       <PageTitle title="ゲストログイン" />
       <div className="mt-2 text-sm" id="guest-login">
-        ゲストログインした場合は一部の機能がご利用になれません。
+        ゲスト権限では一部の機能がご利用になれません。
       </div>
       <div className="mx-4 mb-2 mt-4 flex flex-wrap gap-x-2 md:mx-0">
         {[...Array(guestStudentNum)]
@@ -312,7 +318,6 @@ const LoginPage: React.FC = () => {
             </div>
           ))}
       </div>
-      <div className="h-96"></div>
     </div>
   );
 };
