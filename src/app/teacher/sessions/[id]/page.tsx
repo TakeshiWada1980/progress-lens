@@ -415,6 +415,8 @@ const Page: React.FC = () => {
         </div>
       </div>
 
+      {/* Description */}
+
       {/* 設問 */}
       <PageContent
         session={dataRef.current}
