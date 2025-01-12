@@ -27,6 +27,13 @@ enum Role {
   STUDENT
 }
 
+enum RoleUpgradeRequestState {
+  NONE       // 初期状態
+  PENDING    // 申請中
+  REJECTED   // 却下
+  INELIGIBLE // 資格なし
+}
+
 model User {
   id           String    @id
   role         Role      @default(STUDENT)
@@ -37,6 +44,8 @@ model User {
   attributes   Json?     @default("{}")
   createdAt    DateTime  @default(now()) @map("created_at")
   updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  roleUpgradeRequest  RoleUpgradeRequestState  @default(INELIGIBLE) @map("role_upgrade_request")
 
   // Role-specific information
   student   Student?
@@ -90,6 +99,7 @@ model LearningSession {
   id                   String   @id @default(cuid())
   teacherId            String   @map("teacher_id")
   title                String
+  description          String   @default("")
   accessCode           String   @unique @map("access_code")
   isActive             Boolean  @default(true) @map("is_active")
   allowGuestEnrollment Boolean  @default(true) @map("allow_guest_enrollment")

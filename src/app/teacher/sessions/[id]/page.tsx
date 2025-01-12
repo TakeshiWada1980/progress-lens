@@ -131,7 +131,7 @@ const Page: React.FC = () => {
     []
   );
 
-  //【セッションプロパティ（title,isActive,allowGuestEnrollment）の更新】
+  //【セッションプロパティ（title,isActive,description,allowGuestEnrollment）の更新】
   const updateSessionProperty = useCallback(
     async <K extends keyof SessionEditableFields>(
       key: K,

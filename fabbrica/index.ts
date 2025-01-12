@@ -8,6 +8,7 @@ import type { Question } from "@prisma/client";
 import type { Option } from "@prisma/client";
 import type { Response } from "@prisma/client";
 import type { Role } from "@prisma/client";
+import type { RoleUpgradeRequestState } from "@prisma/client";
 import type { Prisma, PrismaClient } from "@prisma/client";
 import { createInitializer, createScreener, getScalarFieldValueGenerator, normalizeResolver, normalizeList, getSequenceCounter, createCallbackChain, destructure } from "@quramy/prisma-fabbrica/lib/internal";
 import type { ModelWithFields, Resolver, } from "@quramy/prisma-fabbrica/lib/internal";
@@ -194,6 +195,7 @@ type UserFactoryDefineInput = {
     attributes?: Prisma.NullableJsonNullValueInput | Prisma.InputJsonValue;
     createdAt?: Date;
     updatedAt?: Date;
+    roleUpgradeRequest?: RoleUpgradeRequestState;
     student?: UserstudentFactory | Prisma.StudentCreateNestedOneWithoutUserInput;
     teacher?: UserteacherFactory | Prisma.TeacherCreateNestedOneWithoutUserInput;
     admin?: UseradminFactory | Prisma.AdminCreateNestedOneWithoutUserInput;
@@ -814,6 +816,7 @@ type LearningSessionteacherFactory = {
 type LearningSessionFactoryDefineInput = {
     id?: string;
     title?: string;
+    description?: string;
     accessCode?: string;
     isActive?: boolean;
     allowGuestEnrollment?: boolean;

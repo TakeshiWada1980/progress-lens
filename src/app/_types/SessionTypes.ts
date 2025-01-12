@@ -25,6 +25,12 @@ export const sessionTitleSchema = z
   .min(2, "2文字以上16文字以内で入力してください。")
   .max(16, "2文字以上16文字以内で入力してください。");
 
+const sessionDescriptionSchema = z
+  .string()
+  .trim()
+  .min(0, "0文字以上256文字以内で入力してください。")
+  .max(256, "0文字以上256文字以内で入力してください。");
+
 export const questionTitleSchema = z
   .string()
   .trim()
@@ -43,11 +49,18 @@ const rewardPointSchema = z
   .int()
   .min(0, "0以上の整数を入力してください。");
 
+const rewardMessageSchema = z
+  .string()
+  .trim()
+  .min(0, "0文字以上32文字以内で入力してください。")
+  .max(32, "0文字以上32文字以内で入力してください。");
+
 ///////////////////////////////////////////////////////////////
 
 export interface SessionSummary {
   id: string;
   title: string;
+  description: string;
   teacherName: string; // *
   accessCode: string;
   isActive: boolean;
@@ -91,6 +104,7 @@ export type QuestionEditableFields = z.infer<
 export const sessionEditableFieldsSchema = z.object({
   id: cuidSchema,
   title: sessionTitleSchema,
+  description: sessionDescriptionSchema,
   accessCode: accessCodeSchema,
   isActive: z.boolean(),
   allowGuestEnrollment: z.boolean(),
@@ -108,7 +122,7 @@ export const optionSnapshotSchema = z.object({
   order: orderSchema,
   title: optionTitleSchema,
   description: z.string(),
-  rewardMessage: z.string(),
+  rewardMessage: rewardMessageSchema,
   rewardPoint: rewardPointSchema,
   effect: z.boolean(),
   responseCount: z.number(),
@@ -131,6 +145,7 @@ export type QuestionSnapshot = z.infer<typeof questionSnapshotSchema>;
 export const sessionSnapshotSchema = z.object({
   id: cuidSchema,
   title: sessionTitleSchema,
+  description: sessionDescriptionSchema,
   accessCode: accessCodeSchema,
   isActive: z.boolean(),
   teacherId: uuidSchema,
@@ -154,6 +169,7 @@ export type CreateSessionRequest = z.infer<typeof createSessionRequestSchema>;
 export const updateSessionRequestSchema = z.object({
   id: cuidSchema,
   title: sessionTitleSchema.optional(),
+  description: sessionDescriptionSchema.optional(),
   isActive: z.boolean().optional(),
   allowGuestEnrollment: z.boolean().optional(),
 });
@@ -193,7 +209,7 @@ export const updateOptionSchema = z.object({
   title: optionTitleSchema.optional(),
   order: orderSchema.optional(),
   description: z.string().optional(),
-  rewardMessage: z.string().optional(),
+  rewardMessage: rewardMessageSchema.optional(),
   rewardPoint: rewardPointSchema.optional(),
   effect: z.boolean().optional(),
 });

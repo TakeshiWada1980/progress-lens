@@ -50,6 +50,7 @@ export const GET = async (req: NextRequest, { params: { id } }: Params) => {
     const res: SessionEditableFields = {
       id: session.id,
       title: session.title,
+      description: session.description,
       accessCode: session.accessCode,
       isActive: session.isActive,
       allowGuestEnrollment: session.allowGuestEnrollment,

@@ -42,6 +42,7 @@ export const forGetAllByTeacherIdSchema = {
   select: {
     id: true,
     title: true,
+    description: true,
     accessCode: true,
     isActive: true,
     allowGuestEnrollment: true,
@@ -60,6 +61,7 @@ export const forGetAllByStudentIdSchema = {
   select: {
     id: true,
     title: true,
+    description: true,
     accessCode: true,
     isActive: true,
     allowGuestEnrollment: true,
@@ -83,6 +85,7 @@ export const forEditSessionSchema = {
   select: {
     id: true,
     title: true,
+    description: true,
     accessCode: true,
     isActive: true,
     allowGuestEnrollment: true,
@@ -100,6 +103,7 @@ export const forSnapshotSessionSchema = {
   select: {
     id: true,
     title: true,
+    description: true,
     accessCode: true,
     isActive: true,
     allowGuestEnrollment: true,
@@ -365,7 +369,7 @@ class SessionService {
   }
 
   /**
-   * ラーニングセッションの基本情報（title,isActive）の更新
+   * ラーニングセッションの基本情報（title,description,isActive）の更新
    * @param sessionId 呼び出し元で有効性を保証すべきセッションID
    * @param data バリデーション済みの更新データ
    * @note dataに id が含まれていても内部処理で無視するので問題ない
@@ -477,6 +481,7 @@ class SessionService {
           teacherId: session.teacherId,
           accessCode: newAccessCode,
           title: `Copy ${session.title}`.substring(0, 16),
+          description: session.description,
         },
       });
 

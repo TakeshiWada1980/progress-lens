@@ -66,6 +66,7 @@ export const POST = async (req: NextRequest) => {
     const res: SessionSummary = {
       id: session.id,
       title: session.title,
+      description: session.description,
       teacherName: appUser.displayName,
       accessCode: session.accessCode,
       isActive: session.isActive,

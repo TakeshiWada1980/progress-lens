@@ -43,6 +43,7 @@ export const GET = async (req: NextRequest) => {
       avatarImgUrl: avatarImgUrl,
       provider: authUser.app_metadata?.provider,
       isGuest: appUser.isGuest,
+      roleUpgradeRequest: appUser.roleUpgradeRequest,
     };
 
     return NextResponse.json(

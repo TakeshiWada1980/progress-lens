@@ -90,6 +90,7 @@ export const GET = async (req: NextRequest, { params: { id } }: Params) => {
     const res: SessionSnapshot = {
       id: session.id,
       title: session.title,
+      description: session.description,
       accessCode: session.accessCode,
       isActive: session.isActive,
       teacherId: session.teacherId,

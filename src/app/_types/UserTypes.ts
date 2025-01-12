@@ -1,4 +1,3 @@
-import { Provider } from "@radix-ui/react-tooltip";
 import { z } from "zod";
 
 // フロントエンド <-> WebAPI層 の DTO
@@ -12,6 +11,16 @@ export const Role = {
 } as const;
 
 export type Role = (typeof Role)[keyof typeof Role];
+
+export const RoleUpgradeRequestState = {
+  NONE: "NONE",
+  PENDING: "PENDING",
+  REJECTED: "REJECTED",
+  INELIGIBLE: "INELIGIBLE",
+} as const;
+
+export type RoleUpgradeRequestState =
+  (typeof RoleUpgradeRequestState)[keyof typeof RoleUpgradeRequestState];
 
 ///////////////////////////////////////////////////////////////
 
@@ -28,6 +37,12 @@ export const uuidSchema = z.string().refine(isUUID, {
 });
 
 const userRoleSchema = z.enum([Role.ADMIN, Role.TEACHER, Role.STUDENT]);
+const userRoleUpgradeRequestStatSchema = z.enum([
+  RoleUpgradeRequestState.NONE,
+  RoleUpgradeRequestState.PENDING,
+  RoleUpgradeRequestState.REJECTED,
+  RoleUpgradeRequestState.INELIGIBLE,
+]);
 
 ///////////////////////////////////////////////////////////////
 
@@ -65,6 +80,7 @@ export interface UserProfile {
   avatarImgUrl?: string;
   provider?: string;
   isGuest?: boolean;
+  roleUpgradeRequest?: RoleUpgradeRequestState;
 }
 
 export const userProfileSchema = z.object({
@@ -80,4 +96,5 @@ export const userProfileSchema = z.object({
   avatarImgUrl: z.string().optional(),
   provider: z.string().optional(),
   isGuest: z.boolean().optional(),
+  roleUpgradeRequestState: userRoleUpgradeRequestStatSchema.optional(),
 });
