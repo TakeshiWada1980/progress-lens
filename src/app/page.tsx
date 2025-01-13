@@ -38,7 +38,7 @@ const Home: React.FC = () => {
         学びの状況（進捗や理解度など）を匿名性を保ちながら可視化して相互シェア
       </div>
 
-      <div className="mb-2 flex justify-center space-x-2.5 text-sm font-bold  text-indigo-800">
+      <div className="mb-4 flex justify-center space-x-2.5 text-sm font-bold  text-indigo-800">
         <div className="rounded-md border-2 border-indigo-800 px-4 py-0.5 hover:bg-indigo-800 hover:text-white">
           <Link href="/login" style="unstyled">
             ProgressLens に ログイン
@@ -59,7 +59,7 @@ const Home: React.FC = () => {
       </h3>
       <div className="mb-4 mt-3">
         <div className="mb-2 ml-2">
-          授業の「理解度」や演習の「進み具合」を即時的に可視化し、学習者全体の傾向と分布を確認できます。
+          授業の「理解度」や演習の「進み具合」を即時的に可視化し、学習者全体の傾向と分布を確認できます。特にアクティブラーニング、オンライン授業、演習形式の授業など効果を発揮します。
         </div>
         <div className="ml-3 space-y-2 text-sm">
           <p>

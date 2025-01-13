@@ -25,11 +25,11 @@ export const sessionTitleSchema = z
   .min(2, "2文字以上16文字以内で入力してください。")
   .max(16, "2文字以上16文字以内で入力してください。");
 
-const sessionDescriptionSchema = z
+export const sessionDescriptionSchema = z
   .string()
   .trim()
-  .min(0, "0文字以上256文字以内で入力してください。")
-  .max(256, "0文字以上256文字以内で入力してください。");
+  .min(0, "0文字以上128文字以内で入力してください。")
+  .max(128, "0文字以上128文字以内で入力してください。");
 
 export const questionTitleSchema = z
   .string()

@@ -35,22 +35,13 @@ import {
   faSpinner,
   faCaretRight,
   faChalkboardUser,
-  faRotate,
-  faRetweet,
-  faPersonChalkboard,
-  faTurnUp,
 } from "@fortawesome/free-solid-svg-icons";
 import ActionButton from "@/app/_components/elements/ActionButton";
 import CustomModal from "@/app/_components/CustomModal";
 import PageContent from "./_components/PageContent";
 import FormFieldErrorMsg from "@/app/_components/elements/FormFieldErrorMsg";
 import TextInputField from "@/app/_components/elements/TextInputField";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/app/_components/shadcn/ui/tooltip";
+import TextAreaField from "@/app/_components/elements/TextAreaField";
 import Link from "@/app/_components/elements/Link";
 import { twMerge } from "tailwind-merge";
 import { Switch } from "@/app/_components/shadcn/ui/switch";
@@ -66,14 +57,14 @@ import {
   QuestionEditableFields,
   questionEditableFieldsSchema,
   UpdateSessionRequest,
-  updateSessionRequestSchema,
   sessionTitleSchema,
-  SessionSummary,
+  sessionDescriptionSchema,
 } from "@/app/_types/SessionTypes";
 import dev from "@/app/_utils/devConsole";
 
 const Page: React.FC = () => {
   const c_Title = "title";
+  const c_Description = "description";
   const c_IsActive = "isActive";
   const c_AllowGuestEnrollment = "allowGuestEnrollment";
 
@@ -90,6 +81,10 @@ const Page: React.FC = () => {
   const [title, setTitle] = useState("");
   const prevTitle = useRef("");
   const [titleError, setTitleError] = useState<string | null>(null);
+
+  const [description, setDescription] = useState("");
+  const prevDescription = useRef("");
+  const [descriptionError, setDescriptionError] = useState<string | null>(null);
 
   const [isAddingQuestion, setIsAddingQuestion] = React.useState(false);
   const [isDuplicatingQuestion, setIsDuplicatingQuestion] =
@@ -119,12 +114,24 @@ const Page: React.FC = () => {
     prevTitle.current = data.data?.title!;
   }, [data]);
 
-  const handleSessionTitleChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const newTitle = e.target.value;
-      setTitle(newTitle);
-      const zodResult = sessionTitleSchema.safeParse(newTitle);
-      setTitleError(
+  const handleSessionTitleChange = useCallback((newTitle: string) => {
+    setTitle(newTitle);
+    const zodResult = sessionTitleSchema.safeParse(newTitle);
+    setTitleError(zodResult.success ? null : zodResult.error.errors[0].message);
+  }, []);
+
+  // セッションディスクリプションの初期値設定
+  useEffect(() => {
+    if (!data) return;
+    setDescription(data.data?.description!);
+    prevDescription.current = data.data?.description!;
+  }, [data]);
+
+  const handleSessionDescriptionChange = useCallback(
+    (newDescription: string) => {
+      setDescription(newDescription);
+      const zodResult = sessionDescriptionSchema.safeParse(newDescription);
+      setDescriptionError(
         zodResult.success ? null : zodResult.error.errors[0].message
       );
     },
@@ -183,7 +190,6 @@ const Page: React.FC = () => {
 
       // バリデーション
       dev.console.log("■ セッションタイトルの更新処理");
-      const sessionId = data?.data?.id!;
       if (title === prevTitle.current) return;
       const zodResult = sessionTitleSchema.safeParse(title);
       if (!zodResult.success) {
@@ -195,9 +201,38 @@ const Page: React.FC = () => {
       setTitle(updatedTitle);
       prevTitle.current = updatedTitle;
 
-      await updateSessionProperty("title", updatedTitle);
+      await updateSessionProperty(c_Title, updatedTitle);
     },
-    [data?.data?.id, title, updateSessionProperty]
+    [title, updateSessionProperty]
+  );
+
+  // 【セッションディスクリプションの更新】
+  const updateSessionDescription = useCallback(
+    async (e: React.FocusEvent<HTMLTextAreaElement, Element>) => {
+      // ESCキーでキャンセルされた場合は
+      // exitInputOnEnter 経由で INPUT_CANCELLED がセットされているはず
+      if (e.target.value === INPUT_CANCELLED) {
+        setDescription(prevDescription.current);
+        setDescriptionError(null);
+        return;
+      }
+
+      // バリデーション
+      dev.console.log("■ セッションディスクリプションの更新処理");
+      if (description === prevDescription.current) return;
+      const zodResult = sessionDescriptionSchema.safeParse(description);
+      if (!zodResult.success) {
+        setDescription(prevDescription.current); // 前回の値に戻す
+        setDescriptionError(null);
+        return;
+      }
+      const updatedDescription = zodResult.data;
+      setDescription(updatedDescription);
+      prevDescription.current = updatedDescription;
+
+      await updateSessionProperty(c_Description, updatedDescription);
+    },
+    [description, updateSessionProperty]
   );
 
   //【設問の追加】
@@ -343,37 +378,61 @@ const Page: React.FC = () => {
   dataRef.current = sessionEditableFieldsSchema.parse(data.data);
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col gap-y-2">
       {/* セッションタイトル */}
       <div className="grow">
-        <div className="flex items-center justify-between">
-          <TextInputField
-            id={"title" + id}
-            value={title}
-            border="hoverOnly"
-            className="px-2 py-0.5 text-2xl font-bold"
-            error={!!titleError}
-            onChange={handleSessionTitleChange}
-            onBlur={(e) => updateSessionTitle(e)}
-            onKeyDown={exitInputOnEnter}
-          />
-        </div>
+        <TextInputField
+          id={c_Title + id}
+          value={title}
+          border="hoverOnly"
+          className="mb-1 px-2 py-0.5 text-2xl font-bold"
+          error={!!titleError}
+          onChange={(e) => handleSessionTitleChange(e.target.value)}
+          onBlur={(e) => updateSessionTitle(e)}
+          onKeyDown={exitInputOnEnter}
+        />
+
         <div className="ml-1">
           <FormFieldErrorMsg msg={titleError} />
         </div>
         {/* アクセスコード */}
-        <div className="ml-2 mr-1 text-gray-400">
+        <div className="ml-2 text-gray-500">
           <FontAwesomeIcon icon={faCaretRight} className="mr-1.5" />
-          AccessCode:&nbsp;{dataRef.current.accessCode} (
+          アクセスコード:&nbsp;
+          {dataRef.current.accessCode}&nbsp;&nbsp;(
           <Link href={`/student/sessions/${dataRef.current.accessCode}`}>
             Preview
           </Link>
           )
         </div>
+
+        {/* Description */}
+        <div className="ml-2 text-gray-500">
+          <div className="mb-1">
+            <label htmlFor={c_Description + id}>
+              <FontAwesomeIcon icon={faCaretRight} className="mr-1.5" />
+              説明
+            </label>
+          </div>
+          <TextAreaField
+            id={c_Description + id}
+            value={description}
+            border="normal"
+            className="px-2 py-1 text-sm leading-5"
+            placeholder="セッションの説明を入力します（省略可能です）"
+            error={!!descriptionError}
+            onChange={(e) => handleSessionDescriptionChange(e.target.value)}
+            onBlur={(e) => updateSessionDescription(e)}
+            onKeyDown={exitInputOnEnter}
+          />
+          <div className="ml-1">
+            <FormFieldErrorMsg msg={descriptionError} />
+          </div>
+        </div>
       </div>
 
       {/* 設定 */}
-      <div className="ml-3 space-y-2">
+      <div className="mb-2 ml-3 flex flex-col gap-y-2">
         {/* 有効・無効 {c_IsActive} */}
         <div className="flex items-center space-x-2">
           <Switch
@@ -414,8 +473,6 @@ const Page: React.FC = () => {
           </label>
         </div>
       </div>
-
-      {/* Description */}
 
       {/* 設問 */}
       <PageContent

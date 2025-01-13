@@ -10,10 +10,11 @@ const BeginnersGuide: React.FC = () => {
     <div className="space-y-6">
       <div className="space-y-2 break-words text-justify">
         <p className="indent-paragraph text-slate-500">
-          Microsoft Forms や Google Forms における「フォーム」を ここでは「
+          Microsoft Forms や Google Forms における「<b>フォーム</b>
+          」を、ここでは「
           <strong>ラーニングセッション</strong>
           」と呼びます。
-          通常、授業ごとに1個のラーニングセッションを作成して使用します。
+          通常、授業ごとにひとつのラーニングセッションを作成して使用します。
         </p>
       </div>
 
@@ -92,7 +93,7 @@ const BeginnersGuide: React.FC = () => {
           <strong>新規作成</strong>」のボタンを押下するか、
           既存のラーニングセッションの右端の
           <FontAwesomeIcon icon={faEllipsisVertical} className="mx-2" />
-          をクリックして「<strong>複製</strong>」の項目を選択します。
+          をクリックして「<strong>複製</strong>」を選択します。
         </p>
       </div>
     </div>

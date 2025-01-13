@@ -22,9 +22,11 @@ import {
   faGhost,
   faRotate,
   faChalkboardUser,
+  faCaretRight,
 } from "@fortawesome/free-solid-svg-icons";
 import { twMerge } from "tailwind-merge";
 import FormFieldErrorMsg from "@/app/_components/elements/FormFieldErrorMsg";
+import DOMPurify from "isomorphic-dompurify";
 
 const Page: React.FC = () => {
   const { code } = useParams<{ code: string }>();
@@ -44,6 +46,13 @@ const Page: React.FC = () => {
       data.error?.appErrorCode === AppErrorCode.SESSION_NOT_ENROLLED;
     if (isUnenrolled) router.replace(`/student/sessions/?code=${code}`);
   }, [data, code, router]);
+
+  const toSafeHtml = (text: string) => {
+    const html = text.replace(/\n/g, "<br>");
+    return DOMPurify.sanitize(html, {
+      ALLOWED_TAGS: ["b", "strong", "i", "em", "u", "br"],
+    });
+  };
 
   if (!data) return <LoadingPage />;
 
@@ -94,17 +103,34 @@ const Page: React.FC = () => {
         </div>
       </div>
 
-      <div className="mb-2 mr-1 flex items-end justify-between">
-        <div className=" text-gray-400">
-          <div>作成者: {dataRef.current.teacherName}</div>
-          <div>アクセスコード: {dataRef.current.accessCode}</div>
+      <div className="mb-1 mr-1">
+        <div className="text-gray-500">
+          <div>
+            <FontAwesomeIcon icon={faCaretRight} className="mr-1.5" />
+            作成者: {dataRef.current.teacherName}
+          </div>
+          <div>
+            <FontAwesomeIcon icon={faCaretRight} className="mr-1.5" />
+            アクセスコード: {dataRef.current.accessCode}
+          </div>
         </div>
-        {totalRewardPoint > 0 && (
+        {dataRef.current.description !== "" && (
+          <div
+            className="mt-2"
+            dangerouslySetInnerHTML={{
+              __html: toSafeHtml(dataRef.current.description),
+            }}
+          />
+        )}
+      </div>
+
+      {totalRewardPoint > 0 && (
+        <div className="mb-2 mr-1 flex items-end justify-end">
           <div className="mr-1 text-xl font-bold text-pink-700">
             {totalRewardPoint} pt
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {!dataRef.current.isActive && (
         <div className="font-bold text-red-400">

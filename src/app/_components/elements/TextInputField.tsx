@@ -58,6 +58,6 @@ const TextInputField = forwardRef<HTMLInputElement, Props>((props, ref) => {
   );
 });
 
-TextInputField.displayName = "FormTextTextInputField";
+TextInputField.displayName = "TextInputField";
 
 export default TextInputField;

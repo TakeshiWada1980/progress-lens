@@ -27,7 +27,6 @@ import { ConfirmDialog } from "@/app/_components/elements/ConfirmDialog";
 import TextInputField from "@/app/_components/elements/TextInputField";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCaretRight } from "@fortawesome/free-solid-svg-icons";
-import party from "party-js";
 
 // 型・定数・ユーティリティ
 import { produce, Draft } from "immer";
