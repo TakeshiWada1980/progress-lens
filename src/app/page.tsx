@@ -68,7 +68,7 @@ const Home: React.FC = () => {
           </p>
           <p>
             <FontAwesomeIcon icon={faThumbsUp} className="mr-2 text-gray-500" />
-            定量的に状況を把握して授業ペースを最適化
+            状況を可視化して授業のペースや解説を最適化
           </p>
           <p>
             <FontAwesomeIcon icon={faThumbsUp} className="mr-2 text-gray-500" />
