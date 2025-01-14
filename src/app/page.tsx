@@ -60,45 +60,67 @@ const Home: React.FC = () => {
         </div>
       </h3>
       <div className="mb-4 mt-3">
-        <div className="mb-2 ml-2">
-          授業の「理解度」や演習の「進み具合」を即時的に可視化し、学習者全体の傾向と分布を確認できます。
+        <div className="mb-2 ml-1">
+          授業の「理解度」や演習の「進み具合」を即時的に可視化し、
+          <span className="font-bold">
+            学習者全体の傾向と分布に基づいた授業展開
+          </span>
+          を可能にします。
         </div>
 
         <div className="my-2 ml-3 space-y-2 text-sm">
           <p>
-            <FontAwesomeIcon icon={faThumbsUp} className="mr-2 text-gray-500" />
+            <FontAwesomeIcon
+              icon={faThumbsUp}
+              className="mr-2 text-indigo-700"
+            />
             進捗に応じて最適なタイミングでヒントを提示
           </p>
           <p>
-            <FontAwesomeIcon icon={faThumbsUp} className="mr-2 text-gray-500" />
+            <FontAwesomeIcon
+              icon={faThumbsUp}
+              className="mr-2 text-indigo-700"
+            />
             状況を可視化して授業のペースや解説を最適化
           </p>
           <p>
-            <FontAwesomeIcon icon={faThumbsUp} className="mr-2 text-gray-500" />
+            <FontAwesomeIcon
+              icon={faThumbsUp}
+              className="mr-2 text-indigo-700"
+            />
             匿名型だから心理的負担なく学びの状況を共有可能
           </p>
           <p>
-            <FontAwesomeIcon icon={faThumbsUp} className="mr-2 text-gray-500" />
+            <FontAwesomeIcon
+              icon={faThumbsUp}
+              className="mr-2 text-indigo-700"
+            />
             サイレントマジョリティの声を授業にフィードバック
           </p>
         </div>
 
-        <div className="mb-2 ml-2">
-          特に次の授業形態で効果的に活用いただけます。
+        <div className="mb-2 ml-1">
+          特に次の「授業形態」で効果的に活用いただけます。
         </div>
 
         <div className="mb-2 ml-3 space-y-2 text-sm">
           <p>
-            <FontAwesomeIcon icon={faThumbsUp} className="mr-2 text-gray-500" />
+            <FontAwesomeIcon
+              icon={faThumbsUp}
+              className="mr-2 text-indigo-700"
+            />
             セルフペースド学習型の授業、オンライン授業
           </p>
           <p>
-            <FontAwesomeIcon icon={faThumbsUp} className="mr-2 text-gray-500" />
+            <FontAwesomeIcon
+              icon={faThumbsUp}
+              className="mr-2 text-indigo-700"
+            />
             アクティブラーニング形式の授業
           </p>
         </div>
 
-        <div className="mb-2 ml-2">
+        <div className="mb-2 ml-1">
           授業中の発言やリアクションが少ないクラスにおいても有効活用いただけます。
         </div>
 
@@ -176,20 +198,29 @@ const Home: React.FC = () => {
         </div>
       </h3>
       <div className="mb-6 mt-3">
-        <div className="mb-2 ml-2">
+        <div className="mb-2 ml-1">
           参加者同士で状況を共有し、学び合いを促進します。ファシリテータは全体状況に応じた柔軟な進行とタイムマネジメントが可能になります。
         </div>
         <div className="ml-3 space-y-2 text-sm">
           <p>
-            <FontAwesomeIcon icon={faThumbsUp} className="mr-2 text-gray-500" />
+            <FontAwesomeIcon
+              icon={faThumbsUp}
+              className="mr-2 text-indigo-700"
+            />
             参加者間の進捗共有でメリハリのあるワークを実現
           </p>
           <p>
-            <FontAwesomeIcon icon={faThumbsUp} className="mr-2 text-gray-500" />
+            <FontAwesomeIcon
+              icon={faThumbsUp}
+              className="mr-2 text-indigo-700"
+            />
             状況の共有によるコミュニティの活性化
           </p>
           <p>
-            <FontAwesomeIcon icon={faThumbsUp} className="mr-2 text-gray-500" />
+            <FontAwesomeIcon
+              icon={faThumbsUp}
+              className="mr-2 text-indigo-700"
+            />
             ファシリテータは状況に合わせたサポートを提供
           </p>
         </div>
@@ -201,8 +232,8 @@ const Home: React.FC = () => {
           ゲストログイン機能を完備
         </div>
       </h3>
-      <div className="my-2 ml-2">
-        45名分の <span className="font-bold">学生ゲストアカウント</span>{" "}
+      <div className="my-2 ml-1">
+        45名分の<span className="font-bold">学生ゲストアカウント</span>
         を用意しています。
         <br />
         アカウント作成不要で ProgressLens

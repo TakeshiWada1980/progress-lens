@@ -20,13 +20,14 @@ import useConfirmDialog from "@/app/_hooks/useConfirmDialog";
 
 // UIコンポーネント
 import PageTitle from "@/app/_components/elements/PageTitle";
+import Link from "@/app/_components/elements/Link";
 import LoadingSpinner from "@/app/_components/elements/LoadingSpinner";
 import { DataTable } from "@/app/_components/elements/DataTable";
 import FormFieldErrorMsg from "@/app/_components/elements/FormFieldErrorMsg";
 import { ConfirmDialog } from "@/app/_components/elements/ConfirmDialog";
 import TextInputField from "@/app/_components/elements/TextInputField";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faCaretRight } from "@fortawesome/free-solid-svg-icons";
+import { faCaretRight, faUser } from "@fortawesome/free-solid-svg-icons";
 
 // 型・定数・ユーティリティ
 import { produce, Draft } from "immer";
@@ -220,6 +221,17 @@ const Page: React.FC = () => {
           )}
         </div>
       </div>
+
+      {userProfile?.isGuest && (
+        <div className="text-sm text-rose-400">
+          <FontAwesomeIcon icon={faUser} className="mr-1" />
+          ゲストモードでご利用中です。無料の
+          <Link href="/signup" className="font-bold text-rose-500">
+            サインアップ
+          </Link>
+          で全ての機能がお使いいただけます。
+        </div>
+      )}
 
       <ConfirmDialog {...confirmUnenrollDialog} />
     </div>

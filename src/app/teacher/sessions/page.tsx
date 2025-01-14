@@ -21,6 +21,7 @@ import useConfirmDialog from "@/app/_hooks/useConfirmDialog";
 
 // UIコンポーネント
 import PageTitle from "@/app/_components/elements/PageTitle";
+import Link from "@/app/_components/elements/Link";
 import LoadingSpinner from "@/app/_components/elements/LoadingSpinner";
 import { DataTable } from "@/app/_components/elements/DataTable";
 import BeginnersGuide from "./_components/BeginnersGuide";
@@ -30,7 +31,11 @@ import {
   CollapsibleContent,
 } from "@/app/_components/shadcn/ui/collapsible";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faChildReaching, faSpinner } from "@fortawesome/free-solid-svg-icons";
+import {
+  faChildReaching,
+  faSpinner,
+  faUser,
+} from "@fortawesome/free-solid-svg-icons";
 import { EditTitleDialog } from "./_components/TitleEditorDialog";
 import { ConfirmDialog } from "@/app/_components/elements/ConfirmDialog";
 import CustomModal from "@/app/_components/CustomModal";
@@ -378,6 +383,17 @@ const Page: React.FC = () => {
           <BeginnersGuide />
         </CollapsibleContent>
       </Collapsible>
+
+      {userProfile?.isGuest && (
+        <div className="mt-2 text-sm text-blue-500">
+          <FontAwesomeIcon icon={faUser} className="mr-1" />
+          ゲストは、セッションの新規作成はできません。セッションを新規作成するためには
+          <Link href="/signup" className="font-bold text-blue-500">
+            サインアップ
+          </Link>
+          して教員ロールへの昇格をリクエストしてください。
+        </div>
+      )}
 
       <ConfirmDialog {...confirmDialog} />
 

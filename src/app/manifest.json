@@ -1,6 +1,6 @@
 {
   "name": "ProgressLens",
-  "short_name": "P-Lens",
+  "short_name": "Progress Lens",
   "description": "ProgressLens (Next.js App)",
   "start_url": "/",
   "display": "standalone",

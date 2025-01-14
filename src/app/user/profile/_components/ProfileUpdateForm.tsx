@@ -25,6 +25,7 @@ import { avatarBucket } from "@/config/app-config";
 import { calculateMD5Hash } from "@/app/_utils/md5";
 import { roleEnum2str } from "@/app/_utils/roleEnum2str";
 import { twMerge } from "tailwind-merge";
+import { date } from "zod";
 
 interface Props {
   disabled: boolean;
@@ -178,7 +179,7 @@ const ProfileUpdateForm: React.FC<Props> = ({ disabled, email, provider }) => {
         )}
       </div>
 
-      <div className="mb-6">
+      <div className="mb-4">
         <label htmlFor={c_Role} className="mb-1 block font-bold text-gray-700">
           Role
         </label>
@@ -191,6 +192,12 @@ const ProfileUpdateForm: React.FC<Props> = ({ disabled, email, provider }) => {
           readOnly
           disabled={disabled}
         />
+        {roleValue === "学生" && (
+          <div className="ml-1 mt-1 text-sm">
+            ※ 教員ロールへの昇格は progress&#46;lens&#64;gmail&#46;com
+            宛にリクエストを送ってください。
+          </div>
+        )}
       </div>
 
       <div className={twMerge("mb-6", provider !== "google" && "hidden")}>
@@ -236,7 +243,7 @@ const ProfileUpdateForm: React.FC<Props> = ({ disabled, email, provider }) => {
       </div> */}
 
       {/* AvatarImgKey リリース時には hidden 属性を設定 */}
-      <div className="mb-6">
+      <div className="mb-6 hidden">
         <label
           htmlFor={c_AvatarImgKey}
           className="mb-1 block font-bold text-gray-700"
@@ -255,7 +262,7 @@ const ProfileUpdateForm: React.FC<Props> = ({ disabled, email, provider }) => {
       </div>
 
       {/* AvatarImgUrl リリース時には hidden 属性を設定 */}
-      <div className="mb-6">
+      <div className="mb-6 hidden">
         <label
           htmlFor={c_AvatarImgUrl}
           className="mb-1 block font-bold text-gray-700"

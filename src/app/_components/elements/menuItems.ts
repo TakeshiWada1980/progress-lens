@@ -27,7 +27,7 @@ export const studentMenuItems: MenuItem[] = [
     icon: faChalkboardUser,
   },
   {
-    label: "アカウント",
+    label: "設定",
     href: "/user/profile",
     state: "enabled",
     icon: faAddressCard,
@@ -42,7 +42,7 @@ export const guestStudentMenuItems: MenuItem[] = [
     icon: faChalkboardUser,
   },
   {
-    label: "アカウント（ゲストは利用不可）",
+    label: "設定（ゲストは利用不可）",
     href: "#",
     state: "disabled",
     icon: faAddressCard,
@@ -63,7 +63,7 @@ export const teacherMenuItems: MenuItem[] = [
     icon: faChalkboardUser,
   },
   {
-    label: "アカウント",
+    label: "設定",
     href: "/user/profile",
     state: "enabled",
     icon: faAddressCard,
@@ -84,7 +84,7 @@ export const guestTeacherMenuItems: MenuItem[] = [
     icon: faChalkboardUser,
   },
   {
-    label: "アカウント（ゲストは利用不可）",
+    label: "設定（ゲストは利用不可）",
     href: "#",
     state: "disabled",
     icon: faAddressCard,
@@ -105,13 +105,13 @@ export const adminMenuItems: MenuItem[] = [
     icon: faChalkboardUser,
   },
   {
-    label: "ロール昇格",
+    label: "ロール昇格処理",
     href: "/admin/assign-role",
     state: "enabled",
     icon: faUserGear,
   },
   {
-    label: "アカウント",
+    label: "設定",
     href: "/user/profile",
     state: "enabled",
     icon: faAddressCard,

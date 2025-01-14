@@ -90,14 +90,14 @@ export const UserNavWidget: React.FC = () => {
           {menuItems.map((item, index) => (
             <DropdownMenuItem key={index} onClick={() => setIsMenuOpen(false)}>
               <Link href={item.href} style="nav" state={item.state}>
-                <FontAwesomeIcon icon={item.icon} className="mr-1" />
+                <FontAwesomeIcon icon={item.icon} className="mr-1.5" />
                 {item.label}
               </Link>
             </DropdownMenuItem>
           ))}
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={logoutAction} className="cursor-pointer">
-            <FontAwesomeIcon icon={faRightFromBracket} className="mr-1" />
+            <FontAwesomeIcon icon={faRightFromBracket} className="mr-1.5" />
             ログアウト
           </DropdownMenuItem>
         </DropdownMenuContent>
