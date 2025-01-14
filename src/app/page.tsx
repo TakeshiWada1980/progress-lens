@@ -10,6 +10,7 @@ import {
   faCaretRight,
   faThumbsUp,
   faRightToBracket,
+  faShareNodes,
 } from "@fortawesome/free-solid-svg-icons";
 import { twMerge } from "tailwind-merge";
 import ActionButton from "@/app/_components/elements/ActionButton";
@@ -36,6 +37,7 @@ const Home: React.FC = () => {
 
       <div className="mx-3 mb-4 text-sm font-bold italic text-slate-400 md:mx-6">
         学びの状況（進捗や理解度など）を匿名性を保ちながら可視化して相互シェア
+        <FontAwesomeIcon icon={faShareNodes} className="ml-1.5" />
       </div>
 
       <div className="mb-4 flex justify-center space-x-2.5 text-sm font-bold  text-indigo-800">
@@ -59,9 +61,10 @@ const Home: React.FC = () => {
       </h3>
       <div className="mb-4 mt-3">
         <div className="mb-2 ml-2">
-          授業の「理解度」や演習の「進み具合」を即時的に可視化し、学習者全体の傾向と分布を確認できます。特にアクティブラーニング、オンライン授業、演習形式の授業など効果を発揮します。
+          授業の「理解度」や演習の「進み具合」を即時的に可視化し、学習者全体の傾向と分布を確認できます。
         </div>
-        <div className="ml-3 space-y-2 text-sm">
+
+        <div className="my-2 ml-3 space-y-2 text-sm">
           <p>
             <FontAwesomeIcon icon={faThumbsUp} className="mr-2 text-gray-500" />
             進捗に応じて最適なタイミングでヒントを提示
@@ -78,6 +81,25 @@ const Home: React.FC = () => {
             <FontAwesomeIcon icon={faThumbsUp} className="mr-2 text-gray-500" />
             サイレントマジョリティの声を授業にフィードバック
           </p>
+        </div>
+
+        <div className="mb-2 ml-2">
+          特に次の授業形態で効果的に活用いただけます。
+        </div>
+
+        <div className="mb-2 ml-3 space-y-2 text-sm">
+          <p>
+            <FontAwesomeIcon icon={faThumbsUp} className="mr-2 text-gray-500" />
+            セルフペースド学習型の授業、オンライン授業
+          </p>
+          <p>
+            <FontAwesomeIcon icon={faThumbsUp} className="mr-2 text-gray-500" />
+            アクティブラーニング形式の授業
+          </p>
+        </div>
+
+        <div className="mb-2 ml-2">
+          授業中の発言やリアクションが少ないクラスにおいても有効活用いただけます。
         </div>
 
         <div className="mb-4 mt-3 px-2 md:px-4">
@@ -210,7 +232,7 @@ const Home: React.FC = () => {
       <div className="mb-2 flex justify-center space-x-2.5 text-sm font-bold  text-indigo-800">
         <div className="rounded-md border-2 border-indigo-800  px-4 py-0.5 hover:bg-indigo-800 hover:text-white">
           <Link href="/login" style="unstyled">
-            ゲストログインで ProgressLens を体験
+            ゲストログインで ProgressLens を体験する
           </Link>
         </div>
       </div>
