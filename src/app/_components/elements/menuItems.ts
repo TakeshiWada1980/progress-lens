@@ -21,7 +21,7 @@ interface MenuItem {
 
 export const studentMenuItems: MenuItem[] = [
   {
-    label: "セッション",
+    label: "セッション一覧",
     href: "/student/sessions",
     state: "enabled",
     icon: faChalkboardUser,
@@ -36,7 +36,7 @@ export const studentMenuItems: MenuItem[] = [
 
 export const guestStudentMenuItems: MenuItem[] = [
   {
-    label: "セッション",
+    label: "セッション一覧",
     href: "/student/sessions",
     state: "enabled",
     icon: faChalkboardUser,
@@ -51,13 +51,13 @@ export const guestStudentMenuItems: MenuItem[] = [
 
 export const teacherMenuItems: MenuItem[] = [
   {
-    label: "セッション（教員ロール）",
+    label: "セッション一覧（教員ロール）",
     href: "/teacher/sessions",
     state: "enabled",
     icon: faChalkboardUser,
   },
   {
-    label: "セッション（学生ロール）",
+    label: "セッション一覧（学生ロール）",
     href: "/student/sessions",
     state: "enabled",
     icon: faChalkboardUser,
@@ -72,13 +72,13 @@ export const teacherMenuItems: MenuItem[] = [
 
 export const guestTeacherMenuItems: MenuItem[] = [
   {
-    label: "セッション（教員ロール）",
+    label: "セッション一覧（教員ロール）",
     href: "/teacher/sessions",
     state: "enabled",
     icon: faChalkboardUser,
   },
   {
-    label: "セッション（学生ロール）",
+    label: "セッション一覧（学生ロール）",
     href: "/student/sessions",
     state: "enabled",
     icon: faChalkboardUser,
@@ -93,13 +93,13 @@ export const guestTeacherMenuItems: MenuItem[] = [
 
 export const adminMenuItems: MenuItem[] = [
   {
-    label: "セッション（教員ロール）",
+    label: "セッション一覧（教員ロール）",
     href: "/teacher/sessions",
     state: "enabled",
     icon: faChalkboardUser,
   },
   {
-    label: "セッション（学生ロール）",
+    label: "セッション一覧（学生ロール）",
     href: "/student/sessions",
     state: "enabled",
     icon: faChalkboardUser,

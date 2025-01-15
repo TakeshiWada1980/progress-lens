@@ -201,6 +201,12 @@ const Page: React.FC = () => {
           />
         </form>
         <FormFieldErrorMsg msg={errorMsg} />
+        {userProfile?.isGuest && (
+          <div className="text-sm text-rose-400">
+            <FontAwesomeIcon icon={faUser} className="mr-1.5" />
+            評価用のアクセスコードとして「999-0001」と「999-0002」を用意しています。別途アクセスコードを入手すれば、その他のセッションにも参加可能です。
+          </div>
+        )}
       </div>
 
       <div className="space-y-2">
@@ -224,12 +230,12 @@ const Page: React.FC = () => {
 
       {userProfile?.isGuest && (
         <div className="text-sm text-rose-400">
-          <FontAwesomeIcon icon={faUser} className="mr-1" />
-          ゲストモードでご利用中です。無料の
+          <FontAwesomeIcon icon={faUser} className="mr-1.5" />
+          現在、ゲストモードでログインしています。無料の
           <Link href="/signup" className="font-bold text-rose-500">
             サインアップ
           </Link>
-          で全ての機能がお使いいただけます。
+          で全機能が利用できます。
         </div>
       )}
 
