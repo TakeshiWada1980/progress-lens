@@ -204,7 +204,7 @@ const Page: React.FC = () => {
         {userProfile?.isGuest && (
           <div className="text-sm text-rose-400">
             <FontAwesomeIcon icon={faUser} className="mr-1.5" />
-            評価用のアクセスコードとして「999-0001」と「999-0002」を用意しています。別途アクセスコードを入手すれば、その他のセッションにも参加可能です。
+            機能評価用に「999-0001」と「999-0002」を用意しています。別途アクセスコードを入手すれば、ゲストでも任意のセッションに参加可能です。
           </div>
         )}
       </div>
