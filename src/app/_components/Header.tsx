@@ -11,7 +11,11 @@ import { UserNavWidget } from "@/app/_components/elements/UserNavWidget";
 // UIコンポーネント
 import Link from "@/app/_components/elements/Link";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faFan, faRightToBracket } from "@fortawesome/free-solid-svg-icons";
+import {
+  faFan,
+  faRightToBracket,
+  faCrow,
+} from "@fortawesome/free-solid-svg-icons";
 import { SearchCheck } from "lucide-react";
 
 // 型・定数・ユーティリティ
@@ -56,6 +60,14 @@ const Header: React.FC = () => {
           <div className="flex items-center">
             <SearchCheck className="mr-1" />
             {appName}
+            <span className="ml-1.5 rounded-md bg-indigo-50 px-2 py-0.5 text-sm text-indigo-500">
+              β版
+              <FontAwesomeIcon
+                icon={faCrow}
+                flip="horizontal"
+                className="ml-1 text-indigo-400"
+              />
+            </span>
           </div>
         </Link>
 

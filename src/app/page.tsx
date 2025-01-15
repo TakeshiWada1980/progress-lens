@@ -33,7 +33,12 @@ const Home: React.FC = () => {
         <div className="mb-1">みんなの「学び」が、つながる場所</div>
         <div className="ml-1 w-10 border-b-2 border-black pt-0.5"></div>
       </h2>
-      <h1 className="mx-3 mb-1.5 text-4xl font-bold md:mx-6">ProgressLens</h1>
+      <h1 className="mx-3 mb-1.5 text-4xl font-bold md:mx-6">
+        ProgressLens
+        <span className="ml-2 rounded-md bg-indigo-50 px-2 text-lg text-indigo-500">
+          ベータ版
+        </span>
+      </h1>
 
       <div className="mx-3 mb-4 text-sm font-bold italic text-slate-400 md:mx-6">
         学びの状況（進捗や理解度など）を匿名性を保ちながら可視化して相互シェア
@@ -95,21 +100,26 @@ const Home: React.FC = () => {
               icon={faThumbsUp}
               className="mr-2 text-indigo-700"
             />
-            サイレントマジョリティの声を授業にフィードバック
+            サイレントマジョリティの声を授業に反映
           </p>
         </div>
 
         <div className="mb-2 ml-1">
-          特に次の「授業形態」で効果的に活用いただけます。
+          特に、次の「授業形態」で効果的に活用いただけます。
         </div>
 
         <div className="mb-2 ml-3 space-y-2 text-sm">
-          <p>
+          <p className="leading-relaxed">
             <FontAwesomeIcon
               icon={faThumbsUp}
-              className="mr-2 text-indigo-700"
+              className="mr-2 text-indigo-700 "
             />
-            セルフペースド学習型の授業、オンライン授業
+            セルフペースド学習型
+            <sup className="font-bold text-indigo-500">※</sup>
+            の授業、オンライン授業
+            <br />
+            <span className="ml-6 mr-1 font-bold text-indigo-500">※</span>
+            学習者のペースで自律的に学ぶ方式。自己調整学習。
           </p>
           <p>
             <FontAwesomeIcon
