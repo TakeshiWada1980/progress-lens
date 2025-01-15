@@ -10,6 +10,7 @@ import {
   faCaretRight,
   faThumbsUp,
   faRightToBracket,
+  faCrow,
   faShareNodes,
 } from "@fortawesome/free-solid-svg-icons";
 import { twMerge } from "tailwind-merge";
@@ -35,8 +36,13 @@ const Home: React.FC = () => {
       </h2>
       <h1 className="mx-3 mb-1.5 text-4xl font-bold md:mx-6">
         ProgressLens
-        <span className="ml-2 rounded-md bg-indigo-50 px-2 text-lg text-indigo-500">
+        <span className="ml-2 rounded-full bg-indigo-50 px-3 py-1 text-base text-indigo-500">
           ベータ版
+          <FontAwesomeIcon
+            icon={faCrow}
+            flip="horizontal"
+            className="ml-1 text-indigo-400"
+          />
         </span>
       </h1>
 
@@ -68,7 +74,7 @@ const Home: React.FC = () => {
         <div className="mb-2 ml-1">
           授業の「理解度」や演習の「進み具合」を即時的に可視化し、
           <span className="font-bold">
-            学習者全体の傾向と分布に基づいた授業展開
+            クラス全体の傾向と分布に基づいた授業展開
           </span>
           を可能にします。
         </div>
