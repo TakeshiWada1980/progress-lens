@@ -60,14 +60,7 @@ const Header: React.FC = () => {
           <div className="flex items-center">
             <SearchCheck className="mr-1" />
             {appName}
-            <span className="ml-1.5 rounded-full bg-indigo-50 px-3 py-0.5 text-sm text-indigo-500">
-              β版
-              <FontAwesomeIcon
-                icon={faCrow}
-                flip="horizontal"
-                className="ml-1 text-indigo-400"
-              />
-            </span>
+            <span className="ml-1.5 text-sm text-indigo-500">β版</span>
           </div>
         </Link>
 

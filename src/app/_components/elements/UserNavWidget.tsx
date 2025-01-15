@@ -66,11 +66,11 @@ export const UserNavWidget: React.FC = () => {
   return (
     <div className="flex items-center">
       {roleStr !== "" ? (
-        <div className="mr-2 text-xs text-slate-500">[{roleStr}]</div>
+        <div className="mr-1.5 text-xs text-slate-500">[{roleStr}]</div>
       ) : (
         <LoadingSpinner message="Loading..." />
       )}
-      <div className="mr-3">{displayName}</div>
+      <div className="mr-2">{displayName}</div>
       <DropdownMenu
         modal={false}
         open={isMenuOpen}
