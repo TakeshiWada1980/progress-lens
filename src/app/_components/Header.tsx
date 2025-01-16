@@ -58,9 +58,9 @@ const Header: React.FC = () => {
           className="text-xl font-bold text-blue-800"
         >
           <div className="flex items-center">
-            <SearchCheck className="mr-1" />
+            <SearchCheck className="mr-0 md:mr-1" />
             {appName}
-            <span className="ml-1.5 text-sm text-indigo-500">β版</span>
+            <span className="ml-1 text-sm text-indigo-500 md:ml-1.5">β版</span>
           </div>
         </Link>
 
