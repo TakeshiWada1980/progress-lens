@@ -9,12 +9,11 @@ import {
   faComments,
   faCaretRight,
   faThumbsUp,
-  faRightToBracket,
   faCrow,
+  faUser,
   faShareNodes,
 } from "@fortawesome/free-solid-svg-icons";
 import { twMerge } from "tailwind-merge";
-import ActionButton from "@/app/_components/elements/ActionButton";
 
 const Home: React.FC = () => {
   const { session } = useAuth();
@@ -72,7 +71,7 @@ const Home: React.FC = () => {
       </h3>
       <div className="mb-4 mt-3">
         <div className="mb-2 ml-1">
-          授業の「理解度」や演習の「進み具合」を即時的に可視化し、
+          授業の「理解度」や演習の「進み具合」を準リアルタイムに可視化し、
           <span className="font-bold">
             クラス全体の傾向と分布に基づいた授業展開
           </span>
@@ -92,7 +91,7 @@ const Home: React.FC = () => {
               icon={faThumbsUp}
               className="mr-2 text-indigo-700"
             />
-            状況を可視化して授業のペースや解説を最適化
+            状況を可視化して授業のペースと解説を最適化
           </p>
           <p>
             <FontAwesomeIcon
@@ -111,28 +110,37 @@ const Home: React.FC = () => {
         </div>
 
         <div className="mb-2 ml-1">
-          特に、次の「授業形態」で効果的に活用いただけます。
+          次のような形式の授業で効果的に活用いただけます。
         </div>
 
         <div className="mb-2 ml-3 space-y-2 text-sm">
-          <p className="leading-relaxed">
-            <FontAwesomeIcon
-              icon={faThumbsUp}
-              className="mr-2 text-indigo-700 "
-            />
-            セルフペースド学習型
-            <sup className="font-bold text-indigo-500">※</sup>
-            の授業、オンライン授業
-            <br />
-            <span className="ml-6 mr-1 font-bold text-indigo-500">※</span>
-            学習者のペースで自律的に学ぶ方式。自己調整学習。
-          </p>
+          <div>
+            <div>
+              <p className="leading-relaxed">
+                <FontAwesomeIcon
+                  icon={faThumbsUp}
+                  className="mr-2 text-indigo-700 "
+                />
+                セルフペースド学習(
+                <span className="font-bold text-indigo-500">※</span>
+                )を主体とする授業
+              </p>
+            </div>
+            <div className="ml-3">
+              <span className="mr-0.5 font-bold text-indigo-500">※</span>
+              学習者のペースで自律的に学ぶ方式。
+              <Link href="https://www.google.com/search?q=自己調整学習">
+                自己調整学習
+              </Link>
+              。
+            </div>
+          </div>
           <p>
             <FontAwesomeIcon
               icon={faThumbsUp}
               className="mr-2 text-indigo-700"
             />
-            アクティブラーニング形式の授業
+            アクティブラーニング。オンライン授業。
           </p>
         </div>
 
@@ -143,6 +151,10 @@ const Home: React.FC = () => {
         <div className="mb-4 mt-3 px-2 md:px-4">
           <div className="flex flex-col items-center justify-center gap-2 md:flex-row">
             <div className="w-full md:w-1/2">
+              <div className="text-lg font-bold text-indigo-700 md:text-base">
+                <FontAwesomeIcon icon={faUser} className="mr-1" />
+                学生モードの画面
+              </div>
               <Image
                 src="/sp-student01.png"
                 alt="Student Image"
@@ -154,6 +166,10 @@ const Home: React.FC = () => {
             </div>
 
             <div className="w-full md:w-1/2">
+              <div className="text-xl font-bold text-indigo-700 md:text-base">
+                <FontAwesomeIcon icon={faUser} className="mr-1" />
+                教員モードの画面
+              </div>
               <Image
                 src="/sp-teacher01.png"
                 alt="Teacher Image"
