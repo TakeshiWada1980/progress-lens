@@ -2,6 +2,10 @@
 
 ![カバーイメージ](/public/progress-lens.jpg)
 
+## はじめに
+
+このウェブアプリは、教員と学生、学生同士で「演習や課題の進捗状況」を匿名で共有するためのものです。
+
 ## 概要
 
 🔗 https://progress-lens.vercel.app/
